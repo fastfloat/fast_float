@@ -1,5 +1,9 @@
 ## fast_float number parsing library
 
+![Ubuntu 20.04 CI (GCC 9)](https://github.com/lemire/fast_float/workflows/Ubuntu%2020.04%20CI%20(GCC%209)/badge.svg)
+![Ubuntu 18.04 CI (GCC 7)](https://github.com/lemire/fast_float/workflows/Ubuntu%2018.04%20CI%20(GCC%207)/badge.svg)
+![VS16-CI](https://github.com/lemire/fast_float/workflows/VS16-CI/badge.svg)
+
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
 decimal values (e.g., `1.3e10`) into binary types. We provide exact rounding (including
