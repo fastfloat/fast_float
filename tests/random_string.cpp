@@ -11,11 +11,10 @@ public:
     // Inspired from
     // https://github.com/lemire/testingRNG/blob/master/source/wyhash.h
     wyhash64_x_ += UINT64_C(0x60bee2bee120fc15);
-    __uint128_t tmp;
-    tmp = (__uint128_t)wyhash64_x_ * UINT64_C(0xa3b195354a39b70d);
-    uint64_t m1 = (tmp >> 64) ^ tmp;
-    tmp = (__uint128_t)m1 * UINT64_C(0x1b03738712fad5c9);
-    uint64_t m2 = (tmp >> 64) ^ tmp;
+     fast_float::value128 tmp =  fast_float::full_multiplication(wyhash64_x_,  UINT64_C(0xa3b195354a39b70d));
+    uint64_t m1 = (tmp.high) ^ tmp.low;
+    tmp = fast_float::full_multiplication(m1,  UINT64_C(0x1b03738712fad5c9));
+    uint64_t m2 = (tmp.high) ^ tmp.low;
     return m2;
   }
   bool next_bool() { return (next() & 1) == 1; }
@@ -31,17 +30,17 @@ public:
     }*/
     int s = max - min + 1;
     uint64_t x = next();
-    __uint128_t m = (__uint128_t)x * (__uint128_t)s;
-    uint64_t l = (uint64_t)m;
+    fast_float::value128 m =  fast_float::full_multiplication(x, s);
+    uint64_t l = m.low;
     if (l < s) {
       uint64_t t = -s % s;
       while (l < t) {
         x = next();
-        m = (__uint128_t)x * (__uint128_t)s;
-        l = (uint64_t)m;
+        m = fast_float::full_multiplication(x, s);
+        l = m.low;
       }
     }
-    return (m >> 64) + min;
+    return (m.high) + min;
   }
   int next_digit() { return next_ranged_int(0, 9); }
 
@@ -113,7 +112,7 @@ std::pair<float, bool> strtof_from_string(char *st) {
 #endif
   if (st == pr) {
     std::cerr << "strtof_l could not parse '" << st << std::endl;
-    return std::make_pair(0, false);
+    return std::make_pair(0.0f, false);
   }
   return std::make_pair(d, true);
 }

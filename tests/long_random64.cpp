@@ -10,7 +10,7 @@ template <typename T> char *to_string(T d, char *buffer) {
   return buffer + written;
 }
 
-static __uint128_t g_lehmer64_state;
+static fast_float::value128 g_lehmer64_state;
 
 /**
  * D. H. Lehmer, Mathematical methods in large-scale computing units.
@@ -24,11 +24,16 @@ static __uint128_t g_lehmer64_state;
  * Society 68.225 (1999): 249-260.
  */
 
-static inline void lehmer64_seed(uint64_t seed) { g_lehmer64_state = seed; }
+static inline void lehmer64_seed(uint64_t seed) { 
+  g_lehmer64_state.high = 0;
+  g_lehmer64_state.low = seed; 
+}
 
 static inline uint64_t lehmer64() {
-  g_lehmer64_state *= UINT64_C(0xda942042e4dd58b5);
-  return uint64_t(g_lehmer64_state >> 64);
+  fast_float::value128 v = fast_float::full_multiplication(g_lehmer64_state.low,UINT64_C(0xda942042e4dd58b5));
+  v.high += g_lehmer64_state.high * UINT64_C(0xda942042e4dd58b5);
+  g_lehmer64_state = v;
+  return v.high;
 }
 
 size_t errors;
