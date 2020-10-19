@@ -67,7 +67,7 @@ which is merely a pointer to the `include` directory.
 If you drop the `fast_float` repository in your CMake project, you should be able to use
 it in this manner:
 
-```
+```cmake
 add_subdirectory(fast_float)
 target_link_libraries(myprogram PUBLIC fast_float)
 ```
