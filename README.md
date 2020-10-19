@@ -36,6 +36,8 @@ parsed number, and the `value` referenced is set to the parsed value. In case of
 
 The implementation does not throw and does not allocate memory (e.g., with `new` or `malloc`).
 
+It will parse infinity and nan values.
+
 Example:
 
 ``` C++
