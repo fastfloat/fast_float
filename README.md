@@ -5,7 +5,7 @@ functions for `float` and `double` types.  These functions convert ASCII strings
 decimal values (e.g., `1.3e10`) into binary types. We provide exact rounding (including
 round to even). In our experience, these `fast_float` functions are faster than any other comparable number-parsing functions. They provide a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) but using an novel algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers.
 
-Specifically, `fast_float` provides the following two functions with a C++17-like syntax:
+Specifically, `fast_float` provides the following two functions with a C++17-like syntax (the library itself only requires C++11):
 
 ```C++
 from_chars_result from_chars(const char* first, const char* last, float& value, ...);
