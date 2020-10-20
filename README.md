@@ -61,7 +61,7 @@ The default is  `fast_float::chars_format::general` which allows both `fixed` an
 
 ## How fast is it?
 
-We find that it is often twice as fast as the best available competitor, and many times faster than many standard-library implementations.
+It can parse random floating-point numbers at a speed of 1 GB/s on some systems. We find that it is often twice as fast as the best available competitor, and many times faster than many standard-library implementations.
 
 ```
 # parsing random integers in the range [0,1)
