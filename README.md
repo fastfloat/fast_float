@@ -53,11 +53,15 @@ int main() {
 }
 ```
 
+
 Like the C++17 standard, the `fast_float::from_chars` functions take an optional last argument of
 the type `fast_float::chars_format`. It is a bitset value: we check whether 
 `fmt & fast_float::chars_format::fixed` and `fmt & fast_float::chars_format::scientific` are set
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
+
+We support Visual Studio, macOS, Linux, freeBSD.
+
 
 ## How fast is it?
 
@@ -71,6 +75,8 @@ strtod                                  :    86.53 MB/s (+/- 1.4 %)     4.12 Min
 abseil                                  :   521.66 MB/s (+/- 3.2 %)    24.86 Mint/s  
 fastfloat                               :  1061.86 MB/s (+/- 3.8 %)    50.61 Mint/s  
 ```
+
+See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.
 
 ## Using as a CMake dependency
 
