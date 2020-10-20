@@ -59,6 +59,19 @@ the type `fast_float::chars_format`. It is a bitset value: we check whether
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
+## How fast is it?
+
+We find that it is often twice as fast as the best available competitor, and many times faster than many standard-library implementations.
+
+```
+# parsing random integers in the range [0,1)
+volume = 2.09808 MB 
+netlib                                  :   294.33 MB/s (+/- 2.4 %)    14.03 Mint/s  
+strtod                                  :    86.53 MB/s (+/- 1.4 %)     4.12 Mint/s  
+abseil                                  :   521.66 MB/s (+/- 3.2 %)    24.86 Mint/s  
+fastfloat                               :  1061.86 MB/s (+/- 3.8 %)    50.61 Mint/s  
+```
+
 ## Using as a CMake dependency
 
 This library is header-only by design. The CMake file provides the `fast_float` target
