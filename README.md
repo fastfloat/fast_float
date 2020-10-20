@@ -72,6 +72,19 @@ add_subdirectory(fast_float)
 target_link_libraries(myprogram PUBLIC fast_float)
 ```
 
+Or you may want to retrieve the dependency automatically if you have a sufficiently recent version of CMake (3.11 or better at least):
+
+```cmake
+FetchContent_Declare(
+  fast_float
+  GIT_REPOSITORY https://github.com/lemire/fast_float.git
+  GIT_TAG origin/main
+  GIT_SHALLOW TRUE)
+
+FetchContent_MakeAvailable(fast_float)
+target_link_libraries(myprogram PUBLIC fast_float)
+
+```
 
 
 ## Requirements and Limitations
