@@ -18,14 +18,17 @@
 #define fastfloat_really_inline inline __attribute__((always_inline))
 #endif 
 
-#ifdef _MSC_VER
-#define fastfloat_strcasecmp _stricmp
-#define fastfloat_strncasecmp _strnicmp
-#else
-#define fastfloat_strcasecmp strcasecmp
-#define fastfloat_strncasecmp strncasecmp
-#endif
 namespace fast_float {
+
+// Compares two ASCII strings in a case insensitive manner.
+inline bool fastfloat_strncasecmp(const char * input1, const char * input2, size_t length) {
+  char running_diff{0};
+  for(size_t i = 0; i < length; i++) {
+    running_diff |= (input1[i] ^ input2[i]);
+  }
+  return (running_diff == 0) || (running_diff == 32);
+}
+
 #ifndef FLT_EVAL_METHOD
 #error "FLT_EVAL_METHOD should be defined, please include cfloat."
 #endif
@@ -72,7 +75,8 @@ int leading_zeroes(uint64_t input_num) {
 }
 
 
-#ifdef FASTFLOAT_VISUAL_STUDIO
+#if defined(_WIN32) && !defined(__clang__)
+// Note MinGW falls here too
 #include <intrin.h>
 
 #if !defined(_M_X64) && !defined(_M_ARM64)// _umul128 for x86, arm
