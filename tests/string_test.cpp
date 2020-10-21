@@ -2,6 +2,25 @@
 
 #include <vector>
 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+// Anything at all that is related to cygwin, msys and so forth will
+// always use this fallback because we cannot rely on it behaving as normal
+// gcc.
+#include <locale>
+#include <sstream>
+// workaround for CYGWIN
+double cygwin_strtod_l(const char* start, char** end) {
+    double d;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << start;
+    ss >> d;
+    size_t nread = ss.tellg();
+    *end = const_cast<char*>(start) + nread;
+    return d;
+}
+#endif
+
 inline void Assert(bool Assertion) {
   if (!Assertion)
     throw std::runtime_error("bug");
@@ -66,7 +85,9 @@ void strtod_from_string(const std::string &st, double& d) {
 template <>
 void strtod_from_string(const std::string &st, float& d) {
     char *pr = (char *)st.data();
-#ifdef _WIN32
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+    d = cygwin_strtod_l(st, &pr,  c_locale);
+#elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
     d = _strtof_l(st.data(), &pr,  c_locale);
 #else
@@ -215,7 +236,9 @@ bool partow_test() {
 
 
 int main() {
-
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+  std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
+#endif
   std::cout << "32 bits checks" << std::endl;
   Assert(partow_test<float>());
   Assert(test<float>());

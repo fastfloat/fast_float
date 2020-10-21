@@ -4,6 +4,25 @@
 #include <cassert>
 #include <cmath>
 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+// Anything at all that is related to cygwin, msys and so forth will
+// always use this fallback because we cannot rely on it behaving as normal
+// gcc.
+#include <locale>
+#include <sstream>
+// workaround for CYGWIN
+double cygwin_strtod_l(const char* start, char** end) {
+    double d;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << start;
+    ss >> d;
+    size_t nread = ss.tellg();
+    *end = const_cast<char*>(start) + nread;
+    return d;
+}
+#endif
+
 template <typename T> char *to_string(T d, char *buffer) {
   auto written = std::snprintf(buffer, 64, "%.*e",
                                std::numeric_limits<T>::max_digits10 - 1, d);
@@ -12,7 +31,9 @@ template <typename T> char *to_string(T d, char *buffer) {
 
 void strtod_from_string(const char * st, float& d) {
     char *pr = (char *)st;
-#ifdef _WIN32
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+    d = cygwin_strtod_l(st, &pr,  c_locale);
+#elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
     d = _strtof_l(st, &pr,  c_locale);
 #else
@@ -73,6 +94,9 @@ void allvalues() {
 }
 
 int main() {
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+  std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
+#endif
   allvalues();
   std::cout << std::endl;
   std::cout << "all ok" << std::endl;
