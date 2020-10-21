@@ -10,7 +10,7 @@
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
 decimal values (e.g., `1.3e10`) into binary types. We provide exact rounding (including
-round to even). In our experience, these `fast_float` functions are faster than any other comparable number-parsing functions. They provide a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) but using an novel algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers.
+round to even). In our experience, these `fast_float` functions are faster than any other comparable number-parsing functions. 
 
 Specifically, `fast_float` provides the following two functions with a C++17-like syntax (the library itself only requires C++11):
 
@@ -64,6 +64,10 @@ to determine whether we allow the fixed point and scientific notation respective
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
 We support Visual Studio, macOS, Linux, freeBSD.
+
+## Relation With Other Work
+
+The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an novel algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. 
 
 ## Users
 
