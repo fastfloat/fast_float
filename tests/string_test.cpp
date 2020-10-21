@@ -69,32 +69,32 @@ void strtod_from_string(const std::string &st, T& d);
 
 template <>
 void strtod_from_string(const std::string &st, double& d) {
-    char *pr = (char *)st.data();
+    char *pr = (char *)st.c_str();
 #ifdef _WIN32
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
-    d = _strtod_l(st.data(), &pr,  c_locale);
+    d = _strtod_l(st.c_str(), &pr,  c_locale);
 #else
     static locale_t c_locale = newlocale(LC_ALL_MASK, "C", NULL);
-    d = strtod_l(st.data(), &pr,  c_locale);
+    d = strtod_l(st.c_str(), &pr,  c_locale);
 #endif
-    if (pr == st.data()) {
+    if (pr == st.c_str()) {
       throw std::runtime_error("bug in strtod_from_string");
     }
 }
 
 template <>
 void strtod_from_string(const std::string &st, float& d) {
-    char *pr = (char *)st.data();
+    char *pr = (char *)st.c_str();
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-    d = cygwin_strtod_l(st, &pr);
+    d = cygwin_strtod_l(st.c_str(), &pr);
 #elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
-    d = _strtof_l(st.data(), &pr,  c_locale);
+    d = _strtof_l(st.c_str(), &pr,  c_locale);
 #else
     static locale_t c_locale = newlocale(LC_ALL_MASK, "C", NULL);
-    d = strtof_l(st.data(), &pr,  c_locale);
+    d = strtof_l(st.c_str(), &pr,  c_locale);
 #endif
-    if (pr == st.data()) {
+    if (pr == st.c_str()) {
       throw std::runtime_error("bug in strtod_from_string");
     }
 }
