@@ -86,7 +86,7 @@ template <>
 void strtod_from_string(const std::string &st, float& d) {
     char *pr = (char *)st.data();
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-    d = cygwin_strtod_l(st, &pr,  c_locale);
+    d = cygwin_strtod_l(st, &pr);
 #elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
     d = _strtof_l(st.data(), &pr,  c_locale);
