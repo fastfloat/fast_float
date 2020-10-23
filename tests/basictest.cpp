@@ -110,6 +110,7 @@ int main() {
 
 
   std::cout << "======= 64 bits " << std::endl;
+  Assert(basic_test_64bit("1090544144181609348835077142190",0x1.b8779f2474dfbp+99));
   Assert(basic_test_64bit("2.2250738585072013e-308",2.2250738585072013e-308));
   Assert(basic_test_64bit("-92666518056446206563E3", -92666518056446206563E3));
   Assert(basic_test_64bit("-92666518056446206563E3", -92666518056446206563E3));
@@ -162,6 +163,7 @@ int main() {
   std::cout << std::endl;
 
   std::cout << "======= 32 bits " << std::endl;
+  Assert(basic_test_64bit("1090544144181609348835077142190",0x1.b877ap+99f));
   Assert(basic_test_32bit("1.1754943508e-38",1.1754943508e-38f));
   Assert(basic_test_32bit("30219.0830078125",30219.0830078125f));
   Assert(basic_test_32bit("16252921.5",16252921.5f)); 
