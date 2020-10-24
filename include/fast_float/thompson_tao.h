@@ -10,7 +10,7 @@
  * https://github.com/google/wuffs/blob/aa46859ea40c72516deffa1b146121952d6dfd3b/internal/cgen/base/floatconv-submodule-data.c
  * https://github.com/google/wuffs/blob/46cd8105f47ca07ae2ba8e6a7818ef9c0df6c152/internal/cgen/base/floatconv-submodule-code.c
  * It is probably not very fast but it is a fallback that should almost never
- * be used in reallife.
+ * be used in real life.
  **/
 #include "ascii_number.h"
 #include "decimal_to_binary.h"
