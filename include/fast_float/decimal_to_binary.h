@@ -160,6 +160,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   return answer;
 }
 
+
 } // namespace fast_float
 
 #endif

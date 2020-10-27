@@ -126,7 +126,11 @@ value128 full_multiplication(uint64_t value1, uint64_t value2) {
 struct adjusted_mantissa {
   uint64_t mantissa;
   int power2;
-  adjusted_mantissa() : mantissa(0), power2(0) {}
+  adjusted_mantissa() = default;
+  //bool operator==(const adjusted_mantissa &o) const = default;
+  bool operator==(const adjusted_mantissa &o) const {
+    return mantissa == o.mantissa && power2 == o.power2;
+  }
 };
 
 struct decimal {
@@ -135,6 +139,36 @@ struct decimal {
   bool negative;
   bool truncated;
   uint8_t digits[max_digits];
+
+  // generate a mantissa by truncating to 19 digits, this assumes
+  // that num_digits >= 19 (caller should check).
+  inline uint64_t to_truncated_mantissa() {
+    const int64_t max_digit_with_overflow = 19;
+    static_assert(9999999999999999999U < 0xffffffffffffffff, "cannot fit 19 digits in an uint64_t");
+    static_assert(max_digit_with_overflow < max_digits, "too few max_digits");
+    uint64_t val; 
+    // 8 first digits
+    ::memcpy(&val, digits, sizeof(uint64_t));
+    val = val * 2561 >> 8;
+    val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
+    uint64_t mantissa = uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
+    // 8 more digits for a total of 16
+    ::memcpy(&val, digits + sizeof(uint64_t), sizeof(uint64_t));
+    val = val * 2561 >> 8;
+    val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
+    uint32_t eight_digits_value = uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
+    mantissa = 100000000 * mantissa + eight_digits_value;
+    for(size_t i = 2*sizeof(uint64_t); i < max_digit_with_overflow; i++) {
+      mantissa = mantissa * 10 + digits[i]; // can be accelerated
+    }
+    return mantissa;
+  }
+  // generate an exponent matching to_truncated_mantissa() 
+  inline int64_t to_truncated_exponent() {
+    const int64_t max_digit_with_overflow = 19;
+    return decimal_point - max_digit_with_overflow;
+  }    
+
 };
 
 constexpr static double powers_of_ten_double[] = {
@@ -264,5 +298,14 @@ constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
  
 
 } // namespace fast_float
+
+// for convenience:
+#include <ostream>
+std::ostream& operator<<(std::ostream& out, const fast_float::decimal& d) {
+    out << "0.";
+    for(size_t i = 0; i < d.num_digits; i++) { out << int32_t(d.digits[i]); }
+    out << " * 10 ** " << d.decimal_point;
+    return out;
+}
 
 #endif
