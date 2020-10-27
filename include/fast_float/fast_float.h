@@ -41,5 +41,5 @@ from_chars_result from_chars(const char *first, const char *last,
                              T &value, chars_format fmt = chars_format::general)  noexcept;
 
 }
-#include "fast_float/parse_number.h"
+#include "parse_number.h"
 #endif // FASTFLOAT_FAST_FLOAT_H
