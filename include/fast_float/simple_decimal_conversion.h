@@ -4,13 +4,14 @@
 /**
  * This code is meant to handle the case where we have more than 19 digits.
  * 
- * Based on work by Nigel Tao (at https://github.com/google/wuffs/)
+ * It is based on work by Nigel Tao (at https://github.com/google/wuffs/)
  * who credits Ken Thompson for the design (via a reference to the Go source
- * code). See
- * https://github.com/google/wuffs/blob/aa46859ea40c72516deffa1b146121952d6dfd3b/internal/cgen/base/floatconv-submodule-data.c
- * https://github.com/google/wuffs/blob/46cd8105f47ca07ae2ba8e6a7818ef9c0df6c152/internal/cgen/base/floatconv-submodule-code.c
+ * code).
+ * 
+ * Rob Pike suggested that this algorithm be called "Simple Decimal Conversion".
+ * 
  * It is probably not very fast but it is a fallback that should almost never
- * be used in real life.
+ * be used in real life. Though it is not fast, it is "easily" understood and debugged.
  **/
 #include "ascii_number.h"
 #include "decimal_to_binary.h"
