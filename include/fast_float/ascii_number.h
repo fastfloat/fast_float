@@ -168,7 +168,10 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
 }
 
 
-// This should always succeed since it follows a call to parse_number_string.
+// This should always succeed since it follows a call to parse_number_string
+// This function could be optimized. In particular, we could stop after 19 digits
+// and try to bail out. Furthermore, we should be able to recover the computed
+// exponent from the pass in parse_number_string.
 decimal parse_decimal(const char *p, const char *pend) noexcept {
   decimal answer;
   answer.num_digits = 0;
@@ -203,10 +206,13 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
        ++p;
       }
     }
+    // We expect that this loop will often take the bulk of the running time
+    // because when a value has lots of digits, these digits often 
     while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
       uint64_t val;
       ::memcpy(&val, p, sizeof(uint64_t));
-      if(! is_made_of_eight_digits_fast(val)) break;
+      if(! is_made_of_eight_digits_fast(val)) { break; }
+      // We have eight digits, process them in one go!
       val -= 0x3030303030303030;
       ::memcpy(answer.digits + answer.num_digits, &val, sizeof(uint64_t));
       answer.num_digits += 8;

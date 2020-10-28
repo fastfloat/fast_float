@@ -94,7 +94,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   if(product.low == 0xFFFFFFFFFFFFFFFF) { //  could guard it further
     // In some very rare cases, this could happen, in which case we might need a more accurate
     // computation that what we can provide cheaply. This is very, very unlikely.
-    answer.power2 = -1;
+    answer.power2 = -1; // This (a negative value) indicates an error condition.
     return answer;
   }
   // The "compute_product_approximation" function can be slightly slower than a branchless approach:

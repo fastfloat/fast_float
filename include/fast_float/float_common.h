@@ -125,7 +125,7 @@ value128 full_multiplication(uint64_t value1, uint64_t value2) {
 
 struct adjusted_mantissa {
   uint64_t mantissa;
-  int power2;
+  int power2;// a negative value indicate an invalid result
   adjusted_mantissa() = default;
   //bool operator==(const adjusted_mantissa &o) const = default;
   bool operator==(const adjusted_mantissa &o) const {
