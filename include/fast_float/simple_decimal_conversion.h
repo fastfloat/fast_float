@@ -28,20 +28,6 @@ inline void trim(decimal &h) {
   }
 }
 
-/** If you ever want to see what is going on, the following function might prove handy:
- * **/
-void print(const decimal d, int32_t exp2 = 0) {
-  printf("0.");
-  for(size_t i = 0; i < d.num_digits; i++) {
-    printf("%d", int(d.digits[i]));
-  }
-  printf(" * 10 **%d ", d.decimal_point);
-  printf(" * 2 **%d ", exp2);
-
-}
-
-
-
 
 
 uint32_t number_of_digits_decimal_left_shift(decimal &h, uint32_t shift) {
@@ -368,8 +354,23 @@ adjusted_mantissa compute_float(decimal &d) {
 template <typename binary>
 adjusted_mantissa parse_long_mantissa(const char *first, const char* last) {
     decimal d = parse_decimal(first, last);
+    const uint64_t mantissa = d.to_truncated_mantissa();
+    const int64_t exponent =  d.to_truncated_exponent();
+    // credit: Nigel Tao who first implemented this fast path (to my knowledge).
+    // It is rough, but it does the job of accelerating the slow path since most
+    // long streams of digits are determined after 19 digits.
+    adjusted_mantissa am1 = compute_float<binary>(exponent, mantissa);
+    adjusted_mantissa am2 = compute_float<binary>(exponent, mantissa+1);
+    if( am1 == am2 ) { return am1; }
     return compute_float<binary>(d);
 }
 
 } // namespace fast_float
 #endif
+
+/*
+  uint32_t num_digits;
+  int32_t decimal_point;
+  bool negative;
+  bool truncated;
+  uint8_t digits[max_digits];*/

@@ -107,7 +107,7 @@ from_chars_result from_chars(const char *first, const char *last,
   word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
   word = pns.negative 
   ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
-  memcpy(&value, &word, sizeof(T));
+  ::memcpy(&value, &word, sizeof(T));
   return answer;
 }
 

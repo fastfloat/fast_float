@@ -45,7 +45,7 @@ bool is_space(uint8_t c) {
 
 namespace {
 constexpr uint32_t max_digits = 768;
-
+constexpr uint32_t max_digit_without_overflow = 19;
 constexpr int32_t decimal_point_range = 2047;
 } // namespace
 
@@ -126,7 +126,11 @@ value128 full_multiplication(uint64_t value1, uint64_t value2) {
 struct adjusted_mantissa {
   uint64_t mantissa;
   int power2;
-  adjusted_mantissa() : mantissa(0), power2(0) {}
+  adjusted_mantissa() = default;
+  //bool operator==(const adjusted_mantissa &o) const = default;
+  bool operator==(const adjusted_mantissa &o) const {
+    return mantissa == o.mantissa && power2 == o.power2;
+  }
 };
 
 struct decimal {
@@ -135,6 +139,40 @@ struct decimal {
   bool negative;
   bool truncated;
   uint8_t digits[max_digits];
+  decimal() = default;
+  // Copies are not allowed since this is a fat object.
+  decimal(const decimal &) = delete;
+  // Copies are not allowed since this is a fat object.
+  decimal & operator=(const decimal &) = delete; 
+  // Moves are allowed: 
+  decimal(decimal &&) = default;
+  decimal& operator=(decimal&& other) = default;
+  // Generates a mantissa by truncating to 19 digits; this function assumes
+  // that num_digits >= 19 (the caller is responsible for the check).
+  // This function should be reasonably fast.
+  inline uint64_t to_truncated_mantissa() {
+    uint64_t val; 
+    // 8 first digits
+    ::memcpy(&val, digits, sizeof(uint64_t));
+    val = val * 2561 >> 8;
+    val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
+    uint64_t mantissa = uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
+    // 8 more digits for a total of 16
+    ::memcpy(&val, digits + sizeof(uint64_t), sizeof(uint64_t));
+    val = val * 2561 >> 8;
+    val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
+    uint32_t eight_digits_value = uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
+    mantissa = 100000000 * mantissa + eight_digits_value;
+    for(uint32_t i = 2*sizeof(uint64_t); i < max_digit_without_overflow; i++) {
+      mantissa = mantissa * 10 + digits[i]; // can be accelerated
+    }
+    return mantissa;
+  }
+  // Generate san exponent matching to_truncated_mantissa() 
+  inline int32_t to_truncated_exponent() {
+    return decimal_point - max_digit_without_overflow;
+  }    
+
 };
 
 constexpr static double powers_of_ten_double[] = {
@@ -264,5 +302,14 @@ constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
  
 
 } // namespace fast_float
+
+// for convenience:
+#include <ostream>
+std::ostream& operator<<(std::ostream& out, const fast_float::decimal& d) {
+    out << "0.";
+    for(size_t i = 0; i < d.num_digits; i++) { out << int32_t(d.digits[i]); }
+    out << " * 10 ** " << d.decimal_point;
+    return out;
+}
 
 #endif

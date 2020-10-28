@@ -16,31 +16,36 @@ fastfloat_really_inline bool is_integer(char c)  noexcept  { return (c >= '0' &&
 // credit: https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
 fastfloat_really_inline uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
   uint64_t val;
-  memcpy(&val, chars, sizeof(uint64_t));
+  ::memcpy(&val, chars, sizeof(uint64_t));
   val = (val & 0x0F0F0F0F0F0F0F0F) * 2561 >> 8;
   val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
   return uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
 }
 
-fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
-  uint64_t val;
-  memcpy(&val, chars, 8);
+fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
   return (((val & 0xF0F0F0F0F0F0F0F0) |
            (((val + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4)) ==
           0x3333333333333333);
 }
 
 
+fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
+  uint64_t val;
+  ::memcpy(&val, chars, 8);
+  return is_made_of_eight_digits_fast(val);
+}
+
+
 fastfloat_really_inline uint32_t parse_four_digits_unrolled(const char *chars)  noexcept  {
   uint32_t val;
-  memcpy(&val, chars, sizeof(uint32_t));
+  ::memcpy(&val, chars, sizeof(uint32_t));
   val = (val & 0x0F0F0F0F) * 2561 >> 8;
   return (val & 0x00FF00FF) * 6553601 >> 16;
 }
 
 fastfloat_really_inline bool is_made_of_four_digits_fast(const char *chars)  noexcept  {
   uint32_t val;
-  memcpy(&val, chars, 4);
+  ::memcpy(&val, chars, 4);
   return (((val & 0xF0F0F0F0) |
            (((val + 0x06060606) & 0xF0F0F0F0) >> 4)) ==
           0x33333333);
@@ -162,95 +167,20 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   return answer;
 }
 
-// This should always succeed since it follows a call to parse_number_string.
-// It assumes that there are more than 19 mantissa digits to parse.
-parsed_number_string parse_truncated_decimal(const char *&p, const char *pend)  noexcept  {
-  parsed_number_string answer;
-  answer.valid = true;
-  answer.negative = (*p == '-');
-  if ((*p == '-') || (*p == '+')) {
-    ++p;
-  }
-  size_t number_of_digits{0};
-
-
-  uint64_t i = 0; 
-
-  while ((p != pend) && is_integer(*p)) {
-    // a multiplication by 10 is cheaper than an arbitrary integer
-    // multiplication
-    if(number_of_digits < 19) {
-
-      uint8_t digit = uint8_t(*p - '0');
-      i = 10 * i + digit;
-      number_of_digits ++;
-    }
-    ++p;
-  }
-  int64_t exponent = 0;
-  if ((p != pend) && (*p == '.')) {
-    ++p;
-    const char *first_after_period = p;
-   
-    while ((p != pend) && is_integer(*p)) {
-      if(number_of_digits < 19) {
-        uint8_t digit = uint8_t(*p - '0');
-        i = i * 10 + digit;
-        number_of_digits ++;
-      } else if (exponent == 0) {
-        exponent = first_after_period - p;
-      }
-      ++p;
-    }
-  }
-
-  if ((p != pend) && (('e' == *p) || ('E' == *p))) {
-    int64_t exp_number = 0;            // exponential part
-    ++p;
-    bool neg_exp = false;
-    if ((p != pend) && ('-' == *p)) {
-      neg_exp = true;
-      ++p;
-    } else if ((p != pend) && ('+' == *p)) {
-      ++p;
-    }
-    if ((p == pend) || !is_integer(*p)) {
-      return answer;
-    }
-    while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - '0');
-      if (exp_number < 0x10000) {
-        exp_number = 10 * exp_number + digit;
-      }
-      ++p;
-    }
-    exponent += (neg_exp ? -exp_number : exp_number);
-  } 
-  answer.lastmatch = p;
-  answer.valid = true;
-  answer.too_many_digits = true; // assumed
-  answer.exponent = exponent;
-  answer.mantissa = i;
-  return answer;
-}
-
 
 // This should always succeed since it follows a call to parse_number_string.
-decimal parse_decimal(const char *&p, const char *pend)  noexcept  {
+decimal parse_decimal(const char *p, const char *pend) noexcept {
   decimal answer;
   answer.num_digits = 0;
   answer.decimal_point = 0;
   answer.negative = false;
   answer.truncated = false;
-  // skip leading whitespace
-  while (fast_float::is_space(*p)) {
-    p++;
-  }
+  // any whitespace has been skipped.
   answer.negative = (*p == '-');
   if ((*p == '-') || (*p == '+')) {
     ++p;
   }
-
+  // skip leading zeroes
   while ((p != pend) && (*p == '0')) {
     ++p;
   }
@@ -273,8 +203,17 @@ decimal parse_decimal(const char *&p, const char *pend)  noexcept  {
        ++p;
       }
     }
+    while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
+      uint64_t val;
+      ::memcpy(&val, p, sizeof(uint64_t));
+      if(! is_made_of_eight_digits_fast(val)) break;
+      val -= 0x3030303030303030;
+      ::memcpy(answer.digits + answer.num_digits, &val, sizeof(uint64_t));
+      answer.num_digits += 8;
+      p += 8;
+    }
     while ((p != pend) && is_integer(*p)) {
-      if (answer.num_digits + 1 < max_digits) {
+      if (answer.num_digits < max_digits) {
         answer.digits[answer.num_digits] = uint8_t(*p - '0');
       } else {
         answer.truncated = true;
@@ -299,7 +238,7 @@ decimal parse_decimal(const char *&p, const char *pend)  noexcept  {
       uint8_t digit = uint8_t(*p - '0');
       if (exp_number < 0x10000) {
         exp_number = 10 * exp_number + digit;
-      }      
+      }     
       ++p;
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
