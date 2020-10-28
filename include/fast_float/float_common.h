@@ -139,7 +139,14 @@ struct decimal {
   bool negative;
   bool truncated;
   uint8_t digits[max_digits];
-
+  decimal() = default;
+  // Copies are not allowed since this is a fat object.
+  decimal(const decimal &) = delete;
+  // Copies are not allowed since this is a fat object.
+  decimal & operator=(const decimal &) = delete; 
+  // Moves are allowed: 
+  decimal(decimal &&) = default;
+  decimal& operator=(decimal&& other) = default;
   // Generates a mantissa by truncating to 19 digits; this function assumes
   // that num_digits >= 19 (the caller is responsible for the check).
   // This function should be reasonably fast.
