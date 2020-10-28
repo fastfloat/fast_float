@@ -358,7 +358,7 @@ adjusted_mantissa parse_long_mantissa(const char *first, const char* last) {
     // Let us try that.
     const uint64_t mantissa = d.to_truncated_mantissa();
     const int64_t exponent =  d.to_truncated_exponent();
-    // credit: Nigel Tao who first implemented this fast path (to my knowledge).
+    // credit: R. Oudompheng who first implemented this fast path (to my knowledge).
     // It is rough, but it does the job of accelerating the slow path since most
     // long streams of digits are determined after 19 digits.
     adjusted_mantissa am1 = compute_float<binary>(exponent, mantissa);
@@ -370,10 +370,3 @@ adjusted_mantissa parse_long_mantissa(const char *first, const char* last) {
 
 } // namespace fast_float
 #endif
-
-/*
-  uint32_t num_digits;
-  int32_t decimal_point;
-  bool negative;
-  bool truncated;
-  uint8_t digits[max_digits];*/
