@@ -133,7 +133,7 @@ In fact, for many numbers, far fewer than 17 digits are needed.
 
 Though this work is inspired by many different people, this work benefited especially from exchanges with 
 Michael Eisel, who motivated the original research with his key insights, and with Nigel Tao who provided 
-invaluable feedback. 
+invaluable feedback. Rémy Oudompheng first implemented a fast path we use in the case of long digits.
 
 The library includes code adapted from Google Wuffs (written by Nigel Tao) which was originally published 
 under the Apache 2.0 license.
