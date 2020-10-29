@@ -115,7 +115,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
       // result should be zero
       return answer;
     } 
-    // next line is safe because -answer.power2 + 1 < 0
+    // next line is safe because -answer.power2 + 1 < 64
     answer.mantissa >>= -answer.power2 + 1;
     // Thankfully, we can't have both "round-to-even" and subnormals because
     // "round-to-even" only occurs for powers close to 0.
