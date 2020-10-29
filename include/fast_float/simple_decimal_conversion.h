@@ -354,6 +354,7 @@ adjusted_mantissa compute_float(decimal &d) {
 template <typename binary>
 adjusted_mantissa parse_long_mantissa(const char *first, const char* last) {
     decimal d = parse_decimal(first, last);
+    std::cout << " decimall " << d << std::endl;
     // In some cases we can get lucky and looking at only the first 19 digits is enough.
     // Let us try that.
     const uint64_t mantissa = d.to_truncated_mantissa();

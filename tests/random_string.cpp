@@ -41,7 +41,7 @@ public:
   char next_char() { return static_cast<char>(next()); }
   double next_double() { return static_cast<double>(next()); }
 
-  int next_ranged_int(int min, int max) { // min and max are include
+  int next_ranged_int(int min, int max) { // min and max are included
     // Adapted from
     // https://lemire.me/blog/2019/06/06/nearly-divisionless-random-integer-generation-on-various-systems/
     /*  if (min == max) {
@@ -73,6 +73,10 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
     buffer[pos++] = '-';
   }
   int number_of_digits = rand.next_ranged_int(1, 100);
+  if(number_of_digits == 100) {
+    // With low probability, we want to allow very long strings just to stress the system.
+    number_of_digits = rand.next_ranged_int(1, 2000);
+  }
   int location_of_decimal_separator = rand.next_ranged_int(1, number_of_digits);
   for (size_t i = 0; i < number_of_digits; i++) {
     if (i == location_of_decimal_separator) {
@@ -143,7 +147,7 @@ std::pair<float, bool> strtof_from_string(char *st) {
  * and we verify that we get the same answer with with fast_float::from_chars.
  */
 bool tester(int seed, size_t volume) {
-  char buffer[1024]; // large buffer (can't overflow)
+  char buffer[4096]; // large buffer (can't overflow)
   RandomEngine rand(seed);
   for (size_t i = 0; i < volume; i++) {
     if((i%100000) == 0) { std::cout << "."; std::cout.flush(); }

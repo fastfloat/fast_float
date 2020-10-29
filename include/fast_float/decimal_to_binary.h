@@ -68,7 +68,7 @@ template <typename binary>
 fastfloat_really_inline
 adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   adjusted_mantissa answer;
-  if ((w == 0) || (q < smallest_power_of_five) ){
+  if ((w == 0) || (q < smallest_power_of_five)) {
     answer.power2 = 0;
     answer.mantissa = 0;
     // result should be zero

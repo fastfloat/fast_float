@@ -60,7 +60,11 @@ void random_values(size_t N) {
           abort();
         }
       }
-      if (std::isnan(v)) {
+      if(copysign(1,result_value) != copysign(1,v)) {
+        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
+              << std::endl;
+        abort();
+      } else if (std::isnan(v)) {
         if (!std::isnan(result_value)) {
           std::cerr << "not nan" << buffer << std::endl;
           errors++;
