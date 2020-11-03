@@ -57,6 +57,7 @@ void allvalues() {
     memcpy(&v, &word, sizeof(v));
     if(std::isfinite(v)) { 
       float nextf = std::nextafterf(v, INFINITY);
+      if(copysign(1,v) != copysign(1,nextf)) { continue; }
       if(!std::isfinite(nextf)) { continue; }
       double v1{v};
       assert(float(v1) == v);
@@ -77,16 +78,28 @@ void allvalues() {
       }
       if(copysign(1,result_value) != copysign(1,v)) {
         std::cerr << buffer << std::endl;
+        std::cerr << "v " << std::hexfloat << v << std::endl;
+        std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+        std::cerr << "midv " << std::hexfloat << midv << std::endl;
+        std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
         std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
               << std::endl;
         abort();
       } else if (std::isnan(v)) {
         if (!std::isnan(result_value)) {
           std::cerr << "not nan" << buffer << std::endl;
+          std::cerr << "v " << std::hexfloat << v << std::endl;
+          std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+          std::cerr << "midv " << std::hexfloat << midv << std::endl;
+          std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
           abort();
         }
       } else if (result_value != str_answer) {
         std::cerr << "no match ? " << buffer << std::endl;
+        std::cerr << "v " << std::hexfloat << v << std::endl;
+        std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+        std::cerr << "midv " << std::hexfloat << midv << std::endl;
+        std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
         std::cout << "started with " << std::hexfloat << midv << std::endl;
         std::cout << "round down to " << std::hexfloat << str_answer << std::endl;
         std::cout << "got back " << std::hexfloat << result_value << std::endl; 
