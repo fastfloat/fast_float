@@ -24,14 +24,13 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
   from_chars_result answer;
   answer.ec = std::errc(); // be optimistic
   if (last - first >= 3) {
-    if (fastfloat_strncasecmp(first, "nan", 3) == 0) {
+    if (fastfloat_strncasecmp(first, "nan", 3)) {
       answer.ptr = first + 3;
       value = std::numeric_limits<T>::quiet_NaN();
       return answer;
     }
-    if (fastfloat_strncasecmp(first, "inf", 3) == 0) {
-
-      if ((last - first >= 8) && (fastfloat_strncasecmp(first, "infinity", 8) == 0)) {
+    if (fastfloat_strncasecmp(first, "inf", 3)) {
+      if ((last - first >= 8) && fastfloat_strncasecmp(first, "infinity", 8)) {
         answer.ptr = first + 8;
       } else {
         answer.ptr = first + 3;
@@ -40,7 +39,7 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
       return answer;
     }
     if (last - first >= 4) {
-      if ((fastfloat_strncasecmp(first, "+nan", 4) == 0) || (fastfloat_strncasecmp(first, "-nan", 4) == 0)) {
+      if (fastfloat_strncasecmp(first, "+nan", 4) || fastfloat_strncasecmp(first, "-nan", 4)) {
         answer.ptr = first + 4;
         value = std::numeric_limits<T>::quiet_NaN();
         if (first[0] == '-') {
@@ -49,8 +48,8 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
         return answer;
       }
 
-      if ((fastfloat_strncasecmp(first, "+inf", 4) == 0) || (fastfloat_strncasecmp(first, "-inf", 4) == 0)) {
-        if ((last - first >= 8) && (fastfloat_strncasecmp(first + 1, "infinity", 8) == 0)) {
+      if (fastfloat_strncasecmp(first, "+inf", 4) || fastfloat_strncasecmp(first, "-inf", 4)) {
+        if ((last - first >= 8) && fastfloat_strncasecmp(first + 1, "infinity", 8)) {
           answer.ptr = first + 9;
         } else {
           answer.ptr = first + 4;
