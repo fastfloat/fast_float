@@ -61,6 +61,7 @@ void random_values(size_t N) {
         }
       }
       if(copysign(1,result_value) != copysign(1,v)) {
+        std::cerr << buffer << std::endl;
         std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
               << std::endl;
         abort();

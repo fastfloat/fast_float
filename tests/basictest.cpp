@@ -46,19 +46,19 @@ bool basic_test_32bit(std::string vals, float val) {
     std::cerr << " I could not parse " << vals << std::endl;
     return false;
   }
-  std::cout << copysign(1,result_value) << std::endl;
-    std::cout << copysign(1,val) << std::endl;
-
   if(copysign(1,result_value) != copysign(1,val)) {
+    std::cerr << vals << std::endl;
     std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
               << std::endl;
     return false;
   } else if (std::isnan(val)) {
     if (!std::isnan(result_value)) {
+      std::cerr << vals << std::endl;
       std::cerr << "not nan" << result_value << std::endl;
       return false;
     }
   } else if (result_value != val) {
+    std::cerr << vals << std::endl;
     std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
               << std::endl;
     std::cerr << std::dec;
@@ -96,10 +96,12 @@ bool basic_test_64bit(std::string vals, double val) {
     return false;
   } else if (std::isnan(val)) {
     if (!std::isnan(result_value)) {
+      std::cerr << vals << std::endl;
       std::cerr << "not nan" << result_value << std::endl;
       return false;
     }
   } else if (result_value != val) {
+    std::cerr << vals << std::endl;
     std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
               << std::endl;
     std::cerr << std::dec;
@@ -107,7 +109,6 @@ bool basic_test_64bit(std::string vals, double val) {
     return false;
   }
   std::cout << std::hexfloat << result_value << " == " << val << std::endl;
-
   return true;
 }
 bool basiciss_test_64bit(double val) {
