@@ -14,9 +14,6 @@
 
 namespace fast_float {
 
-
-
-
 // This will compute or rather approximate w * 5**q and return a pair of 64-bit words approximating
 // the result, with the "high" part corresponding to the most significant bits and the
 // low part corresponding to the least significant bits.
@@ -91,7 +88,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   // 2. We need an extra bit for rounding purposes
   // 3. We might lose a bit due to the "upperbit" routine (result too small, requiring a shift)
   value128 product = compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
-  if(product.low == 0xFFFFFFFFFFFFFFFF) { //  could guard it further
+  if(product.low == 0xFFFFFFFFFFFFFFFF) { //  could guard it further 
     // In some very rare cases, this could happen, in which case we might need a more accurate
     // computation that what we can provide cheaply. This is very, very unlikely.
     answer.power2 = -1; // This (a negative value) indicates an error condition.
