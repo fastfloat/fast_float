@@ -61,7 +61,7 @@ struct parsed_number_string {
 };
 
 
-// Assuming that you use no more than 17 digits, this will
+// Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
 fastfloat_really_inline
 parsed_number_string parse_number_string(const char *p, const char *pend, chars_format fmt) noexcept {
