@@ -67,6 +67,7 @@ fastfloat_really_inline
 parsed_number_string parse_number_string(const char *p, const char *pend, chars_format fmt) noexcept {
   parsed_number_string answer;
   answer.valid = false;
+  answer.too_many_digits = false;
   answer.negative = (*p == '-');
   if ((*p == '-') || (*p == '+')) {
     ++p;
@@ -78,43 +79,80 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     }
   }
   const char *const start_digits = p;
+  // skip leading zeroes
+  while ((p != pend) && (*p == '0')) { p++; }
+
+  // We can go forward up to 19 characters without overflow for sure, we might even go 20 characters
+  // or more  if we have a decimal separator. We will adjust accordingly.
+  const char *pend_overflow_free = p + 19 > pend ? pend : p + 19;
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
 
-  while ((p != pend) && is_integer(*p)) {
+  while ((p != pend_overflow_free) && is_integer(*p)) {
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
-        (*p - '0'); // might overflow, we will handle the overflow later
+        (*p - '0'); 
     ++p;
   }
   int64_t exponent = 0;
-  if ((p != pend) && (*p == '.')) {
+  if ((p != pend_overflow_free) && (*p == '.')) {
     ++p;
     const char *first_after_period = p;
-    if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
-      i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
+    if (i == 0) {
+      // Keep on skipping leading zeroes avec the decimal separator.
+      while ((p != pend) && (*p == '0')) { p++; }
+      // reset the ending point
+      pend_overflow_free = p + 19 > pend ? pend : p + 19;
+    } else if(pend_overflow_free < pend) { 
+      pend_overflow_free++; // go one further thanks to '.' 
+    }
+    if ((p + 8 <= pend_overflow_free) && is_made_of_eight_digits_fast(p)) {
+      i = i * 100000000 + parse_eight_digits_unrolled(p); 
       p += 8;
-      if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
-        i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
+      if ((p + 8 <= pend_overflow_free) && is_made_of_eight_digits_fast(p)) {
+        i = i * 100000000 + parse_eight_digits_unrolled(p); 
         p += 8;
       }
     }
-    while ((p != pend) && is_integer(*p)) {
+    while ((p != pend_overflow_free) && is_integer(*p)) {
       uint8_t digit = uint8_t(*p - '0');
       ++p;
-      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+      i = i * 10 + digit; 
     }
     exponent = first_after_period - p;
   }
   // we must have encountered at least one integer!
-  if ((start_digits == p) || ((start_digits == p - 1) && (*start_digits == '.') )) {
-    return answer;
+  // We only need this check if i == 0 which is preditably unlikely.
+  if(i == 0) {
+    if ((start_digits == p) || ((start_digits == p - 1) && (*start_digits == '.') )) {
+      return answer;
+    }
   }
-
-  int32_t digit_count =
-      int32_t(p - start_digits - 1); // used later to guard against overflows
-  
+  if((p == pend_overflow_free) && (pend_overflow_free < pend)) { // We possibly have an overflow!
+    bool found_non_zero{false};
+    if((exponent == 0) && (*(p-1) != '.')) {
+      // We have not yet encountered the '.'
+      // We do the pre-decimal part first.
+      while ((p != pend) && is_integer(*p)) {
+        found_non_zero |= (*p != '0');
+        p++;
+        exponent += 1;
+      }
+      if ((p != pend) && (*p == '.')) { p++; }
+      while ((p != pend) && is_integer(*p)) {
+        found_non_zero |= (*p != '0');
+        p++;
+      }
+    } else {
+      // This is the easy case, we just have to skip all of the digits!
+      while ((p != pend) && is_integer(*p)) {
+        found_non_zero |= (*p != '0');
+        p++;
+      }
+    }
+    answer.too_many_digits = found_non_zero;
+  }
   if ((p != pend) && (('e' == *p) || ('E' == *p))) {
     if((fmt & chars_format::fixed) && !(fmt & chars_format::scientific)) { return answer; } 
     int64_t exp_number = 0;            // exponential part
@@ -142,26 +180,6 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   }
   answer.lastmatch = p;
   answer.valid = true;
-
-  // If we frequently had to deal with long strings of digits,
-  // we could extend our code by using a 128-bit integer instead
-  // of a 64-bit integer. However, this is uncommon.
-  if (((digit_count >= 19))) { // this is uncommon
-    // It is possible that the integer had an overflow.
-    // We have to handle the case where we have 0.0000somenumber.
-    const char *start = start_digits;
-    while (*start == '0' || (*start == '.')) {
-      start++;
-    }
-    // we over-decrement by one when there is a decimal separator
-    digit_count -= int(start - start_digits);
-    if (digit_count >= 19) {
-      answer.mantissa = 0xFFFFFFFFFFFFFFFF; // important: we don't want the mantissa to be used in a fast path uninitialized.
-      answer.too_many_digits = true;
-      return answer;
-    }
-  }
-  answer.too_many_digits = false;
   answer.exponent = exponent;
   answer.mantissa = i;
   return answer;
