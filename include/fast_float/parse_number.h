@@ -16,7 +16,7 @@ namespace fast_float {
 namespace {
 /**
  * Special case +inf, -inf, nan, infinity, -infinity.
- * The case comparisons could be made much faster given that we know that the 
+ * The case comparisons could be made much faster given that we know that the
  * strings a null-free and fixed.
  **/
 template <typename T>
@@ -63,6 +63,7 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
     }
   }
   answer.ec = std::errc::invalid_argument;
+  answer.ptr = first;
   return answer;
 }
 } // namespace
@@ -93,7 +94,7 @@ from_chars_result from_chars(const char *first, const char *last,
 
   if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path()) {
     value = T(pns.mantissa);
-    if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); } 
+    if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); }
     else { value = value * binary_format<T>::exact_power_of_ten(pns.exponent); }
     if (pns.negative) { value = -value; }
     return answer;
@@ -104,7 +105,7 @@ from_chars_result from_chars(const char *first, const char *last,
   if(am.power2 < 0) { am = parse_long_mantissa<binary_format<T>>(first,last); }
   uint64_t word = am.mantissa;
   word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
-  word = pns.negative 
+  word = pns.negative
   ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
   ::memcpy(&value, &word, sizeof(T));
   return answer;
