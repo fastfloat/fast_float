@@ -30,7 +30,7 @@ inline void trim(decimal &h) {
 
 
 
-uint32_t number_of_digits_decimal_left_shift(decimal &h, uint32_t shift) {
+uint32_t number_of_digits_decimal_left_shift(const decimal &h, uint32_t shift) {
   shift &= 63;
   const static uint16_t number_of_digits_decimal_left_shift_table[65] = {
     0x0000, 0x0800, 0x0801, 0x0803, 0x1006, 0x1009, 0x100D, 0x1812, 0x1817,

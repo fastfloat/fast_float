@@ -35,22 +35,6 @@ fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  no
   return is_made_of_eight_digits_fast(val);
 }
 
-
-fastfloat_really_inline uint32_t parse_four_digits_unrolled(const char *chars)  noexcept  {
-  uint32_t val;
-  ::memcpy(&val, chars, sizeof(uint32_t));
-  val = (val & 0x0F0F0F0F) * 2561 >> 8;
-  return (val & 0x00FF00FF) * 6553601 >> 16;
-}
-
-fastfloat_really_inline bool is_made_of_four_digits_fast(const char *chars)  noexcept  {
-  uint32_t val;
-  ::memcpy(&val, chars, 4);
-  return (((val & 0xF0F0F0F0) |
-           (((val + 0x06060606) & 0xF0F0F0F0) >> 4)) ==
-          0x33333333);
-}
-
 struct parsed_number_string {
   int64_t exponent;
   uint64_t mantissa;
@@ -182,7 +166,6 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
   decimal answer;
   answer.num_digits = 0;
   answer.decimal_point = 0;
-  answer.negative = false;
   answer.truncated = false;
   // any whitespace has been skipped.
   answer.negative = (*p == '-');
@@ -200,10 +183,9 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
     answer.num_digits++;
     ++p;
   }
-  const char *first_after_period{};
   if ((p != pend) && (*p == '.')) {
     ++p;
-    first_after_period = p;
+    const char *first_after_period = p;
     // if we have not yet encountered a zero, we have to skip it as well
     if(answer.num_digits == 0) {
       // skip zeros
