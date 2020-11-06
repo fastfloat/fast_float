@@ -114,9 +114,9 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
 
   int32_t digit_count =
       int32_t(p - start_digits - 1); // used later to guard against overflows
-  
-  if ((p != pend) && (('e' == *p) || ('E' == *p))) {
-    if((fmt & chars_format::fixed) && !(fmt & chars_format::scientific)) { return answer; } 
+ 
+  if ((fmt & chars_format::scientific) && (p != pend) && (('e' == *p) || ('E' == *p))) {
+    const char * location_of_e = p;
     int64_t exp_number = 0;            // exponential part
     ++p;
     bool neg_exp = false;
@@ -127,18 +127,24 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
       ++p;
     }
     if ((p == pend) || !is_integer(*p)) {
-      return answer;
-    }
-    while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - '0');
-      if (exp_number < 0x10000) {
-        exp_number = 10 * exp_number + digit;
+      if(!(fmt & chars_format::fixed)) {
+        // We are in error.
+        return answer;
       }
-      ++p;
+      // Otherwise, we will be ignoring the 'e'.
+    } else {
+      while ((p != pend) && is_integer(*p)) {
+        uint8_t digit = uint8_t(*p - '0');
+        if (exp_number < 0x10000) {
+          exp_number = 10 * exp_number + digit;
+        }
+        ++p;
+      }
+      exponent += (neg_exp ? -exp_number : exp_number);
     }
-    exponent += (neg_exp ? -exp_number : exp_number);
   } else {
-    if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; } 
+    // If it scientific and not fixed, we have to bail out.
+    if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; }
   }
   answer.lastmatch = p;
   answer.valid = true;
@@ -206,7 +212,7 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
       }
     }
     // We expect that this loop will often take the bulk of the running time
-    // because when a value has lots of digits, these digits often 
+    // because when a value has lots of digits, these digits often
     while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
       uint64_t val;
       ::memcpy(&val, p, sizeof(uint64_t));
@@ -240,7 +246,7 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
       uint8_t digit = uint8_t(*p - '0');
       if (exp_number < 0x10000) {
         exp_number = 10 * exp_number + digit;
-      }     
+      }    
       ++p;
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
