@@ -21,7 +21,7 @@ for q in range(-342,0):
         assert c < (1<<128)
         format(c)
     else:
-        b = 2 * z + 64
+        b = 2 * z + 2 * 64
         c = 2 ** b // power5 + 1
         format(c)    
     
