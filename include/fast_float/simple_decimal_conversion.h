@@ -3,13 +3,13 @@
 
 /**
  * This code is meant to handle the case where we have more than 19 digits.
- * 
+ *
  * It is based on work by Nigel Tao (at https://github.com/google/wuffs/)
  * who credits Ken Thompson for the design (via a reference to the Go source
  * code).
- * 
+ *
  * Rob Pike suggested that this algorithm be called "Simple Decimal Conversion".
- * 
+ *
  * It is probably not very fast but it is a fallback that should almost never
  * be used in real life. Though it is not fast, it is "easily" understood and debugged.
  **/
@@ -30,7 +30,7 @@ inline void trim(decimal &h) {
 
 
 
-uint32_t number_of_digits_decimal_left_shift(decimal &h, uint32_t shift) {
+uint32_t number_of_digits_decimal_left_shift(const decimal &h, uint32_t shift) {
   shift &= 63;
   const static uint16_t number_of_digits_decimal_left_shift_table[65] = {
     0x0000, 0x0800, 0x0801, 0x0803, 0x1006, 0x1009, 0x100D, 0x1812, 0x1817,
@@ -139,7 +139,7 @@ uint64_t round(decimal &h) {
   }
   bool round_up = false;
   if (dp < h.num_digits) {
-    round_up = h.digits[dp] >= 5; // normally, we round up    
+    round_up = h.digits[dp] >= 5; // normally, we round up  
     // but we may need to round to even!
     if ((h.digits[dp] == 5) && (dp + 1 == h.num_digits)) {
       round_up = h.truncated || ((dp > 0) && (1 & h.digits[dp - 1]));
@@ -253,21 +253,21 @@ adjusted_mantissa compute_float(decimal &d) {
   // At this point, going further, we can assume that d.num_digits > 0.
   //
   // We want to guard against excessive decimal point values because
-  // they can result in long running times. Indeed, we do 
+  // they can result in long running times. Indeed, we do
   // shifts by at most 60 bits. We have that log(10**400)/log(2**60) ~= 22
   // which is fine, but log(10**299995)/log(2**60) ~= 16609 which is not
   // fine (runs for a long time).
   //
   if(d.decimal_point < -324) {
     // We have something smaller than 1e-324 which is always zero
-    // in binary64 and binary32. 
+    // in binary64 and binary32.
     // It should be zero.
     answer.power2 = 0;
     answer.mantissa = 0;
     return answer;
   } else if(d.decimal_point >= 310) {
     // We have something at least as large as 0.1e310 which is
-    // always infinite.    
+    // always infinite.  
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
     return answer;
