@@ -116,6 +116,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
         return answer;
       }
       // Otherwise, we will be ignoring the 'e'.
+      p = location_of_e;
     } else {
       while ((p != pend) && is_integer(*p)) {
         uint8_t digit = uint8_t(*p - '0');

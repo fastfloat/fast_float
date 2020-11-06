@@ -111,13 +111,10 @@ bool basic_test_64bit(std::string vals, double val) {
   std::cout << std::hexfloat << result_value << " == " << val << std::endl;
   return true;
 }
-bool basiciss_test_64bit(double val) {
-  std::string long_vals = to_long_string(val);
-  std::string vals = to_string(val);
-  return basic_test_64bit(long_vals, val) && basic_test_64bit(vals, val);
-}
+
 
 bool issue8() {
+  std::cout << __func__ << std::endl;
   const char* s =
       "3."
       "141592653589793238462643383279502884197169399375105820974944592307816406"
@@ -148,6 +145,7 @@ bool issue8() {
 }
 
 bool check_behavior() {
+    std::cout << __func__ << std::endl;
     const std::string input =  "abc";
     double result;
     auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
@@ -165,6 +163,7 @@ bool check_behavior() {
 }
 
 bool issue19() {
+    std::cout << __func__ << std::endl;
     const std::string input =  "3.14e";
     double result;
     auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
@@ -173,14 +172,61 @@ bool issue19() {
       return false;
     }
     std::cout << "parsed the number " << result << std::endl;
-    if(answer.ptr != input.data() + 4) {
+    if(answer.ptr == input.data() + 4) {
+      std::cout << "Parsed the number and stopped at the right character." << result << std::endl;
+      return true;
+    }
+    std::cout << "stopped after " << (answer.ptr - input.data()) << " characters" << std::endl;
+    return false;
+}
+
+
+bool test_scientific_only() {
+    std::cout << __func__ << std::endl;
+    // first, we try with something that should fail...
+    std::string input =  "3.14";
+    double result;
+    auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result, fast_float::chars_format::scientific);
+    if(answer.ec == std::errc()) {
+      std::cerr << "It is not scientific!\n";
+      return false;
+    }
+    input = "3.14e10";
+    result;
+    answer = fast_float::from_chars(input.data(), input.data()+input.size(), result, fast_float::chars_format::scientific);
+    if(answer.ec != std::errc()) {
+      std::cerr << "It is scientific!\n";
+      return false;
+    }
+    std::cout << "parsed the number " << result << std::endl;
+    if(answer.ptr == input.data() + input.size()) {
       std::cout << "Parsed the number and stopped at the right character." << result << std::endl;
       return true;
     }
     return false;
 }
 
+bool test_fixed_only() {
+    std::cout << __func__ << std::endl;
+    const std::string input =  "3.14e10";
+    double result;
+    auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result, fast_float::chars_format::fixed);
+    if(answer.ec != std::errc()) {
+      std::cerr << "We want to parse up to 3.14\n";
+      return false;
+    }
+    std::cout << "parsed the number " << result << std::endl;
+    if(answer.ptr == input.data() + 4) {
+      std::cout << "Parsed the number and stopped at the right character." << result << std::endl;
+      return true;
+    }
+    return false;
+}
+
+
 int main() {
+  Assert(test_fixed_only());
+  Assert(test_scientific_only());
   Assert(issue19());
   Assert(check_behavior());
   std::cout << "======= 64 bits " << std::endl;
