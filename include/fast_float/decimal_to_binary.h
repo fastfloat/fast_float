@@ -110,10 +110,6 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   lz += int(1 ^ upperbit);
   
   answer.power2 = power(int(q)) - lz - binary::minimum_exponent() + 1;
-//if(q < 0) {
-//  std::cout << "power(int("<< q << " )) = " << int(power(int(q))) << std::endl;
-//    std::cout << "result answer.power2  = " << answer.power2  << std::endl;
-//}
   if (answer.power2 <= 0) { // we have a subnormal?
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if(-answer.power2 + 1 >= 64) { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
