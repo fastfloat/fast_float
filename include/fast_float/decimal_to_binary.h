@@ -43,15 +43,21 @@ value128 compute_product_approximation(int64_t q, uint64_t w) {
 
 namespace {
 /**
- * For q in (-400,350), we have that
+ * For q in (0,350), we have that
  *  f = (((152170 + 65536) * q ) >> 16);
  * is equal to
  *   floor(p) + q
  * where
  *   p = log(5**q)/log(2) = q * log(5)/log(2)
  *
+ * For negative values of q in (-400,0), we have that 
+ *  f = (((152170 + 65536) * q ) >> 16);
+ * is equal to 
+ *   -ceil(p) + q
+ * where
+ *   p = log(5**-q)/log(2) = -q * log(5)/log(2)
  */
-  fastfloat_really_inline unsigned int power(int q)  noexcept  {
+  fastfloat_really_inline int power(int q)  noexcept  {
     return (((152170 + 65536) * q) >> 16) + 63;
   }
 } // namespace
@@ -102,8 +108,12 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
 
   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
   lz += int(1 ^ upperbit);
+  
   answer.power2 = power(int(q)) - lz - binary::minimum_exponent() + 1;
-
+//if(q < 0) {
+//  std::cout << "power(int("<< q << " )) = " << int(power(int(q))) << std::endl;
+//    std::cout << "result answer.power2  = " << answer.power2  << std::endl;
+//}
   if (answer.power2 <= 0) { // we have a subnormal?
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if(-answer.power2 + 1 >= 64) { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
