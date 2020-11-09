@@ -10,7 +10,9 @@
 
 namespace fast_float {
 
-fastfloat_really_inline bool is_integer(char c)  noexcept  { return (c & 0x30) == 0x30; }
+// Next function can be micro-optimized to (c & 0x30) == 0x30, but compilers are entirely
+// able to optimize c >= '0' && c <= '9' very well.
+fastfloat_really_inline bool is_integer(char c)  noexcept  { return c >= '0' && c <= '9'; }
 
 
 // credit: https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
