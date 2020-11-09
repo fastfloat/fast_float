@@ -123,8 +123,6 @@ uint32_t number_of_digits_decimal_left_shift(const decimal &h, uint32_t shift) {
   return num_new_digits;
 }
 
-} // end of anonymous namespace
-
 uint64_t round(decimal &h) {
   if ((h.num_digits == 0) || (h.decimal_point < 0)) {
     return 0;
@@ -240,6 +238,7 @@ void decimal_right_shift(decimal &h, uint32_t shift) {
   trim(h);
 }
 
+} // end of anonymous namespace
 
 template <typename binary>
 adjusted_mantissa compute_float(decimal &d) {

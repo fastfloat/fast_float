@@ -30,7 +30,7 @@ inline bool fastfloat_strncasecmp(const char *input1, const char *input2,
 #error "FLT_EVAL_METHOD should be defined, please include cfloat."
 #endif
 
-bool is_space(uint8_t c) {
+inline bool is_space(uint8_t c) {
   static const bool table[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -281,7 +281,7 @@ constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
 
 // for convenience:
 #include <ostream>
-std::ostream &operator<<(std::ostream &out, const fast_float::decimal &d) {
+inline std::ostream &operator<<(std::ostream &out, const fast_float::decimal &d) {
   out << "0.";
   for (size_t i = 0; i < d.num_digits; i++) {
     out << int32_t(d.digits[i]);

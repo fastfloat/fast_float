@@ -10,7 +10,7 @@
 
 namespace fast_float {
 
-fastfloat_really_inline bool is_integer(char c)  noexcept  { return (c >= '0' && c <= '9'); }
+fastfloat_really_inline bool is_integer(char c)  noexcept  { return (c & 0x30) == 0x30; }
 
 
 // credit: https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
@@ -163,7 +163,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
 // This function could be optimized. In particular, we could stop after 19 digits
 // and try to bail out. Furthermore, we should be able to recover the computed
 // exponent from the pass in parse_number_string.
-decimal parse_decimal(const char *p, const char *pend) noexcept {
+fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) noexcept {
   decimal answer;
   answer.num_digits = 0;
   answer.decimal_point = 0;
