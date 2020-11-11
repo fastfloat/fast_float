@@ -107,9 +107,8 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   uint64_t upperbit = product.high >> 63;
 
   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
-  lz += int(1 ^ upperbit);
-  
-  answer.power2 = power(int(q)) - lz - binary::minimum_exponent() + 1;
+
+  answer.power2 = power(int(q)) + upperbit - lz - binary::minimum_exponent();
   if (answer.power2 <= 0) { // we have a subnormal?
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if(-answer.power2 + 1 >= 64) { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
