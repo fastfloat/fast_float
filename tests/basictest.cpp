@@ -334,6 +334,7 @@ int main() {
   Assert(issue19());
   Assert(check_behavior());
   std::cout << "======= 64 bits " << std::endl;
+  Assert(basic_test_64bit("1.1920928955078125e-07",1.1920928955078125e-07));
   Assert(basic_test_64bit("INF",std::numeric_limits<double>::infinity()));
   Assert(basic_test_64bit("-INF",-std::numeric_limits<double>::infinity()));
   Assert(basic_test_64bit("INFINITY",std::numeric_limits<double>::infinity()));
