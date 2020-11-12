@@ -24,7 +24,7 @@ double cygwin_strtod_l(const char* start, char** end) {
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(int new_seed) : wyhash64_x_(new_seed) {};
+  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed) {};
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
     // Inspired from
@@ -59,7 +59,7 @@ public:
         l = m.low;
       }
     }
-    return int(m.high + min);
+    return int(m.high) + min;
   }
   int next_digit() { return next_ranged_int(0, 9); }
 
@@ -146,7 +146,7 @@ std::pair<float, bool> strtof_from_string(char *st) {
  * We generate random strings and we try to parse them with both strtod/strtof,
  * and we verify that we get the same answer with with fast_float::from_chars.
  */
-bool tester(int seed, size_t volume) {
+bool tester(uint64_t seed, size_t volume) {
   char buffer[4096]; // large buffer (can't overflow)
   RandomEngine rand(seed);
   for (size_t i = 0; i < volume; i++) {

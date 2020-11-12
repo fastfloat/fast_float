@@ -10,7 +10,7 @@ template <typename T> std::string to_string(T d) {
   std::string s(64, '\0');
   auto written = std::snprintf(&s[0], s.size(), "%.*e",
                                std::numeric_limits<T>::max_digits10 - 1, d);
-  s.resize(written);
+  s.resize(size_t(written));
   return s;
 }
 
@@ -18,7 +18,7 @@ template <typename T> std::string to_long_string(T d) {
   std::string s(4096, '\0');
   auto written = std::snprintf(&s[0], s.size(), "%.*e",
                                std::numeric_limits<T>::max_digits10 * 10, d);
-  s.resize(written);
+  s.resize(size_t(written));
   return s;
 }
 
@@ -134,7 +134,7 @@ bool issue8() {
     auto answer = fast_float::from_chars(s, s + strlen(s) - i, d);
     if(answer.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
     if(d != 0x1.921fb54442d18p+1) {
-      printf("%.*s\n", int(strlen(s) - i), s);
+      printf("%.*s\n", int(strlen(s) - size_t(i)), s);
       std::cout << std::hexfloat << d << std::endl;
       std::cout << std::defaultfloat << d << std::endl;
       return false;
@@ -308,7 +308,7 @@ bool test_fixed_only() {
     for (int i = start_point; i <= 308; ++i) {// large negative values should be zero.
       std::cout << ".";
       std::cout.flush();
-      size_t n = snprintf(buf, sizeof(buf), "1e%d", i);
+      size_t n = size_t(snprintf(buf, sizeof(buf), "1e%d", i));
       if (n >= sizeof(buf)) { abort(); }
       double actual;
       auto result = fast_float::from_chars(buf, buf + 1000, actual);
