@@ -53,7 +53,7 @@ void allvalues() {
       std::cout << ".";
       std::cout.flush();
     }
-    uint32_t word = w;
+    uint32_t word = uint32_t(w);
     memcpy(&v, &word, sizeof(v));
     if(std::isfinite(v)) { 
       float nextf = std::nextafterf(v, INFINITY);
@@ -64,7 +64,7 @@ void allvalues() {
       double v2{nextf};
       assert(float(v2) == nextf);
       double midv{v1 + (v2 - v1) / 2};
-      float expected_midv(midv);
+      float expected_midv = float(midv);
 
       const char *string_end = to_string(midv, buffer);
       float str_answer;

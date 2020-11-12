@@ -24,7 +24,7 @@ double cygwin_strtod_l(const char* start, char** end) {
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(int new_seed) { wyhash64_x_ = new_seed; };
+  RandomEngine(int new_seed) : wyhash64_x_(new_seed) {};
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
     // Inspired from
@@ -47,7 +47,7 @@ public:
     /*  if (min == max) {
          return min;
     }*/
-    int s = max - min + 1;
+    uint64_t s = uint64_t(max - min + 1);
     uint64_t x = next();
     fast_float::value128 m =  fast_float::full_multiplication(x, s);
     uint64_t l = m.low;
@@ -59,7 +59,7 @@ public:
         l = m.low;
       }
     }
-    return (m.high) + min;
+    return int(m.high + min);
   }
   int next_digit() { return next_ranged_int(0, 9); }
 
@@ -78,8 +78,8 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
     number_of_digits = rand.next_ranged_int(1, 2000);
   }
   int location_of_decimal_separator = rand.next_ranged_int(1, number_of_digits);
-  for (size_t i = 0; i < number_of_digits; i++) {
-    if (i == location_of_decimal_separator) {
+  for (size_t i = 0; i < size_t(number_of_digits); i++) {
+    if (i == size_t(location_of_decimal_separator)) {
       buffer[pos++] = '.';
     }
     buffer[pos++] = char(rand.next_digit() + '0');
@@ -98,7 +98,7 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
       }
     }
     number_of_digits = rand.next_ranged_int(1, 3);
-    for (size_t i = 0; i < number_of_digits; i++) {
+    for (size_t i = 0; i < size_t(number_of_digits); i++) {
       buffer[pos++] = char(rand.next_digit() + '0');
     }
   }
