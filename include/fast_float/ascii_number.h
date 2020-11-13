@@ -241,6 +241,10 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     answer.truncated = true;
     answer.num_digits = max_digits;
   }
+  // In very rare cases, we may have fewer than 19 digits, we want to be able to reliably
+  // assume that all digits up to max_digit_without_overflow have been initialized.
+  for(uint32_t i = answer.num_digits; i < max_digit_without_overflow; i++) { answer.digits[i] = 0; }
+
   return answer;
 }
 } // namespace fast_float
