@@ -77,7 +77,7 @@ from_chars_result from_chars(const char *first, const char *last,
 
 
   from_chars_result answer;
-  while ((first != last) && fast_float::is_space(*first)) {
+  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
     first++;
   }
   if (first == last) {

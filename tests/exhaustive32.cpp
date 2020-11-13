@@ -19,7 +19,7 @@ void allvalues() {
       std::cout << ".";
       std::cout.flush();
     }
-    uint32_t word = w;
+    uint32_t word = uint32_t(w);
     memcpy(&v, &word, sizeof(v));
 
     {

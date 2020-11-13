@@ -30,7 +30,7 @@ template <typename T> std::string to_string(T d) {
   std::string s(64, '\0');
   auto written = std::snprintf(&s[0], s.size(), "%.*e",
                                std::numeric_limits<T>::max_digits10 - 1, d);
-  s.resize(written);
+  s.resize(size_t(written));
   return s;
 }
 

@@ -149,9 +149,10 @@ struct decimal {
   // Moves are allowed:
   decimal(decimal &&) = default;
   decimal &operator=(decimal &&other) = default;
-  // Generates a mantissa by truncating to 19 digits; this function assumes
-  // that num_digits >= 19 (the caller is responsible for the check).
+  // Generates a mantissa by truncating to 19 digits.
   // This function should be reasonably fast.
+  // Note that the user is responsible to ensure that digits are
+  // initialized to zero when there are fewer than 19.
   inline uint64_t to_truncated_mantissa() {
     uint64_t val;
     // 8 first digits
@@ -175,7 +176,7 @@ struct decimal {
   }
   // Generate san exponent matching to_truncated_mantissa()
   inline int32_t to_truncated_exponent() {
-    return decimal_point - max_digit_without_overflow;
+    return decimal_point - int32_t(max_digit_without_overflow);
   }
 };
 

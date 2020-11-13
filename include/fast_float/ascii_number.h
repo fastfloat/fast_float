@@ -71,7 +71,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
-        (*p - '0'); // might overflow, we will handle the overflow later
+        uint64_t(*p - '0'); // might overflow, we will handle the overflow later
     ++p;
   }
   int64_t exponent = 0;
@@ -236,11 +236,15 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
   }
-  answer.decimal_point += answer.num_digits;
+  answer.decimal_point += int32_t(answer.num_digits);
   if(answer.num_digits > max_digits) {
     answer.truncated = true;
     answer.num_digits = max_digits;
   }
+  // In very rare cases, we may have fewer than 19 digits, we want to be able to reliably
+  // assume that all digits up to max_digit_without_overflow have been initialized.
+  for(uint32_t i = answer.num_digits; i < max_digit_without_overflow; i++) { answer.digits[i] = 0; }
+
   return answer;
 }
 } // namespace fast_float
