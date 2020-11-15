@@ -9,8 +9,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {cxx: -DCMAKE_CXX_COMPILER=g++-8}
-          - {cxx: } # default compiler 9
+          - {cxx: -DCMAKE_CXX_COMPILER=g++-8, arch:                         }
+          - {cxx:                           , arch:                         } # default=gcc9
+          - {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9
     steps:
       - uses: actions/checkout@v2
       - name: Setup cmake
@@ -19,12 +20,13 @@ jobs:
           cmake-version: '3.9.x'
       - name: install older compilers
         run: |
+          sudo -E dpkg --add-architecture i386
           sudo -E apt-get update
-          sudo -E apt-get install -y --force-yes g++-8 g++-7
-      - name: Prepare build dir
+          sudo -E apt-get install -y g++-8 g++-8-multilib g++-multilib linux-libc-dev:i386 libc6:i386 libc6-dev:i386 libc6-dbg:i386
+    - name: Prepare build dir
         run: mkdir build
       - name: Configure
-        run: cd build && cmake ${{matrix.cxx}} -DFASTFLOAT_TEST=ON ..
+        run: cd build && cmake ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
       - name: Build
         run: cmake --build build
       - name: Run basic tests

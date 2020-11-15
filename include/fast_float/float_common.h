@@ -139,15 +139,31 @@ fastfloat_really_inline value128 full_multiplication(uint64_t value1,
   return answer;
 }
 
-#else
+#else // gcc
 
 // compute value1 * value2
-fastfloat_really_inline value128 full_multiplication(uint64_t value1,
-                                                     uint64_t value2) {
+fastfloat_really_inline value128 full_multiplication(uint64_t a,
+                                                     uint64_t b) {
   value128 answer;
-  __uint128_t r = ((__uint128_t)value1) * value2;
+#if  defined(__i386) || defined(__i386__) || defined(_M_IX86) || defined(__arm__)
+  static constexpr const uint64_t lo32 = 0xffffffffu;
+  // https://stackoverflow.com/questions/28868367/getting-the-high-part-of-64-bit-integer-multiplication
+  uint64_t a_lo = a & lo32;
+  uint64_t a_hi = a >> 32;
+  uint64_t b_lo = b & lo32;
+  uint64_t b_hi = b >> 32;
+  uint64_t ab_hi =  a_hi * b_hi;
+  uint64_t ab_mid = a_hi * b_lo;
+  uint64_t ba_mid = b_hi * a_lo;
+  uint64_t ab_lo =  a_lo * b_lo;
+  uint64_t carry_bit = ((ab_mid & lo32) + (ba_mid & lo32) + (ab_lo >> 32)) >> 32;
+  answer.high = ab_hi + (ab_mid >> 32) + (ba_mid >> 32) + carry_bit;
+  answer.low = ab_lo + (ab_mid & lo32) + (ba_mid & lo32);
+#else // if defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+  __uint128_t r = ((__uint128_t)a) * b;
   answer.low = uint64_t(r);
   answer.high = uint64_t(r >> 64);
+#endif
   return answer;
 }
 
