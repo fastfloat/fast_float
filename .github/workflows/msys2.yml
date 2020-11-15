@@ -35,10 +35,11 @@ jobs:
           update: true
           msystem: ${{ matrix.msystem }}
           install: ${{ matrix.install }}
-      - name: Build and Test
-        run: |
-          mkdir build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.type }}  -DFASTFLOAT_TEST=ON ..
-          cmake --build . --verbose
-          ctest  --output-on-failure -R basictest
+      - name: Prepare build dir
+        run: mkdir build
+      - name: Configure
+        run: cd build && cmake -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DFASTFLOAT_TEST=ON ..
+      - name: Build
+        run: cmake --build build
+      - name: Run basic tests
+        run: cd build && ctest --output-on-failure -R basictest
