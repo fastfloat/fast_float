@@ -136,10 +136,10 @@ struct adjusted_mantissa {
 };
 
 struct decimal {
-  uint32_t num_digits;
-  int32_t decimal_point;
-  bool negative;
-  bool truncated;
+  uint32_t num_digits{0};
+  int32_t decimal_point{0};
+  bool negative{false};
+  bool truncated{false};
   uint8_t digits[max_digits];
   decimal() = default;
   // Copies are not allowed since this is a fat object.
