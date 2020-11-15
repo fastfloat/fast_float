@@ -126,8 +126,8 @@ fastfloat_really_inline value128 full_multiplication(uint64_t value1,
 #endif
 
 struct adjusted_mantissa {
-  uint64_t mantissa;
-  int power2; // a negative value indicate an invalid result
+  uint64_t mantissa{0};
+  int power2{0}; // a negative value indicate an invalid result
   adjusted_mantissa() = default;
   // bool operator==(const adjusted_mantissa &o) const = default;
   bool operator==(const adjusted_mantissa &o) const {
