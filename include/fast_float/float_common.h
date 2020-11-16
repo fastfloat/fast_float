@@ -120,10 +120,13 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 
 #if !defined(_M_X64) && !defined(_M_ARM64) // _umul128 for x86, arm
 // this is a slow emulation routine for 32-bit Windows
-//
-//fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
-//  return x * (uint64_t)y;
-//}
+
+#ifdef __MINGW32__
+fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
+  return x * (uint64_t)y;
+}
+#endif
+
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
   uint64_t ad = __emulu((uint32_t)(ab >> 32), (uint32_t)cd);
