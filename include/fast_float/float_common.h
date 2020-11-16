@@ -183,6 +183,7 @@ struct decimal {
   // initialized to zero when there are fewer than 19.
   inline uint64_t to_truncated_mantissa() {
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
+    uint64_t mantissa = 0;
     for (uint32_t i = 0; i < max_digit_without_overflow;
          i++) {
       mantissa = mantissa * 10 + digits[i]; // can be accelerated
