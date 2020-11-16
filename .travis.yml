@@ -166,8 +166,9 @@ install:
   - sudo apt-get -qq update
 
 script:
-  - cmake  -DFASTFLOAT_TEST=ON  -B build
-  - cmake --build build
+  - mkdir build
   - cd build
+  - cmake  -DFASTFLOAT_TEST=ON  ..
+  - make
   - ctest --output-on-failure -R basictest
 
