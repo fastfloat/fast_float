@@ -23,7 +23,7 @@ jobs:
           sudo -E dpkg --add-architecture i386
           sudo -E apt-get update
           sudo -E apt-get install -y g++-8 g++-8-multilib g++-multilib linux-libc-dev:i386 libc6:i386 libc6-dev:i386 libc6-dbg:i386
-    - name: Prepare build dir
+      - name: Prepare build dir
         run: mkdir build
       - name: Configure
         run: cd build && cmake ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
