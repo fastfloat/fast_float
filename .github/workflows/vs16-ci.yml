@@ -13,15 +13,12 @@ jobs:
           - {gen: Visual Studio 16 2019, arch: Win32}
           - {gen: Visual Studio 16 2019, arch: x64}
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.0
-        with:
-          cmake-version: '3.9.x'
-      - name: Prepare build dir
-        run: mkdir build
+      - name: checkout
+        uses: actions/checkout@v2
       - name: Configure
-        run: cd build && cmake -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
+        run: |
+          mkdir build
+          cd build && cmake -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
       - name: Build
         run: cmake --build build --configuration Release
       - name: Run basic tests
