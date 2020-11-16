@@ -20,6 +20,6 @@ jobs:
           mkdir build
           cd build && cmake -G "${{matrix.gen}}" -A ${{matrix.arch}} -T ClangCL -DFASTFLOAT_TEST=ON ..
       - name: Build
-        run: cmake --build build --configuration Release
+        run: cmake --build build --config Release --parallel
       - name: Run basic tests
         run: cd build && ctest -C Release --output-on-failure -R basictest
