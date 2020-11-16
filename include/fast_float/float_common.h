@@ -8,6 +8,34 @@
 #define FASTFLOAT_VISUAL_STUDIO 1
 #endif
 
+
+
+#ifdef _WIN32
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#else
+#if defined(__APPLE__) || defined(__FreeBSD__)
+#include <machine/endian.h>
+#else
+#include <endian.h>
+#endif
+#
+#ifndef __BYTE_ORDER__
+// safe choice
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#endif
+#
+#ifndef __ORDER_LITTLE_ENDIAN__
+// safe choice
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#endif
+#
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#else
+#define FASTFLOAT_IS_BIG_ENDIAN 1
+#endif
+#endif
+
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #define fastfloat_really_inline __forceinline
 #else
@@ -154,6 +182,14 @@ struct decimal {
   // Note that the user is responsible to ensure that digits are
   // initialized to zero when there are fewer than 19.
   inline uint64_t to_truncated_mantissa() {
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+    uint64_t mantissa = 0;
+    for (uint32_t i = 0; i < max_digit_without_overflow;
+         i++) {
+      mantissa = mantissa * 10 + digits[i]; // can be accelerated
+    }
+    return mantissa;
+#else
     uint64_t val;
     // 8 first digits
     ::memcpy(&val, digits, sizeof(uint64_t));
@@ -173,6 +209,7 @@ struct decimal {
       mantissa = mantissa * 10 + digits[i]; // can be accelerated
     }
     return mantissa;
+#endif
   }
   // Generate san exponent matching to_truncated_mantissa()
   inline int32_t to_truncated_exponent() {
