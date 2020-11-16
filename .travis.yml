@@ -13,7 +13,7 @@ cache:
 
 env:
   global:
-    - simdjson_DEPENDENCY_CACHE_DIR=$HOME/.dep_cache
+    - fastfloat_DEPENDENCY_CACHE_DIR=$HOME/.dep_cache
 
 matrix:
   include:
@@ -163,22 +163,7 @@ before_install:
   - eval "${COMPILER}"
 
 install:
-  - wget -q -O - "https://raw.githubusercontent.com/simdjson/debian-ppa/master/key.gpg" | sudo apt-key add -
-  - sudo apt-add-repository "deb https://raw.githubusercontent.com/simdjson/debian-ppa/master simdjson main"
   - sudo apt-get -qq update
-  - sudo apt-get purge cmake cmake-data
-  - sudo apt-get -t simdjson -y install cmake
-  - export CMAKE_CXX_FLAGS="-maltivec -mcpu=power9 -mtune=power9"
-  - export CMAKE_C_FLAGS="${CMAKE_CXX_FLAGS}"
-  - export CMAKE_FLAGS="-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS} -DSIMDJSON_IMPLEMENTATION=ppc64;fallback";
-  - if [[ "${SANITIZE}" == "on" ]]; then
-      export CMAKE_FLAGS="${CMAKE_FLAGS} -DSIMDJSON_SANITIZE=ON";
-      export ASAN_OPTIONS="detect_leaks=0";
-    fi
-  - if [[ "${STATIC}" == "on" ]]; then
-      export CMAKE_FLAGS="${CMAKE_FLAGS} -DSIMDJSON_BUILD_STATIC=ON";
-    fi
-  - export CTEST_FLAGS="-j4 --output-on-failure -E checkperf"
 
 script:
   - cmake  -DFASTFLOAT_TEST=ON  -B build
