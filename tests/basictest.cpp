@@ -1,9 +1,14 @@
 #include "fast_float/fast_float.h"
 #include <iomanip>
 
-inline void Assert(bool Assertion) {
-  if (!Assertion)
-    throw std::runtime_error("bug");
+#define Q(x) #x
+#define QUOTE(x) Q(x)
+#define Assert(assertion) \
+  if (!(assertion)) {\
+    AssertionFailed(__FILE__ ":" QUOTE(__LINE__) ": assertion failed: " #assertion);\
+  }
+inline void AssertionFailed(const char *msg) {
+    throw std::runtime_error(msg);
 }
 
 template <typename T> std::string to_string(T d) {
@@ -327,7 +332,20 @@ bool test_fixed_only() {
     return true;
   }
 
+  void test_leading_zeroes()
+  {
+      constexpr const uint64_t bit = 1;
+      Assert(fast_float::leading_zeroes(0) == 64);
+      Assert(fast_float::leading_zeroes(bit <<  0) == 63);
+      Assert(fast_float::leading_zeroes(bit <<  1) == 62);
+      Assert(fast_float::leading_zeroes(bit <<  2) == 61);
+      Assert(fast_float::leading_zeroes(bit << 61) ==  2);
+      Assert(fast_float::leading_zeroes(bit << 62) ==  1);
+      Assert(fast_float::leading_zeroes(bit << 63) ==  0);
+  }
+
 int main() {
+  test_leading_zeroes();
   Assert(test_fixed_only());
   Assert(test_scientific_only());
   Assert(issue8());
