@@ -344,8 +344,33 @@ bool test_fixed_only() {
       Assert(fast_float::leading_zeroes(bit << 63) ==  0);
   }
 
+  void test_full_multiplication(uint64_t lhs, uint64_t rhs, uint64_t expected_lo, uint64_t expected_hi)
+  {
+      fast_float::value128 v;
+      v = fast_float::full_multiplication(lhs, rhs);
+      Assert(v.low == expected_lo);
+      Assert(v.high == expected_hi);
+      v = fast_float::full_multiplication(rhs, lhs);
+      Assert(v.low == expected_lo);
+      Assert(v.high == expected_hi);
+  }
+  
+  void test_full_multiplication()
+  {
+      constexpr const uint64_t bit = 1;
+      //                       lhs        rhs        lo         hi
+      test_full_multiplication(bit << 0 , bit <<  0, 1u       , 0u);
+      test_full_multiplication(bit << 0 , bit << 63, bit << 63, 0u);
+      test_full_multiplication(bit << 1 , bit << 63, 0u       , 1u);
+      test_full_multiplication(bit << 63, bit <<  0, bit << 63, 0u);
+      test_full_multiplication(bit << 63, bit <<  1, 0u       , 1u);
+      test_full_multiplication(bit << 63, bit <<  2, 0u       , 2u);
+      test_full_multiplication(bit << 63, bit << 63, 0u       , bit << 62);
+  }
+
 int main() {
   test_leading_zeroes();
+  test_full_multiplication();
   Assert(test_fixed_only());
   Assert(test_scientific_only());
   Assert(issue8());
