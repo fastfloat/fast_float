@@ -15,10 +15,6 @@ jobs:
           - {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc7
     steps:
       - uses: actions/checkout@v2
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.0
-        with:
-          cmake-version: '3.12.x'
       - name: Install older compilers
         run: |
           sudo -E dpkg --add-architecture i386
