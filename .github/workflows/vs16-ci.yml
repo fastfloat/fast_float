@@ -22,4 +22,6 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
       - name: Run basic tests
-        run: cd build && ctest -C Release --output-on-failure -R basictest
+        run: |
+          cd build
+          ctest -C Release --output-on-failure -R basictest

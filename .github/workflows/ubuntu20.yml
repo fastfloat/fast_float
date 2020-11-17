@@ -17,7 +17,7 @@ jobs:
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.0
         with:
-          cmake-version: '3.9.x'
+          cmake-version: '3.12.x'
       - name: install older compilers
         run: |
           sudo -E dpkg --add-architecture i386
