@@ -1,3 +1,9 @@
+include(FetchContent)
+
+FetchContent_Declare(doctest
+  GIT_REPOSITORY https://github.com/onqtam/doctest.git
+  GIT_TAG master)
+FetchContent_MakeAvailable(doctest)
 
 function(fast_float_add_cpp_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
@@ -6,7 +12,7 @@ function(fast_float_add_cpp_test TEST_NAME)
       target_compile_options(${TEST_NAME} PUBLIC -Werror -Wall -Wextra -Weffc++)
       target_compile_options(${TEST_NAME} PUBLIC -Wsign-compare -Wshadow -Wwrite-strings -Wpointer-arith -Winit-self -Wconversion -Wsign-conversion)
     endif()
-    target_link_libraries(${TEST_NAME}  PUBLIC fast_float)
+    target_link_libraries(${TEST_NAME} PUBLIC fast_float doctest)
 endfunction(fast_float_add_cpp_test)
 fast_float_add_cpp_test(short_random_string)
 fast_float_add_cpp_test(exhaustive32_midpoint)
