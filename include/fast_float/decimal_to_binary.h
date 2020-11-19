@@ -60,36 +60,6 @@ namespace {
   fastfloat_really_inline int power(int q)  noexcept  {
     return (((152170 + 65536) * q) >> 16) + 63;
   }
-  // Checks whether w is divisible by 5**-q. If it returns true, then
-  // w is definitively divisible by 5**-q.
-  inline bool is_divisible(int64_t q, uint64_t w)  noexcept  {
-    if((q>=-18) || (q<-27)) { return false; }
-    int64_t pos_q = -q;
-    // For each pair, first entry is the multiplicative inverse of 5**-q
-    // and the second one is the largest quotient.
-    //
-    // This could be more efficient by using...
-    // Faster remainder by direct computation: Applications to compilers and software libraries
-    // Software: Practice and Experience 49 (6), 2019.
-    // but the following is simple enough.
-    constexpr static uint64_t table[10][2] = {
-     {0xc1773b91fac10669,0x49c977}, // inverse of 5**18
-     {0x26b172506559ce15,0xec1e4}, // inverse of 5**19
-     {0xd489e3a9addec2d1,0x2f394}, // inverse of 5**20
-     {0x90e860bb892c8d5d,0x971d}, // inverse of 5**21
-     {0x502e79bf1b6f4f79,0x1e39}, // inverse of 5**22
-     {0xdcd618596be30fe5,0x60b}, // inverse of 5**23
-     {0x2c2ad1ab7bfa3661,0x135}, // inverse of 5**24
-     {0x8d55d224bfed7ad,0x3d}, // inverse of 5**25
-     {0x1c445d3a8cc9189,0xc}, // inverse of 5**26
-     {0xcd27412a54f5b6b5,0x2}, // inverse of 5**27
-    };
-    uint64_t inverse = table[pos_q-18][0];
-    uint64_t threshold = table[pos_q-18][1];
-    uint64_t product = w * inverse;
-    if(product > threshold) { return false; }
-    return true;
-  }
 } // namespace
 
 
@@ -131,13 +101,8 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
     // In some very rare cases, this could happen, in which case we might need a more accurate
     // computation that what we can provide cheaply. This is very, very unlikely.
     //
-    // There is still a chance to recover. If w is divisible by 5**-q, 
-    if(!is_divisible(q,w)) {
-      answer.power2 = -1; // This (a negative value) indicates an error condition.
-      return answer;
-    }
-    product.low += 1;
-    product.high += 1;
+    answer.power2 = -1; // This (a negative value) indicates an error condition.
+    return answer;
   }
   // The "compute_product_approximation" function can be slightly slower than a branchless approach:
   // value128 product = compute_product(q, w);
