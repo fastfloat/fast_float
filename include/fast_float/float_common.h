@@ -3,6 +3,7 @@
 
 #include <cfloat>
 #include <cstdint>
+#include <cassert>
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #define FASTFLOAT_VISUAL_STUDIO 1
@@ -89,26 +90,23 @@ struct value128 {
 
 /* result might be undefined when input_num is zero */
 fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
+  assert(input_num > 0);
 #ifdef FASTFLOAT_VISUAL_STUDIO
-#if defined(_M_X64) || defined(_M_ARM64)
+  #if defined(_M_X64) || defined(_M_ARM64)
   unsigned long leading_zero = 0;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
-  if (_BitScanReverse64(&leading_zero, input_num))
-    return (int)(63 - leading_zero);
-  else
-    return 64;
-#else
-    if(!input_num) return 64;
-    int n = 0;
-    if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, n |= 32;
-    if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, n |= 16;
-    if(input_num & uint64_t(            0xff00)) input_num >>=  8, n |=  8;
-    if(input_num & uint64_t(              0xf0)) input_num >>=  4, n |=  4;
-    if(input_num & uint64_t(               0xc)) input_num >>=  2, n |=  2;
-    if(input_num & uint64_t(               0x2)) input_num >>=  1, n |=  1;
-    return 63 - n;
-#endif
+  return (int)(_BitScanReverse64(&leading_zero, input_num) - leading_zero);
+  #else
+  int n = 0;
+  if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, n |= 32;
+  if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, n |= 16;
+  if(input_num & uint64_t(            0xff00)) input_num >>=  8, n |=  8;
+  if(input_num & uint64_t(              0xf0)) input_num >>=  4, n |=  4;
+  if(input_num & uint64_t(               0xc)) input_num >>=  2, n |=  2;
+  if(input_num & uint64_t(               0x2)) input_num >>=  1, n |=  1;
+  return 63 - n;
+  #endif
 #else
   return __builtin_clzll(input_num);
 #endif

@@ -7,7 +7,6 @@
 
 TEST_CASE("leading_zeroes") {
   constexpr const uint64_t bit = 1;
-  CHECK(fast_float::leading_zeroes(0) == 64);
   CHECK(fast_float::leading_zeroes(bit <<  0) == 63);
   CHECK(fast_float::leading_zeroes(bit <<  1) == 62);
   CHECK(fast_float::leading_zeroes(bit <<  2) == 61);
