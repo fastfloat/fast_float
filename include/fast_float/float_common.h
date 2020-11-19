@@ -112,19 +112,29 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 #endif
 }
 
-#if defined(_WIN32) && !defined(__clang__)
-// Note MinGW falls here too
-#include <intrin.h>
 
-#if !defined(_M_X64) && !defined(_M_ARM64) // _umul128 for x86, arm
-// this is a slow emulation routine for 32-bit Windows
-
-#ifdef __MINGW32__
-fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
-  return x * (uint64_t)y;
-}
+#if (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
+     || defined(__arm__) || defined(__MINGW32__))
+#define FASTFLOAT_32BIT
+#elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
+       || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64))
+#define FASTFLOAT_64BIT
+#else
+#error Unknown platform
 #endif
 
+
+#ifdef FASTFLOAT_32BIT
+#if (defined(_WIN32) && !defined(__clang__))
+#include <intrin.h>
+#endif
+
+// slow emulation routine for 32-bit
+fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
+    return x * (uint64_t)y;
+}
+
+// slow emulation routine for 32-bit
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
   uint64_t ad = __emulu((uint32_t)(ab >> 32), (uint32_t)cd);
@@ -136,51 +146,29 @@ fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
         (adbc_carry << 32) + !!(lo < bd);
   return lo;
 }
-#endif
+#endif // FASTFLOAT_32BIT
 
-fastfloat_really_inline value128 full_multiplication(uint64_t value1,
-                                                     uint64_t value2) {
-  value128 answer;
-#ifdef _M_ARM64
-  // ARM64 has native support for 64-bit multiplications, no need to emultate
-  answer.high = __umulh(value1, value2);
-  answer.low = value1 * value2;
-#else
-  answer.low =
-      _umul128(value1, value2, &answer.high); // _umul128 not available on ARM64
-#endif // _M_ARM64
-  return answer;
-}
 
-#else // gcc
-
-// compute value1 * value2
+// compute 64-bit a*b
 fastfloat_really_inline value128 full_multiplication(uint64_t a,
                                                      uint64_t b) {
   value128 answer;
-#if  defined(__i386) || defined(__i386__) || defined(_M_IX86) || defined(__arm__)
-  static constexpr const uint64_t lo32 = 0xffffffffu;
-  // https://stackoverflow.com/questions/28868367/getting-the-high-part-of-64-bit-integer-multiplication
-  uint64_t a_lo = a & lo32;
-  uint64_t a_hi = a >> 32;
-  uint64_t b_lo = b & lo32;
-  uint64_t b_hi = b >> 32;
-  uint64_t ab_hi =  a_hi * b_hi;
-  uint64_t ab_mid = a_hi * b_lo;
-  uint64_t ba_mid = b_hi * a_lo;
-  uint64_t ab_lo =  a_lo * b_lo;
-  uint64_t carry_bit = ((ab_mid & lo32) + (ba_mid & lo32) + (ab_lo >> 32)) >> 32;
-  answer.high = ab_hi + (ab_mid >> 32) + (ba_mid >> 32) + carry_bit;
-  answer.low = ab_lo + (ab_mid & lo32) + (ba_mid & lo32);
-#else // if defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+#ifdef _M_ARM64
+  // ARM64 has native support for 64-bit multiplications, no need to emulate
+  answer.high = __umulh(a, b);
+  answer.low = a * b;
+#elif defined(FASTFLOAT_32BIT)
+  answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
+#elif defined(FASTFLOAT_64BIT)
   __uint128_t r = ((__uint128_t)a) * b;
   answer.low = uint64_t(r);
   answer.high = uint64_t(r >> 64);
+#else
+  #error Not implemented
 #endif
   return answer;
 }
 
-#endif
 
 struct adjusted_mantissa {
   uint64_t mantissa{0};
