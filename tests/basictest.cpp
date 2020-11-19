@@ -17,7 +17,7 @@ TEST_CASE("leading_zeroes") {
 }
 
 #define iHexAndDec(v) std::hex << "0x" << (v) << " (" << std::dec << (v) << ")"
-#define fHexAndDec(v) std::hexfloat << "0x" << (v) << " (" << std::defaultfloat << (v) << ")"
+#define fHexAndDec(v) std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
 
 void test_full_multiplication(uint64_t lhs, uint64_t rhs, uint64_t expected_lo, uint64_t expected_hi) {
   fast_float::value128 v;
