@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.0
+        uses: jwlawson/actions-setup-cmake@v1.4
         with:
           cmake-version: '3.9.x'
       - name: Install older compilers
