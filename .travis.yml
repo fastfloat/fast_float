@@ -1,11 +1,6 @@
 language: cpp
 
 dist: bionic
-addons:
- snaps:
-   - name: cmake
-     confinement: classic
-     channel: 3.16/stable
 
 arch:
   - amd64
@@ -168,7 +163,37 @@ before_install:
   - eval "${COMPILER}"
 
 install:
-  - sudo apt-get -qq update
+  # make sure we have a recent cmake version.
+  # fastfloat itself does not require it, but the tests require >= 3.14.
+
+  # these architectures have a snap:
+  # https://gitlab.kitware.com/cmake/cmake/-/issues/20122
+  - sudo -E apt-get -y update
+  - sudo -E apt-get -y install snapd
+  - sudo -E snap install cmake --beta --classic
+  - export PATH=/snap/cmake/current/bin:$PATH
+
+  # ALTERNATIVE: does not work on s390 and ppc64le
+  ## https://github.com/kahypar/kahypar/blob/master/.travis.yml
+  #- echo ${TRAVIS_OS_NAME}
+  #- |
+  #  if [ "${TRAVIS_OS_NAME}" == "linux" ]; then
+  #    pwd ;
+  #    export DEPS_DIR="${HOME}/deps" ;
+  #    mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR} ;
+  #    export CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.17.0/cmake-3.17.0-Linux-x86_64.tar.gz";
+  #    mkdir cmake;
+  #    travis_retry wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake;
+  #    export PATH=${DEPS_DIR}/cmake/bin:${PATH};
+  #    cd - ;
+  #    pwd
+  #  else
+  #    brew install cmake || brew upgrade cmake;
+  #  fi
+
+  - echo ${PATH}
+  - which cmake
+  - cmake --version
 
 script:
   - mkdir build
