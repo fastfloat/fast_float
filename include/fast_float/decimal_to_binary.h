@@ -101,8 +101,11 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
     // In some very rare cases, this could happen, in which case we might need a more accurate
     // computation that what we can provide cheaply. This is very, very unlikely.
     //
-    answer.power2 = -1; // This (a negative value) indicates an error condition.
-    return answer;
+    const bool inside_safe_exponent = (q >= 0) && (q <= 55); // always good because 5**q <2**128.
+    if(!inside_safe_exponent) {
+      answer.power2 = -1; // This (a negative value) indicates an error condition.
+      return answer;
+    }
   }
   // The "compute_product_approximation" function can be slightly slower than a branchless approach:
   // value128 product = compute_product(q, w);
