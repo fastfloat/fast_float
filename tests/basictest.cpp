@@ -192,7 +192,7 @@ static const double testing_power_of_ten[] = {
 
 TEST_CASE("powers_of_ten") {
     char buf[1024];
-    CHECK_MESSAGE(1e-308 == std::pow(10, -308), "On your system, the pow function is busted. Sorry about that.");
+    WARN_MESSAGE(1e-308 == std::pow(10, -308), "On your system, the pow function is busted. Sorry about that.");
     bool is_pow_correct{1e-308 == std::pow(10,-308)};
     // large negative values should be zero.
     int start_point = is_pow_correct ? -1000 : -307;
