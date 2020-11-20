@@ -1,3 +1,7 @@
+# FetchContent_MakeAvailable() was only introduced in 3.14
+# https://cmake.org/cmake/help/v3.14/release/3.14.html#modules
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+
 include(FetchContent)
 
 FetchContent_Declare(doctest

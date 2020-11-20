@@ -1,6 +1,11 @@
 language: cpp
 
 dist: bionic
+addons:
+ snaps:
+   - name: cmake
+     confinement: classic
+     channel: 3.16/stable
 
 arch:
   - amd64
