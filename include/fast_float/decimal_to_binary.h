@@ -63,7 +63,6 @@ namespace {
 } // namespace
 
 
- 
 // w * 10 ** q
 // The returned value should be a valid ieee64 number that simply need to be packed.
 // However, in some very rare cases, the computation will fail. In such cases, we
@@ -73,13 +72,13 @@ template <typename binary>
 fastfloat_really_inline
 adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   adjusted_mantissa answer;
-  if ((w == 0) || (q < smallest_power_of_five)) {
+  if ((w == 0) || (q < binary::smallest_power_of_ten())) {
     answer.power2 = 0;
     answer.mantissa = 0;
     // result should be zero
     return answer;
   }
-  if (q > largest_power_of_five) {
+  if (q > binary::largest_power_of_ten()) {
     // we want to get infinity:
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
@@ -101,7 +100,8 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
     // In some very rare cases, this could happen, in which case we might need a more accurate
     // computation that what we can provide cheaply. This is very, very unlikely.
     //
-    const bool inside_safe_exponent = (q >= 0) && (q <= 55); // always good because 5**q <2**128.
+    const bool inside_safe_exponent = (q >= -27) && (q <= 55); // always good because 5**q <2**128 when q>=0, 
+    // and otherwise, for q<0, we have 5**-q<2**64 and the 128-bit reciprocal allows for exact computation.
     if(!inside_safe_exponent) {
       answer.power2 = -1; // This (a negative value) indicates an error condition.
       return answer;

@@ -233,6 +233,8 @@ template <typename T> struct binary_format {
   static constexpr int max_exponent_round_to_even();
   static constexpr int min_exponent_round_to_even();
   static constexpr uint64_t max_mantissa_fast_path();
+  static constexpr int largest_power_of_ten();
+  static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
 };
 
@@ -313,6 +315,25 @@ template <>
 constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
 
   return powers_of_ten_float[power];
+}
+
+
+template <>
+constexpr int binary_format<double>::largest_power_of_ten() {
+  return 308;
+}
+template <>
+constexpr int binary_format<float>::largest_power_of_ten() {
+  return 38;
+}
+
+template <>
+constexpr int binary_format<double>::smallest_power_of_ten() {
+  return -342;
+}
+template <>
+constexpr int binary_format<float>::smallest_power_of_ten() {
+  return -65;
 }
 
 } // namespace fast_float
