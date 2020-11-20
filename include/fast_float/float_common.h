@@ -96,16 +96,17 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
   unsigned long leading_zero = 0;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
-  return (int)(_BitScanReverse64(&leading_zero, input_num) - leading_zero);
+  _BitScanReverse64(&leading_zero, input_num);
+  return (int)(63 - leading_zero);
   #else
-  int n = 0;
-  if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, n |= 32;
-  if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, n |= 16;
-  if(input_num & uint64_t(            0xff00)) input_num >>=  8, n |=  8;
-  if(input_num & uint64_t(              0xf0)) input_num >>=  4, n |=  4;
-  if(input_num & uint64_t(               0xc)) input_num >>=  2, n |=  2;
-  if(input_num & uint64_t(               0x2)) input_num >>=  1, n |=  1;
-  return 63 - n;
+  int last_bit = 0;
+  if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, last_bit |= 32;
+  if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, last_bit |= 16;
+  if(input_num & uint64_t(            0xff00)) input_num >>=  8, last_bit |=  8;
+  if(input_num & uint64_t(              0xf0)) input_num >>=  4, last_bit |=  4;
+  if(input_num & uint64_t(               0xc)) input_num >>=  2, last_bit |=  2;
+  if(input_num & uint64_t(               0x2)) input_num >>=  1, last_bit |=  1;
+  return 63 - last_bit;
   #endif
 #else
   return __builtin_clzll(input_num);
@@ -124,15 +125,18 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 #endif
 
 
-#ifdef FASTFLOAT_32BIT
-#if (defined(_WIN32) && !defined(__clang__))
+#if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
 #include <intrin.h>
 #endif
 
+#ifdef FASTFLOAT_32BIT
+
+#if !defined(_WIN32)
 // slow emulation routine for 32-bit
 fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
     return x * (uint64_t)y;
 }
+#endif
 
 // slow emulation routine for 32-bit
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
@@ -157,7 +161,7 @@ fastfloat_really_inline value128 full_multiplication(uint64_t a,
   // ARM64 has native support for 64-bit multiplications, no need to emulate
   answer.high = __umulh(a, b);
   answer.low = a * b;
-#elif defined(FASTFLOAT_32BIT)
+#elif defined(FASTFLOAT_32BIT) || (defined(_WIN64))
   answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
 #elif defined(FASTFLOAT_64BIT)
   __uint128_t r = ((__uint128_t)a) * b;
