@@ -5,11 +5,24 @@
 #include <cstdint>
 #include <cassert>
 
+#if (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
+     || defined(__arm__) || defined(__MINGW32__))
+#define FASTFLOAT_32BIT
+#elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
+       || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
+       || defined(__MINGW64__))
+#define FASTFLOAT_64BIT
+#else
+#error Unknown platform
+#endif
+
+#if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
+#include <intrin.h>
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 #define FASTFLOAT_VISUAL_STUDIO 1
 #endif
-
-
 
 #ifdef _WIN32
 #define FASTFLOAT_IS_BIG_ENDIAN 0
@@ -112,22 +125,6 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
   return __builtin_clzll(input_num);
 #endif
 }
-
-
-#if (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
-     || defined(__arm__) || defined(__MINGW32__))
-#define FASTFLOAT_32BIT
-#elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
-       || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64))
-#define FASTFLOAT_64BIT
-#else
-#error Unknown platform
-#endif
-
-
-#if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
-#include <intrin.h>
-#endif
 
 #ifdef FASTFLOAT_32BIT
 
