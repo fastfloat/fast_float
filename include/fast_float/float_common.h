@@ -12,7 +12,8 @@
 #elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
        || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
        || defined(__MINGW64__)                                          \
-       || defined(__s390x__))
+       || defined(__s390x__)                                            \
+       || (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)))
 #define FASTFLOAT_64BIT
 #else
 #error Unknown platform
