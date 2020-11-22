@@ -6,20 +6,22 @@ jobs:
   ci:
     name: windows-vs16
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 16 2019, arch: Win32}
+          - {gen: Visual Studio 16 2019, arch: x64}
     steps:
-    - uses: actions/checkout@v2
-    - name: 'Run CMake with VS16'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        buildDirectory: "${{ github.workspace }}/../../_temp/windows"
-        cmakeBuildType: Release   
-        buildWithCMake: true
-        cmakeGenerator: VS16Win64 
-        cmakeAppendedArgs:  -T ClangCL -DFASTFLOAT_TEST=ON
-        buildWithCMakeArgs: --config Release  
-        
-    - name: 'Run CTest'
-      run: ctest -C Release -R basictest  --output-on-failure 
-      working-directory: "${{ github.workspace }}/../../_temp/windows"
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Configure
+        run: |
+          mkdir build
+          cd build && cmake -G "${{matrix.gen}}" -A ${{matrix.arch}} -T ClangCL -DFASTFLOAT_TEST=ON ..
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Run basic tests
+        run: |
+          cd build
+          ctest -C Release --output-on-failure -R basictest

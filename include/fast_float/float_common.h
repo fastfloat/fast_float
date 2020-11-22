@@ -3,12 +3,29 @@
 
 #include <cfloat>
 #include <cstdint>
+#include <cassert>
+
+#if (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
+     || defined(__arm__)                                        \
+     || defined(__MINGW32__))
+#define FASTFLOAT_32BIT
+#elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
+       || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
+       || defined(__MINGW64__)                                          \
+       || defined(__s390x__)                                            \
+       || (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)))
+#define FASTFLOAT_64BIT
+#else
+#error Unknown platform
+#endif
+
+#if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
+#include <intrin.h>
+#endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #define FASTFLOAT_VISUAL_STUDIO 1
 #endif
-
-
 
 #ifdef _WIN32
 #define FASTFLOAT_IS_BIG_ENDIAN 0
@@ -89,29 +106,40 @@ struct value128 {
 
 /* result might be undefined when input_num is zero */
 fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
+  assert(input_num > 0);
 #ifdef FASTFLOAT_VISUAL_STUDIO
+  #if defined(_M_X64) || defined(_M_ARM64)
   unsigned long leading_zero = 0;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
-  if (_BitScanReverse64(&leading_zero, input_num))
-    return (int)(63 - leading_zero);
-  else
-    return 64;
+  _BitScanReverse64(&leading_zero, input_num);
+  return (int)(63 - leading_zero);
+  #else
+  int last_bit = 0;
+  if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, last_bit |= 32;
+  if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, last_bit |= 16;
+  if(input_num & uint64_t(            0xff00)) input_num >>=  8, last_bit |=  8;
+  if(input_num & uint64_t(              0xf0)) input_num >>=  4, last_bit |=  4;
+  if(input_num & uint64_t(               0xc)) input_num >>=  2, last_bit |=  2;
+  if(input_num & uint64_t(               0x2)) input_num >>=  1, last_bit |=  1;
+  return 63 - last_bit;
+  #endif
 #else
   return __builtin_clzll(input_num);
 #endif
 }
 
-#if defined(_WIN32) && !defined(__clang__)
-// Note MinGW falls here too
-#include <intrin.h>
+#ifdef FASTFLOAT_32BIT
 
-#if !defined(_M_X64) && !defined(_M_ARM64) // _umul128 for x86, arm
-// this is a slow emulation routine for 32-bit Windows
-//
+#if (!defined(_WIN32)) || defined(__MINGW32__)
+// slow emulation routine for 32-bit
 fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
-  return x * (uint64_t)y;
+    return x * (uint64_t)y;
 }
+#endif
+
+// slow emulation routine for 32-bit
+#if !defined(__MINGW64__)
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
   uint64_t ad = __emulu((uint32_t)(ab >> 32), (uint32_t)cd);
@@ -123,35 +151,31 @@ fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
         (adbc_carry << 32) + !!(lo < bd);
   return lo;
 }
-#endif
+#endif // !__MINGW64__
 
-fastfloat_really_inline value128 full_multiplication(uint64_t value1,
-                                                     uint64_t value2) {
+#endif // FASTFLOAT_32BIT
+
+
+// compute 64-bit a*b
+fastfloat_really_inline value128 full_multiplication(uint64_t a,
+                                                     uint64_t b) {
   value128 answer;
 #ifdef _M_ARM64
-  // ARM64 has native support for 64-bit multiplications, no need to emultate
-  answer.high = __umulh(value1, value2);
-  answer.low = value1 * value2;
-#else
-  answer.low =
-      _umul128(value1, value2, &answer.high); // _umul128 not available on ARM64
-#endif // _M_ARM64
-  return answer;
-}
-
-#else
-
-// compute value1 * value2
-fastfloat_really_inline value128 full_multiplication(uint64_t value1,
-                                                     uint64_t value2) {
-  value128 answer;
-  __uint128_t r = ((__uint128_t)value1) * value2;
+  // ARM64 has native support for 64-bit multiplications, no need to emulate
+  answer.high = __umulh(a, b);
+  answer.low = a * b;
+#elif defined(FASTFLOAT_32BIT) || (defined(_WIN64))
+  answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
+#elif defined(FASTFLOAT_64BIT)
+  __uint128_t r = ((__uint128_t)a) * b;
   answer.low = uint64_t(r);
   answer.high = uint64_t(r >> 64);
+#else
+  #error Not implemented
+#endif
   return answer;
 }
 
-#endif
 
 struct adjusted_mantissa {
   uint64_t mantissa{0};
