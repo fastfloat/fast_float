@@ -62,6 +62,7 @@ namespace {
   }
 } // namespace
 
+
 // w * 10 ** q
 // The returned value should be a valid ieee64 number that simply need to be packed.
 // However, in some very rare cases, the computation will fail. In such cases, we
@@ -71,13 +72,13 @@ template <typename binary>
 fastfloat_really_inline
 adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   adjusted_mantissa answer;
-  if ((w == 0) || (q < smallest_power_of_five)) {
+  if ((w == 0) || (q < binary::smallest_power_of_ten())) {
     answer.power2 = 0;
     answer.mantissa = 0;
     // result should be zero
     return answer;
   }
-  if (q > largest_power_of_five) {
+  if (q > binary::largest_power_of_ten()) {
     // we want to get infinity:
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
@@ -93,23 +94,28 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   // 1. We need the implicit bit
   // 2. We need an extra bit for rounding purposes
   // 3. We might lose a bit due to the "upperbit" routine (result too small, requiring a shift)
+
   value128 product = compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
   if(product.low == 0xFFFFFFFFFFFFFFFF) { //  could guard it further
     // In some very rare cases, this could happen, in which case we might need a more accurate
     // computation that what we can provide cheaply. This is very, very unlikely.
-    answer.power2 = -1; // This (a negative value) indicates an error condition.
-    return answer;
+    //
+    const bool inside_safe_exponent = (q >= -27) && (q <= 55); // always good because 5**q <2**128 when q>=0, 
+    // and otherwise, for q<0, we have 5**-q<2**64 and the 128-bit reciprocal allows for exact computation.
+    if(!inside_safe_exponent) {
+      answer.power2 = -1; // This (a negative value) indicates an error condition.
+      return answer;
+    }
   }
   // The "compute_product_approximation" function can be slightly slower than a branchless approach:
   // value128 product = compute_product(q, w);
   // but in practice, we can win big with the compute_product_approximation if its additional branch
   // is easily predicted. Which is best is data specific.
-  uint64_t upperbit = product.high >> 63;
+  int upperbit = int(product.high >> 63);
 
   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
-  lz += int(1 ^ upperbit);
-  
-  answer.power2 = power(int(q)) - lz - binary::minimum_exponent() + 1;
+
+  answer.power2 = int(power(int(q)) + upperbit - lz - binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal?
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if(-answer.power2 + 1 >= 64) { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
@@ -144,7 +150,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
     //   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
     // ... we dropped out only zeroes. But if this happened, then we can go back!!!
     if((answer.mantissa  << (upperbit + 64 - binary::mantissa_explicit_bits() - 3)) ==  product.high) {
-      answer.mantissa &= ~1;          // flip it so that we do not round up
+      answer.mantissa &= ~uint64_t(1);          // flip it so that we do not round up
     }
   }
 

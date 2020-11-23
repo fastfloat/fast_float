@@ -94,13 +94,15 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
-        (*p - '0'); // might overflow, we will handle the overflow later
+        uint64_t(*p - '0'); // might overflow, we will handle the overflow later
     ++p;
   }
   int64_t exponent = 0;
   if ((p != pend) && (*p == '.')) {
     ++p;
     const char *first_after_period = p;
+#if FASTFLOAT_IS_BIG_ENDIAN == 0
+    // Fast approach only tested under little endian systems
     if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
       i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
       p += 8;
@@ -109,6 +111,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
         p += 8;
       }
     }
+#endif
     while ((p != pend) && is_integer(*p)) {
       uint8_t digit = uint8_t(*p - '0');
       ++p;
@@ -219,6 +222,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
        ++p;
       }
     }
+#if FASTFLOAT_IS_BIG_ENDIAN == 0
     // We expect that this loop will often take the bulk of the running time
     // because when a value has lots of digits, these digits often
     while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
@@ -231,6 +235,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
       answer.num_digits += 8;
       p += 8;
     }
+#endif
     while ((p != pend) && is_integer(*p)) {
       if (answer.num_digits < max_digits) {
         answer.digits[answer.num_digits] = uint8_t(*p - '0');
@@ -259,11 +264,15 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
   }
-  answer.decimal_point += answer.num_digits;
+  answer.decimal_point += int32_t(answer.num_digits);
   if(answer.num_digits > max_digits) {
     answer.truncated = true;
     answer.num_digits = max_digits;
   }
+  // In very rare cases, we may have fewer than 19 digits, we want to be able to reliably
+  // assume that all digits up to max_digit_without_overflow have been initialized.
+  for(uint32_t i = answer.num_digits; i < max_digit_without_overflow; i++) { answer.digits[i] = 0; }
+
   return answer;
 }
 } // namespace fast_float

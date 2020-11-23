@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
 // Anything at all that is related to cygwin, msys and so forth will
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
@@ -30,7 +30,7 @@ template <typename T> std::string to_string(T d) {
   std::string s(64, '\0');
   auto written = std::snprintf(&s[0], s.size(), "%.*e",
                                std::numeric_limits<T>::max_digits10 - 1, d);
-  s.resize(written);
+  s.resize(size_t(written));
   return s;
 }
 
@@ -85,7 +85,7 @@ void strtod_from_string(const std::string &st, double& d) {
 template <>
 void strtod_from_string(const std::string &st, float& d) {
     char *pr = (char *)st.c_str();
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
     d = cygwin_strtod_l(st.c_str(), &pr);
 #elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
@@ -236,7 +236,7 @@ bool partow_test() {
 
 
 int main() {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
   std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
 #endif
   std::cout << "32 bits checks" << std::endl;

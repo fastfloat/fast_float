@@ -3,9 +3,54 @@
 
 #include <cfloat>
 #include <cstdint>
+#include <cassert>
+
+#if (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
+     || defined(__arm__)                                        \
+     || defined(__MINGW32__))
+#define FASTFLOAT_32BIT
+#elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
+       || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
+       || defined(__MINGW64__)                                          \
+       || defined(__s390x__)                                            \
+       || (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)))
+#define FASTFLOAT_64BIT
+#else
+#error Unknown platform
+#endif
+
+#if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
+#include <intrin.h>
+#endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #define FASTFLOAT_VISUAL_STUDIO 1
+#endif
+
+#ifdef _WIN32
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#else
+#if defined(__APPLE__) || defined(__FreeBSD__)
+#include <machine/endian.h>
+#else
+#include <endian.h>
+#endif
+#
+#ifndef __BYTE_ORDER__
+// safe choice
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#endif
+#
+#ifndef __ORDER_LITTLE_ENDIAN__
+// safe choice
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#endif
+#
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define FASTFLOAT_IS_BIG_ENDIAN 0
+#else
+#define FASTFLOAT_IS_BIG_ENDIAN 1
+#endif
 #endif
 
 #ifdef FASTFLOAT_VISUAL_STUDIO
@@ -61,29 +106,40 @@ struct value128 {
 
 /* result might be undefined when input_num is zero */
 fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
+  assert(input_num > 0);
 #ifdef FASTFLOAT_VISUAL_STUDIO
+  #if defined(_M_X64) || defined(_M_ARM64)
   unsigned long leading_zero = 0;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
-  if (_BitScanReverse64(&leading_zero, input_num))
-    return (int)(63 - leading_zero);
-  else
-    return 64;
+  _BitScanReverse64(&leading_zero, input_num);
+  return (int)(63 - leading_zero);
+  #else
+  int last_bit = 0;
+  if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, last_bit |= 32;
+  if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, last_bit |= 16;
+  if(input_num & uint64_t(            0xff00)) input_num >>=  8, last_bit |=  8;
+  if(input_num & uint64_t(              0xf0)) input_num >>=  4, last_bit |=  4;
+  if(input_num & uint64_t(               0xc)) input_num >>=  2, last_bit |=  2;
+  if(input_num & uint64_t(               0x2)) input_num >>=  1, last_bit |=  1;
+  return 63 - last_bit;
+  #endif
 #else
   return __builtin_clzll(input_num);
 #endif
 }
 
-#if defined(_WIN32) && !defined(__clang__)
-// Note MinGW falls here too
-#include <intrin.h>
+#ifdef FASTFLOAT_32BIT
 
-#if !defined(_M_X64) && !defined(_M_ARM64) // _umul128 for x86, arm
-// this is a slow emulation routine for 32-bit Windows
-//
+#if (!defined(_WIN32)) || defined(__MINGW32__)
+// slow emulation routine for 32-bit
 fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
-  return x * (uint64_t)y;
+    return x * (uint64_t)y;
 }
+#endif
+
+// slow emulation routine for 32-bit
+#if !defined(__MINGW64__)
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
   uint64_t ad = __emulu((uint32_t)(ab >> 32), (uint32_t)cd);
@@ -95,39 +151,35 @@ fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
         (adbc_carry << 32) + !!(lo < bd);
   return lo;
 }
-#endif
+#endif // !__MINGW64__
 
-fastfloat_really_inline value128 full_multiplication(uint64_t value1,
-                                                     uint64_t value2) {
+#endif // FASTFLOAT_32BIT
+
+
+// compute 64-bit a*b
+fastfloat_really_inline value128 full_multiplication(uint64_t a,
+                                                     uint64_t b) {
   value128 answer;
 #ifdef _M_ARM64
-  // ARM64 has native support for 64-bit multiplications, no need to emultate
-  answer.high = __umulh(value1, value2);
-  answer.low = value1 * value2;
-#else
-  answer.low =
-      _umul128(value1, value2, &answer.high); // _umul128 not available on ARM64
-#endif // _M_ARM64
-  return answer;
-}
-
-#else
-
-// compute value1 * value2
-fastfloat_really_inline value128 full_multiplication(uint64_t value1,
-                                                     uint64_t value2) {
-  value128 answer;
-  __uint128_t r = ((__uint128_t)value1) * value2;
+  // ARM64 has native support for 64-bit multiplications, no need to emulate
+  answer.high = __umulh(a, b);
+  answer.low = a * b;
+#elif defined(FASTFLOAT_32BIT) || (defined(_WIN64))
+  answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
+#elif defined(FASTFLOAT_64BIT)
+  __uint128_t r = ((__uint128_t)a) * b;
   answer.low = uint64_t(r);
   answer.high = uint64_t(r >> 64);
+#else
+  #error Not implemented
+#endif
   return answer;
 }
 
-#endif
 
 struct adjusted_mantissa {
-  uint64_t mantissa;
-  int power2; // a negative value indicate an invalid result
+  uint64_t mantissa{0};
+  int power2{0}; // a negative value indicate an invalid result
   adjusted_mantissa() = default;
   // bool operator==(const adjusted_mantissa &o) const = default;
   bool operator==(const adjusted_mantissa &o) const {
@@ -136,10 +188,10 @@ struct adjusted_mantissa {
 };
 
 struct decimal {
-  uint32_t num_digits;
-  int32_t decimal_point;
-  bool negative;
-  bool truncated;
+  uint32_t num_digits{0};
+  int32_t decimal_point{0};
+  bool negative{false};
+  bool truncated{false};
   uint8_t digits[max_digits];
   decimal() = default;
   // Copies are not allowed since this is a fat object.
@@ -149,10 +201,19 @@ struct decimal {
   // Moves are allowed:
   decimal(decimal &&) = default;
   decimal &operator=(decimal &&other) = default;
-  // Generates a mantissa by truncating to 19 digits; this function assumes
-  // that num_digits >= 19 (the caller is responsible for the check).
+  // Generates a mantissa by truncating to 19 digits.
   // This function should be reasonably fast.
+  // Note that the user is responsible to ensure that digits are
+  // initialized to zero when there are fewer than 19.
   inline uint64_t to_truncated_mantissa() {
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+    uint64_t mantissa = 0;
+    for (uint32_t i = 0; i < max_digit_without_overflow;
+         i++) {
+      mantissa = mantissa * 10 + digits[i]; // can be accelerated
+    }
+    return mantissa;
+#else
     uint64_t val;
     // 8 first digits
     ::memcpy(&val, digits, sizeof(uint64_t));
@@ -172,10 +233,11 @@ struct decimal {
       mantissa = mantissa * 10 + digits[i]; // can be accelerated
     }
     return mantissa;
+#endif
   }
   // Generate san exponent matching to_truncated_mantissa()
   inline int32_t to_truncated_exponent() {
-    return decimal_point - max_digit_without_overflow;
+    return decimal_point - int32_t(max_digit_without_overflow);
   }
 };
 
@@ -195,6 +257,8 @@ template <typename T> struct binary_format {
   static constexpr int max_exponent_round_to_even();
   static constexpr int min_exponent_round_to_even();
   static constexpr uint64_t max_mantissa_fast_path();
+  static constexpr int largest_power_of_ten();
+  static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
 };
 
@@ -275,6 +339,25 @@ template <>
 constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
 
   return powers_of_ten_float[power];
+}
+
+
+template <>
+constexpr int binary_format<double>::largest_power_of_ten() {
+  return 308;
+}
+template <>
+constexpr int binary_format<float>::largest_power_of_ten() {
+  return 38;
+}
+
+template <>
+constexpr int binary_format<double>::smallest_power_of_ten() {
+  return -342;
+}
+template <>
+constexpr int binary_format<float>::smallest_power_of_ten() {
+  return -65;
 }
 
 } // namespace fast_float

@@ -8,7 +8,7 @@ for q in range(-342,0):
     z = 0
     while( (1<<z) < power5) :
         z += 1
-    if(q >= -17):
+    if(q >= -27):
         b = z + 127
         c = 2 ** b // power5 + 1
         format(c)
@@ -18,8 +18,8 @@ for q in range(-342,0):
         # truncate
         while(c >= (1<<128)):
           c //= 2
-        format(c)    
-    
+        format(c)
+
 for q in range(0,308+1):
     power5 = 5 ** q
     # move the most significant bit in position

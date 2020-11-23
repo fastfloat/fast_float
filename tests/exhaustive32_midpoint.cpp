@@ -31,7 +31,7 @@ template <typename T> char *to_string(T d, char *buffer) {
 
 void strtod_from_string(const char * st, float& d) {
     char *pr = (char *)st;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
     d = cygwin_strtod_l(st, &pr);
 #elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
@@ -53,7 +53,7 @@ void allvalues() {
       std::cout << ".";
       std::cout.flush();
     }
-    uint32_t word = w;
+    uint32_t word = uint32_t(w);
     memcpy(&v, &word, sizeof(v));
     if(std::isfinite(v)) { 
       float nextf = std::nextafterf(v, INFINITY);
@@ -64,7 +64,7 @@ void allvalues() {
       double v2{nextf};
       assert(float(v2) == nextf);
       double midv{v1 + (v2 - v1) / 2};
-      float expected_midv(midv);
+      float expected_midv = float(midv);
 
       const char *string_end = to_string(midv, buffer);
       float str_answer;
@@ -112,8 +112,8 @@ void allvalues() {
 }
 
 int main() {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-  std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
 #endif
   allvalues();
   std::cout << std::endl;

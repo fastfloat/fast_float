@@ -77,7 +77,7 @@ from_chars_result from_chars(const char *first, const char *last,
 
 
   from_chars_result answer;
-  while ((first != last) && fast_float::is_space(*first)) {
+  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
     first++;
   }
   if (first == last) {
@@ -107,7 +107,16 @@ from_chars_result from_chars(const char *first, const char *last,
   word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
   word = pns.negative
   ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
-  ::memcpy(&value, &word, sizeof(T));
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+   if (std::is_same<T, float>::value) {
+     ::memcpy(&value, (char *)&word + 4, sizeof(T)); // extract value at offset 4-7 if float on big-endian
+   } else {
+     ::memcpy(&value, &word, sizeof(T));
+   }
+#else
+   // For little-endian systems:
+   ::memcpy(&value, &word, sizeof(T));
+#endif
   return answer;
 }
 
