@@ -8,7 +8,7 @@ for q in range(-342,0):
     z = 0
     while( (1<<z) < power5) :
         z += 1
-    if(q >= -17):
+    if(q >= -27):
         b = z + 127
         c = 2 ** b // power5 + 1
         format(c)

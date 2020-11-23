@@ -31,7 +31,7 @@ template <typename T> char *to_string(T d, char *buffer) {
 
 void strtod_from_string(const char * st, float& d) {
     char *pr = (char *)st;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
     d = cygwin_strtod_l(st, &pr);
 #elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
@@ -112,8 +112,8 @@ void allvalues() {
 }
 
 int main() {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-  std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
 #endif
   allvalues();
   std::cout << std::endl;

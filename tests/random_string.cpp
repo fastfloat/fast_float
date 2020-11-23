@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <random>
 
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
 // Anything at all that is related to cygwin, msys and so forth will
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
@@ -126,7 +126,7 @@ std::pair<double, bool> strtod_from_string(char *st) {
 std::pair<float, bool> strtof_from_string(char *st) {
   float d;
   char *pr;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
     d = cygwin_strtod_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
@@ -203,8 +203,8 @@ bool tester(uint64_t seed, size_t volume) {
 }
 
 int main() {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-  std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
 #endif
   if (tester(1234344, 100000000)) {
     std::cout << "All tests ok." << std::endl;
