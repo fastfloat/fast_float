@@ -20,21 +20,11 @@ fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
   const uint64_t mask = 0x000000FF000000FF;
   const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
   const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
-
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
-  val = uint32_t((((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32);
-  return val;
+  val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+  return uint32_t(val);
 }
-
-// credit: https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
-//fastfloat_really_inline uint32_t parse_eight_digits_unrolled(uint64_t val)  noexcept  {
-//  uint64_t val;
-//  ::memcpy(&val, chars, sizeof(uint64_t));
-//  val = (val & 0x0F0F0F0F0F0F0F0F) * 2561 >> 8;
-//  val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
-//  return uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
-//}
 
 fastfloat_really_inline uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
   uint64_t val;
@@ -47,12 +37,6 @@ fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcep
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
      0x8080808080808080)); 
 }
-//fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
-//  return (((val & 0xF0F0F0F0F0F0F0F0) |
-//           (((val + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4)) ==
-//          0x3333333333333333);
-//}
-
 
 fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
   uint64_t val;
