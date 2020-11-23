@@ -360,6 +360,8 @@ adjusted_mantissa parse_long_mantissa(const char *first, const char* last) {
     // credit: R. Oudompheng who first implemented this fast path (to my knowledge).
     // It is rough, but it does the job of accelerating the slow path since most
     // long streams of digits are determined after 19 digits.
+    // Note that mantissa+1 cannot overflow since mantissa < 10**19 and so
+    // mantissa+1 <= 10**19 < 2**64.
     adjusted_mantissa am1 = compute_float<binary>(exponent, mantissa);
     adjusted_mantissa am2 = compute_float<binary>(exponent, mantissa+1);
     // They must both agree and be both a successful result.
