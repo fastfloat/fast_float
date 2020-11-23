@@ -23,7 +23,7 @@ fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
 
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
-  val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+  val = uint32_t((((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32);
   return val;
 }
 
