@@ -1,4 +1,4 @@
-## fast_float number parsing library
+## fast_float number parsing library: 4x faster than strtod
 
 ![Ubuntu 20.04 CI (GCC 9)](https://github.com/lemire/fast_float/workflows/Ubuntu%2020.04%20CI%20(GCC%209)/badge.svg)
 ![Ubuntu 18.04 CI (GCC 7)](https://github.com/lemire/fast_float/workflows/Ubuntu%2018.04%20CI%20(GCC%207)/badge.svg)
