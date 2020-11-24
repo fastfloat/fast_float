@@ -363,8 +363,8 @@ constexpr int binary_format<float>::smallest_power_of_ten() {
 } // namespace fast_float
 
 // for convenience:
-#include <ostream>
-inline std::ostream &operator<<(std::ostream &out, const fast_float::decimal &d) {
+template<class OStream>
+inline OStream& operator<<(OStream &out, const fast_float::decimal &d) {
   out << "0.";
   for (size_t i = 0; i < d.num_digits; i++) {
     out << int32_t(d.digits[i]);
