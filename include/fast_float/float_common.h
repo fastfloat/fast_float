@@ -138,7 +138,7 @@ fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
 }
 #endif
 
-// slow emulation routine for 32-bit
+// routine for 32-bit systems
 #if !defined(__MINGW64__)
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
