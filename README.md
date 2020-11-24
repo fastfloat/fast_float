@@ -78,6 +78,7 @@ This library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494
 ## How fast is it?
 
 It can parse random floating-point numbers at a speed of 1 GB/s on some systems. We find that it is often twice as fast as the best available competitor, and many times faster than many standard-library implementations.
+<img src="http://lemire.me/blog/wp-content/uploads/2020/11/fastfloat_speed.png" width="400">
 
 ```
 $ ./build/benchmarks/benchmark 
