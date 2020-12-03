@@ -28,7 +28,7 @@ struct from_chars_result {
 ```
 
 It parses the character sequence [first,last) for a number. It parses floating-point numbers expecting
-a locale-indepent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
+a locale-independent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
 The resulting floating-point value is the closest floating-point values (using either float or double), 
 using the "round to even" convention for values that would otherwise fall right in-between two values.
 That is, we provide exact parsing according to the IEEE standard.
