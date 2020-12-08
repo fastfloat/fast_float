@@ -68,11 +68,11 @@ We support Visual Studio, macOS, Linux, freeBSD. We support big and little endia
 
 ## Relation With Other Work
 
-The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an novel algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. 
+The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an updated algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. The fast_double_parser library is part of the [Microsoft LightGBM machine-learning framework](https://github.com/microsoft/LightGBM).
 
 ## Users
 
-This library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times.
+The fast_float library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times.
 
 
 ## How fast is it?
