@@ -93,6 +93,11 @@ fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfl
 
 See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.
 
+
+## Video
+
+[![Go Systems 2020](http://img.youtube.com/vi/AVXgvlMeIm4/0.jpg)](http://www.youtube.com/watch?v=AVXgvlMeIm4)<br />
+
 ## Using as a CMake dependency
 
 This library is header-only by design. The CMake file provides the `fast_float` target
@@ -131,6 +136,7 @@ locale-sensitive parsing.
 The performance is optimized for 19 or fewer significant digits. In practice, there should
 never be more than 17 digits since it is enough to identify exactly all possible 64-bit numbers (double).
 In fact, for many numbers, far fewer than 17 digits are needed.
+
 
 ## Credit
 
