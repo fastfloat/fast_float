@@ -14,13 +14,10 @@ jobs:
           - {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9
     steps:
       - uses: actions/checkout@v2
-<<<<<<< HEAD
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.4
         with:
           cmake-version: '3.9.x'
-=======
->>>>>>> main
       - name: install older compilers
         run: |
           sudo -E dpkg --add-architecture i386
