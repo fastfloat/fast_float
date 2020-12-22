@@ -38,7 +38,7 @@ jobs:
       - name: Prepare build dir
         run: mkdir build
       - name: Configure
-        run: cd build && cmake -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DFASTFLOAT_TEST=ON ..
+        run: cd build && cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=${{ matrix.type }} -DFASTFLOAT_TEST=ON ..
       - name: Build
         run: cmake --build build
       - name: Run basic tests
