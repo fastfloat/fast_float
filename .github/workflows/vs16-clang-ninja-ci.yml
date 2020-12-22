@@ -21,5 +21,5 @@ jobs:
         buildWithCMakeArgs: --config Release  
 
     - name: 'Run CTest'
-      run: ctest -C Release   --output-on-failure
+      run: ctest -C Release   --output-on-failure -R basictest
       working-directory: "${{ github.workspace }}/../../_temp/windows"

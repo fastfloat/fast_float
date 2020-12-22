@@ -46,4 +46,4 @@ jobs:
           cd build32
           cmake  -DFASTFLOAT_TEST=ON ..
           cmake --build .   --verbose
-          ctest -j4 --output-on-failure
+          ctest -j4 --output-on-failure -R basictest
