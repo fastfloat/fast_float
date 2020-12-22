@@ -19,7 +19,21 @@ double cygwin_strtod_l(const char* start, char** end) {
     ss.imbue(std::locale::classic());
     ss << start;
     ss >> d;
-    size_t nread = ss.tellg();
+    if(ss.fail()) { *end = nullptr; }
+    if(ss.eof()) { ss.clear(); }
+    auto nread = ss.tellg();
+    *end = const_cast<char*>(start) + nread;
+    return d;
+}
+float cygwin_strtof_l(const char* start, char** end) {
+    float d;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << start;
+    ss >> d;
+    if(ss.fail()) { *end = nullptr; }
+    if(ss.eof()) { ss.clear(); }
+    auto nread = ss.tellg();
     *end = const_cast<char*>(start) + nread;
     return d;
 }
@@ -29,7 +43,9 @@ double cygwin_strtod_l(const char* start, char** end) {
 std::pair<double, bool> strtod_from_string(const char *st) {
   double d;
   char *pr;
-#ifdef _WIN32
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+    d = cygwin_strtod_l(st, &pr);
+#elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtod_l(st, &pr, c_locale);
 #else
@@ -47,7 +63,7 @@ std::pair<float, bool> strtof_from_string(char *st) {
   float d;
   char *pr;
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
-  d = cygwin_strtod_l(st, &pr);
+  d = cygwin_strtof_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtof_l(st, &pr, c_locale);

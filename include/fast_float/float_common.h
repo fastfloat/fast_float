@@ -5,18 +5,18 @@
 #include <cstdint>
 #include <cassert>
 
-#if (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
-     || defined(__arm__)                                        \
-     || defined(__MINGW32__))
-#define FASTFLOAT_32BIT
-#elif (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
+#if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
        || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
        || defined(__MINGW64__)                                          \
        || defined(__s390x__)                                            \
        || (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)))
 #define FASTFLOAT_64BIT
+#elif (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
+     || defined(__arm__)                                        \
+     || defined(__MINGW32__))
+#define FASTFLOAT_32BIT
 #else
-#error Unknown platform
+#error Unknown platform (not 32-bit, not 64-bit?)
 #endif
 
 #if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
@@ -164,7 +164,7 @@ fastfloat_really_inline value128 full_multiplication(uint64_t a,
   // ARM64 has native support for 64-bit multiplications, no need to emulate
   answer.high = __umulh(a, b);
   answer.low = a * b;
-#elif defined(FASTFLOAT_32BIT) || (defined(_WIN64))
+#elif defined(FASTFLOAT_32BIT) || (defined(_WIN64) && !defined(__clang__))
   answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
 #elif defined(FASTFLOAT_64BIT)
   __uint128_t r = ((__uint128_t)a) * b;

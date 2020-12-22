@@ -3,8 +3,7 @@
 #include <vector>
 
 inline void Assert(bool Assertion) {
-  if (!Assertion)
-    throw std::runtime_error("bug");
+  if (!Assertion) { throw std::runtime_error("bug"); }
 }
 
 template <typename T>

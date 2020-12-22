@@ -17,7 +17,21 @@ double cygwin_strtod_l(const char* start, char** end) {
     ss.imbue(std::locale::classic());
     ss << start;
     ss >> d;
-    size_t nread = ss.tellg();
+    if(ss.fail()) { *end = nullptr; }
+    if(ss.eof()) { ss.clear(); }
+    auto nread = ss.tellg();
+    *end = const_cast<char*>(start) + nread;
+    return d;
+}
+float cygwin_strtof_l(const char* start, char** end) {
+    float d;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << start;
+    ss >> d;
+    if(ss.fail()) { *end = nullptr; }
+    if(ss.eof()) { ss.clear(); }
+    auto nread = ss.tellg();
     *end = const_cast<char*>(start) + nread;
     return d;
 }
@@ -29,10 +43,10 @@ template <typename T> char *to_string(T d, char *buffer) {
   return buffer + written;
 }
 
-void strtod_from_string(const char * st, float& d) {
+void strtof_from_string(const char * st, float& d) {
     char *pr = (char *)st;
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-    d = cygwin_strtod_l(st, &pr);
+    d = cygwin_strtof_l(st, &pr);
 #elif defined(_WIN32)
     static _locale_t c_locale = _create_locale(LC_ALL, "C");
     d = _strtof_l(st, &pr,  c_locale);
@@ -45,7 +59,7 @@ void strtod_from_string(const char * st, float& d) {
     }
 }
 
-void allvalues() {
+bool allvalues() {
   char buffer[64];
   for (uint64_t w = 0; w <= 0xFFFFFFFF; w++) {
     float v;
@@ -68,15 +82,24 @@ void allvalues() {
 
       const char *string_end = to_string(midv, buffer);
       float str_answer;
-      strtod_from_string(buffer, str_answer);
+      strtof_from_string(buffer, str_answer);
 
       float result_value;
       auto result = fast_float::from_chars(buffer, string_end, result_value);
       if (result.ec != std::errc()) {
         std::cerr << "parsing error ? " << buffer << std::endl;
-        abort();
+        return false;
       }
-      if(copysign(1,result_value) != copysign(1,v)) {
+      if (std::isnan(v)) {
+        if (!std::isnan(result_value)) {
+          std::cerr << "not nan" << buffer << std::endl;
+          std::cerr << "v " << std::hexfloat << v << std::endl;
+          std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+          std::cerr << "midv " << std::hexfloat << midv << std::endl;
+          std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
+          return false;
+        }
+      } else if(copysign(1,result_value) != copysign(1,v)) {
         std::cerr << buffer << std::endl;
         std::cerr << "v " << std::hexfloat << v << std::endl;
         std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
@@ -84,16 +107,7 @@ void allvalues() {
         std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
         std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
               << std::endl;
-        abort();
-      } else if (std::isnan(v)) {
-        if (!std::isnan(result_value)) {
-          std::cerr << "not nan" << buffer << std::endl;
-          std::cerr << "v " << std::hexfloat << v << std::endl;
-          std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
-          std::cerr << "midv " << std::hexfloat << midv << std::endl;
-          std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
-          abort();
-        }
+        return false;
       } else if (result_value != str_answer) {
         std::cerr << "no match ? " << buffer << std::endl;
         std::cerr << "v " << std::hexfloat << v << std::endl;
@@ -104,18 +118,26 @@ void allvalues() {
         std::cout << "round down to " << std::hexfloat << str_answer << std::endl;
         std::cout << "got back " << std::hexfloat << result_value << std::endl; 
         std::cout << std::dec;
-        abort();
+        return false;
       }
     }
   }
   std::cout << std::endl;
+  return true;
 }
 
+inline void Assert(bool Assertion) {
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+  if (!Assertion) { std::cerr << "Omitting hard falure on msys/cygwin/sun systems."; }
+#else 
+  if (!Assertion) { throw std::runtime_error("bug"); }
+#endif
+}
 int main() {
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
-  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library as a gold standard." << std::endl;
 #endif
-  allvalues();
+  Assert(allvalues());
   std::cout << std::endl;
   std::cout << "all ok" << std::endl;
   return EXIT_SUCCESS;

@@ -62,12 +62,7 @@ void random_values(size_t N) {
           abort();
         }
       }
-      if(copysign(1,result_value) != copysign(1,v)) {
-        std::cerr << buffer << std::endl;
-        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
-              << std::endl;
-        abort();
-      } else if (std::isnan(v)) {
+      if (std::isnan(v)) {
         if (!std::isnan(result_value)) {
           std::cerr << "not nan" << buffer << std::endl;
           errors++;
@@ -75,6 +70,11 @@ void random_values(size_t N) {
             abort();
           }
         }
+      } else if(copysign(1,result_value) != copysign(1,v)) {
+        std::cerr << buffer << std::endl;
+        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
+              << std::endl;
+        abort();
       } else if (result_value != v) {
         std::cerr << "no match ? " << buffer << std::endl;
         std::cout << "started with " << std::hexfloat << v << std::endl;
