@@ -20,16 +20,16 @@ bool basic_test_64bit(std::string vals, double val) {
     std::cerr << " I could not parse " << vals << std::endl;
     return false;
   }
-  if(copysign(1,result_value) != copysign(1,val)) {
-    std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
-              << std::endl;
-    return false;
-  } else if (std::isnan(val)) {
+  if (std::isnan(val)) {
     if (!std::isnan(result_value)) {
       std::cerr << vals << std::endl;
       std::cerr << "not nan" << result_value << std::endl;
       return false;
-    }
+    } 
+  } else if(copysign(1,result_value) != copysign(1,val)) {
+    std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
+              << std::endl;
+    return false; 
   } else if (result_value != val) {
     std::cerr << vals << std::endl;
     std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
