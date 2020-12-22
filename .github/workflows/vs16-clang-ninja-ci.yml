@@ -18,8 +18,8 @@ jobs:
         buildWithCMake: true
         cmakeGenerator: VS16Win64
         cmakeAppendedArgs:  -G Ninja  -DFASTFLOAT_TEST=ON
-        buildWithCMakeArgs: --config Release  
+        buildWithCMakeArgs: 
 
     - name: 'Run CTest'
-      run: ctest -C Release --verbose  --output-on-failure -R basictest
+      run: ctest --verbose  --output-on-failure -R basictest
       working-directory: "${{ github.workspace }}/../../_temp/windows"
