@@ -305,7 +305,7 @@ adjusted_mantissa compute_float(decimal &d) {
     decimal_left_shift(d, shift);
     if (d.decimal_point > decimal_point_range) {
       // we want to get infinity:
-      answer.power2 = 0xFF;
+      answer.power2 = binary::infinite_power();
       answer.mantissa = 0;
       return answer;
     }
