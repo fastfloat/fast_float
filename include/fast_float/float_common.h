@@ -235,7 +235,7 @@ struct decimal {
     return mantissa;
 #endif
   }
-  // Generate san exponent matching to_truncated_mantissa()
+  // Generate an exponent matching to_truncated_mantissa()
   inline int32_t to_truncated_exponent() {
     return decimal_point - int32_t(max_digit_without_overflow);
   }
