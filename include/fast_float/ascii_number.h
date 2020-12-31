@@ -107,10 +107,10 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   if ((start_digits == p) || ((start_digits == p - 1) && (*start_digits == '.') )) {
     return answer;
   }
-
+  // digit_count is the exact number of digits.
   int32_t digit_count =
-      int32_t(p - start_digits - 1); // used later to guard against overflows
- 
+      int32_t(p - start_digits); // used later to guard against overflows
+  if(exponent > 0) {digit_count--;}
   if ((fmt & chars_format::scientific) && (p != pend) && (('e' == *p) || ('E' == *p))) {
     const char * location_of_e = p;
     int64_t exp_number = 0;            // exponential part
@@ -149,16 +149,21 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   // If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
   // of a 64-bit integer. However, this is uncommon.
-  if (((digit_count >= 19))) { // this is uncommon
+  //
+  // We can deal with up to 19 digits.
+  if (((digit_count > 19))) { // this is uncommon
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
+    // We need to be mindful of the case where we only have zeroes...
+    // E.g., 0.000000000...000.
     const char *start = start_digits;
-    while (*start == '0' || (*start == '.')) {
+    while ((start != pend) && (*start == '0' || *start == '.')) {
+      if(*start == '.') { digit_count++; } // We will subtract it again later.
       start++;
     }
-    // we over-decrement by one when there is a decimal separator
+    // We over-decrement by one when there is a decimal separator
     digit_count -= int(start - start_digits);
-    if (digit_count >= 19) {
+    if (digit_count > 19) {
       answer.mantissa = 0xFFFFFFFFFFFFFFFF; // important: we don't want the mantissa to be used in a fast path uninitialized.
       answer.too_many_digits = true;
       return answer;
