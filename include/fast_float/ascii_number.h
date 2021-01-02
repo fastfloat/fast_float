@@ -145,13 +145,14 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   }
   answer.lastmatch = p;
   answer.valid = true;
+  answer.too_many_digits = false; // be optimistic
 
   // If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
   // of a 64-bit integer. However, this is uncommon.
   //
   // We can deal with up to 19 digits.
-  if (((digit_count > 19))) { // this is uncommon
+  if (digit_count > 19) { // this is uncommon
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
@@ -164,12 +165,46 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     // We over-decrement by one when there is a decimal separator
     digit_count -= int(start - start_digits);
     if (digit_count > 19) {
-      answer.mantissa = 0xFFFFFFFFFFFFFFFF; // important: we don't want the mantissa to be used in a fast path uninitialized.
+      // This is very unlikely in practice!!!
       answer.too_many_digits = true;
-      return answer;
+      p = start;
+      const char * safe_end = p + 19; // ensures that we never read more than 19 digits
+      i = 0; // recomputing
+      // Next loop will process the integer part
+      while ((p != safe_end) && is_integer(*p)) {
+          i = 10 * i + uint64_t(*p - '0');
+          p++;
+      }
+      if(p != safe_end) {
+        // If p != safe_end, then we hit the
+        // decimal separator and we need to keep going.
+        //
+        // We must have the decimal separator, skip over it.
+        p++;
+        safe_end++;
+        // Keep adding to the mantissa.
+        while (p != safe_end) {
+          i = 10 * i + uint64_t(*p - '0');
+          p++;
+        }
+        // We need to adjust the exponent.
+        const char * end_of_parsed_mantissa = p;
+        while ((p != pend) && is_integer(*p)) { p++; }
+        exponent += int64_t(p - end_of_parsed_mantissa);
+      } else {
+        // if we did not hit a decimal separator, then
+        // we still have to adjust the exponent.
+        const char * end_of_parsed_mantissa = p;
+        while ((p != pend) && is_integer(*p)) { p++; }
+        if(*p == '.') {
+          p++;
+          exponent -= 1;
+          while ((p != pend) && is_integer(*p)) { p++; }
+        }
+        exponent += int64_t(p - end_of_parsed_mantissa );
+      }
     }
   }
-  answer.too_many_digits = false;
   answer.exponent = exponent;
   answer.mantissa = i;
   return answer;
