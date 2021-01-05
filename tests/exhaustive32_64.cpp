@@ -1,7 +1,7 @@
 
 #include "fast_float/fast_float.h"
 
-
+#include <iostream>
 #include <cassert>
 #include <cmath>
 
@@ -10,6 +10,37 @@ template <typename T> char *to_string(T d, char *buffer) {
                                std::numeric_limits<T>::max_digits10 - 1, d);
   return buffer + written;
 }
+
+
+bool basic_test_64bit(std::string vals, double val) {
+  double result_value;
+  auto result = fast_float::from_chars(vals.data(), vals.data() + vals.size(),
+                                      result_value);
+  if (result.ec != std::errc()) {
+    std::cerr << " I could not parse " << vals << std::endl;
+    return false;
+  }
+  if (std::isnan(val)) {
+    if (!std::isnan(result_value)) {
+      std::cerr << vals << std::endl;
+      std::cerr << "not nan" << result_value << std::endl;
+      return false;
+    } 
+  } else if(copysign(1,result_value) != copysign(1,val)) {
+    std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
+              << std::endl;
+    return false; 
+  } else if (result_value != val) {
+    std::cerr << vals << std::endl;
+    std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
+              << std::endl;
+    std::cerr << std::dec;
+    std::cerr << "string: " << vals << std::endl;
+    return false;
+  }
+  return true;
+}
+
 
 void all_32bit_values() {
   char buffer[64];
@@ -25,28 +56,9 @@ void all_32bit_values() {
 
     {
       const char *string_end = to_string(v, buffer);
-      double result_value;
-      auto result = fast_float::from_chars(buffer, string_end, result_value);
-      if (result.ec != std::errc()) {
-        std::cerr << "parsing error ? " << buffer << std::endl;
-        abort();
-      }
-      if(copysign(1,result_value) != copysign(1,v)) {
-        std::cerr << buffer << std::endl;
-        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
-              << std::endl;
-        abort();
-      } else if (std::isnan(v)) {
-        if (!std::isnan(result_value)) {
-          std::cerr << "not nan" << buffer << std::endl;
-          abort();
-        }
-      } else if (result_value != v) {
-        std::cerr << "no match ? " << buffer << std::endl;
-        std::cout << "started with " << std::hexfloat << v << std::endl;
-        std::cout << "got back " << std::hexfloat << result_value << std::endl; 
-        std::cout << std::dec;
-        abort();
+      std::string s(buffer, size_t(string_end-buffer));
+      if(!basic_test_64bit(s,v)) {
+        return;
       }
     }
   }

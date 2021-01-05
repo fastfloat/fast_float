@@ -10,45 +10,38 @@
 
 namespace fast_float {
 
-fastfloat_really_inline bool is_integer(char c)  noexcept  { return (c >= '0' && c <= '9'); }
+// Next function can be micro-optimized, but compilers are entirely
+// able to optimize it well.
+fastfloat_really_inline bool is_integer(char c)  noexcept  { return c >= '0' && c <= '9'; }
 
 
-// credit: https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
+// credit  @aqrit
+fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
+  const uint64_t mask = 0x000000FF000000FF;
+  const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  val -= 0x3030303030303030;
+  val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+  val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+  return uint32_t(val);
+}
+
 fastfloat_really_inline uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
   uint64_t val;
   ::memcpy(&val, chars, sizeof(uint64_t));
-  val = (val & 0x0F0F0F0F0F0F0F0F) * 2561 >> 8;
-  val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
-  return uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
+  return parse_eight_digits_unrolled(val);
 }
 
+// credit @aqrit
 fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
-  return (((val & 0xF0F0F0F0F0F0F0F0) |
-           (((val + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4)) ==
-          0x3333333333333333);
+  return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
+     0x8080808080808080)); 
 }
-
 
 fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
   uint64_t val;
   ::memcpy(&val, chars, 8);
   return is_made_of_eight_digits_fast(val);
-}
-
-
-fastfloat_really_inline uint32_t parse_four_digits_unrolled(const char *chars)  noexcept  {
-  uint32_t val;
-  ::memcpy(&val, chars, sizeof(uint32_t));
-  val = (val & 0x0F0F0F0F) * 2561 >> 8;
-  return (val & 0x00FF00FF) * 6553601 >> 16;
-}
-
-fastfloat_really_inline bool is_made_of_four_digits_fast(const char *chars)  noexcept  {
-  uint32_t val;
-  ::memcpy(&val, chars, 4);
-  return (((val & 0xF0F0F0F0) |
-           (((val + 0x06060606) & 0xF0F0F0F0) >> 4)) ==
-          0x33333333);
 }
 
 struct parsed_number_string {
@@ -197,7 +190,6 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   }
   answer.lastmatch = p;
   answer.valid = true;
-
   answer.exponent = exponent;
   answer.mantissa = i;
   return answer;
@@ -207,11 +199,10 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
 // This function could be optimized. In particular, we could stop after 19 digits
 // and try to bail out. Furthermore, we should be able to recover the computed
 // exponent from the pass in parse_number_string.
-decimal parse_decimal(const char *p, const char *pend) noexcept {
+fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) noexcept {
   decimal answer;
   answer.num_digits = 0;
   answer.decimal_point = 0;
-  answer.negative = false;
   answer.truncated = false;
   // any whitespace has been skipped.
   answer.negative = (*p == '-');
@@ -229,10 +220,9 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
     answer.num_digits++;
     ++p;
   }
-  const char *first_after_period{};
   if ((p != pend) && (*p == '.')) {
     ++p;
-    first_after_period = p;
+    const char *first_after_period = p;
     // if we have not yet encountered a zero, we have to skip it as well
     if(answer.num_digits == 0) {
       // skip zeros
@@ -240,8 +230,9 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
        ++p;
       }
     }
+#if FASTFLOAT_IS_BIG_ENDIAN == 0
     // We expect that this loop will often take the bulk of the running time
-    // because when a value has lots of digits, these digits often 
+    // because when a value has lots of digits, these digits often
     while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
       uint64_t val;
       ::memcpy(&val, p, sizeof(uint64_t));
@@ -252,6 +243,7 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
       answer.num_digits += 8;
       p += 8;
     }
+#endif
     while ((p != pend) && is_integer(*p)) {
       if (answer.num_digits < max_digits) {
         answer.digits[answer.num_digits] = uint8_t(*p - '0');
@@ -275,16 +267,20 @@ decimal parse_decimal(const char *p, const char *pend) noexcept {
       uint8_t digit = uint8_t(*p - '0');
       if (exp_number < 0x10000) {
         exp_number = 10 * exp_number + digit;
-      }     
+      }    
       ++p;
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
   }
-  answer.decimal_point += answer.num_digits;
+  answer.decimal_point += int32_t(answer.num_digits);
   if(answer.num_digits > max_digits) {
     answer.truncated = true;
     answer.num_digits = max_digits;
   }
+  // In very rare cases, we may have fewer than 19 digits, we want to be able to reliably
+  // assume that all digits up to max_digit_without_overflow have been initialized.
+  for(uint32_t i = answer.num_digits; i < max_digit_without_overflow; i++) { answer.digits[i] = 0; }
+
   return answer;
 }
 } // namespace fast_float

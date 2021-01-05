@@ -1,4 +1,4 @@
-## fast_float number parsing library
+## fast_float number parsing library: 4x faster than strtod
 
 ![Ubuntu 20.04 CI (GCC 9)](https://github.com/lemire/fast_float/workflows/Ubuntu%2020.04%20CI%20(GCC%209)/badge.svg)
 ![Ubuntu 18.04 CI (GCC 7)](https://github.com/lemire/fast_float/workflows/Ubuntu%2018.04%20CI%20(GCC%207)/badge.svg)
@@ -10,7 +10,7 @@
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
 decimal values (e.g., `1.3e10`) into binary types. We provide exact rounding (including
-round to even). In our experience, these `fast_float` functions are faster than any other comparable number-parsing functions. 
+round to even). In our experience, these `fast_float` functions many times faster than comparable number-parsing functions from existing C++ standard libraries.
 
 Specifically, `fast_float` provides the following two functions with a C++17-like syntax (the library itself only requires C++11):
 
@@ -28,7 +28,7 @@ struct from_chars_result {
 ```
 
 It parses the character sequence [first,last) for a number. It parses floating-point numbers expecting
-a locale-indepent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
+a locale-independent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
 The resulting floating-point value is the closest floating-point values (using either float or double), 
 using the "round to even" convention for values that would otherwise fall right in-between two values.
 That is, we provide exact parsing according to the IEEE standard.
@@ -64,31 +64,40 @@ the type `fast_float::chars_format`. It is a bitset value: we check whether
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
-We support Visual Studio, macOS, Linux, freeBSD.
+We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
 
 ## Relation With Other Work
 
-The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an novel algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. 
+The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an updated algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. The fast_double_parser library is part of the [Microsoft LightGBM machine-learning framework](https://github.com/microsoft/LightGBM).
 
 ## Users
 
-This library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times.
+The fast_float library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times. It is also used by [Yandex ClickHouse](https://github.com/ClickHouse/ClickHouse).
 
 
 ## How fast is it?
 
 It can parse random floating-point numbers at a speed of 1 GB/s on some systems. We find that it is often twice as fast as the best available competitor, and many times faster than many standard-library implementations.
 
+<img src="http://lemire.me/blog/wp-content/uploads/2020/11/fastfloat_speed.png" width="400">
+
 ```
+$ ./build/benchmarks/benchmark 
 # parsing random integers in the range [0,1)
 volume = 2.09808 MB 
-netlib                                  :   294.33 MB/s (+/- 2.4 %)    14.03 Mint/s  
-strtod                                  :    86.53 MB/s (+/- 1.4 %)     4.12 Mint/s  
-abseil                                  :   521.66 MB/s (+/- 3.2 %)    24.86 Mint/s  
-fastfloat                               :  1061.86 MB/s (+/- 3.8 %)    50.61 Mint/s  
+netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s  
+doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s  
+strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s  
+abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s  
+fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s  
 ```
 
 See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.
+
+
+## Video
+
+[![Go Systems 2020](http://img.youtube.com/vi/AVXgvlMeIm4/0.jpg)](http://www.youtube.com/watch?v=AVXgvlMeIm4)<br />
 
 ## Using as a CMake dependency
 
@@ -128,6 +137,7 @@ locale-sensitive parsing.
 The performance is optimized for 19 or fewer significant digits. In practice, there should
 never be more than 17 digits since it is enough to identify exactly all possible 64-bit numbers (double).
 In fact, for many numbers, far fewer than 17 digits are needed.
+
 
 ## Credit
 
