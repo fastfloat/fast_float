@@ -99,7 +99,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     const char *truncated_integer_part = p;
     while ((p != pend) && is_integer(*p)) { p++; }
     answer.too_many_digits = (p != truncated_integer_part);
-    if (i > minimal_nineteen_digit_integer) {
+    if (i >= minimal_nineteen_digit_integer) {
       exponent = p - truncated_integer_part;
     }
     if((p != pend) && (*p == '.')) {
