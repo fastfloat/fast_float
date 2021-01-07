@@ -184,6 +184,9 @@ struct adjusted_mantissa {
   bool operator==(const adjusted_mantissa &o) const {
     return mantissa == o.mantissa && power2 == o.power2;
   }
+  bool operator!=(const adjusted_mantissa &o) const {
+    return mantissa != o.mantissa || power2 != o.power2;
+  }
 };
 
 struct decimal {
