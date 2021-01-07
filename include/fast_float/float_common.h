@@ -181,7 +181,6 @@ struct adjusted_mantissa {
   uint64_t mantissa{0};
   int power2{0}; // a negative value indicates an invalid result
   adjusted_mantissa() = default;
-  // bool operator==(const adjusted_mantissa &o) const = default;
   bool operator==(const adjusted_mantissa &o) const {
     return mantissa == o.mantissa && power2 == o.power2;
   }
