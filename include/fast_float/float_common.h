@@ -184,6 +184,9 @@ struct adjusted_mantissa {
   bool operator==(const adjusted_mantissa &o) const {
     return mantissa == o.mantissa && power2 == o.power2;
   }
+  bool operator!=(const adjusted_mantissa &o) const {
+    return mantissa != o.mantissa || power2 != o.power2;
+  }
 };
 
 struct decimal {
@@ -200,44 +203,6 @@ struct decimal {
   // Moves are allowed:
   decimal(decimal &&) = default;
   decimal &operator=(decimal &&other) = default;
-  // Generates a mantissa by truncating to 19 digits.
-  // This function should be reasonably fast.
-  // Note that the user is responsible to ensure that digits are
-  // initialized to zero when there are fewer than 19.
-  inline uint64_t to_truncated_mantissa() {
-#if FASTFLOAT_IS_BIG_ENDIAN == 1
-    uint64_t mantissa = 0;
-    for (uint32_t i = 0; i < max_digit_without_overflow;
-         i++) {
-      mantissa = mantissa * 10 + digits[i]; // can be accelerated
-    }
-    return mantissa;
-#else
-    uint64_t val;
-    // 8 first digits
-    ::memcpy(&val, digits, sizeof(uint64_t));
-    val = val * 2561 >> 8;
-    val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
-    uint64_t mantissa =
-        uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
-    // 8 more digits for a total of 16
-    ::memcpy(&val, digits + sizeof(uint64_t), sizeof(uint64_t));
-    val = val * 2561 >> 8;
-    val = (val & 0x00FF00FF00FF00FF) * 6553601 >> 16;
-    uint32_t eight_digits_value =
-        uint32_t((val & 0x0000FFFF0000FFFF) * 42949672960001 >> 32);
-    mantissa = 100000000 * mantissa + eight_digits_value;
-    for (uint32_t i = 2 * sizeof(uint64_t); i < max_digit_without_overflow;
-         i++) {
-      mantissa = mantissa * 10 + digits[i]; // can be accelerated
-    }
-    return mantissa;
-#endif
-  }
-  // Generate an exponent matching to_truncated_mantissa()
-  inline int32_t to_truncated_exponent() {
-    return decimal_point - int32_t(max_digit_without_overflow);
-  }
 };
 
 constexpr static double powers_of_ten_double[] = {

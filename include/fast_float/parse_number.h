@@ -66,6 +66,25 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
   answer.ptr = first;
   return answer;
 }
+
+template<typename T>
+fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
+  uint64_t word = am.mantissa;
+  word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
+  word = negative
+  ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+   if (std::is_same<T, float>::value) {
+     ::memcpy(&value, (char *)&word + 4, sizeof(T)); // extract value at offset 4-7 if float on big-endian
+   } else {
+     ::memcpy(&value, &word, sizeof(T));
+   }
+#else
+   // For little-endian systems:
+   ::memcpy(&value, &word, sizeof(T));
+#endif
+}
+
 } // namespace
 
 
@@ -92,31 +111,23 @@ from_chars_result from_chars(const char *first, const char *last,
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
   // Next is Clinger's fast path.
-  if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path()) {
+  if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path() && !pns.too_many_digits) {
     value = T(pns.mantissa);
     if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); }
     else { value = value * binary_format<T>::exact_power_of_ten(pns.exponent); }
     if (pns.negative) { value = -value; }
     return answer;
   }
-  adjusted_mantissa am = pns.too_many_digits ? parse_long_mantissa<binary_format<T>>(first,last) : compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
+  adjusted_mantissa am = compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
+  if(pns.too_many_digits) {
+    if(am != compute_float<binary_format<T>>(pns.exponent, pns.mantissa + 1)) {
+      am.power2 = -1; // value is invalid.
+    }
+  }
   // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
   // then we need to go the long way around again. This is very uncommon.
   if(am.power2 < 0) { am = parse_long_mantissa<binary_format<T>>(first,last); }
-  uint64_t word = am.mantissa;
-  word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
-  word = pns.negative
-  ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
-#if FASTFLOAT_IS_BIG_ENDIAN == 1
-   if (std::is_same<T, float>::value) {
-     ::memcpy(&value, (char *)&word + 4, sizeof(T)); // extract value at offset 4-7 if float on big-endian
-   } else {
-     ::memcpy(&value, &word, sizeof(T));
-   }
-#else
-   // For little-endian systems:
-   ::memcpy(&value, &word, sizeof(T));
-#endif
+  to_float(pns.negative, am, value);
   return answer;
 }
 
