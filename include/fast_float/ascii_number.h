@@ -262,9 +262,8 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
       if(*preverse == '0') { trailing_zeros++; };
       --preverse;
     }
-    answer.decimal_point += trailing_zeros;
-    answer.num_digits -= uint32_t(trailing_zeros);
     answer.decimal_point += int32_t(answer.num_digits);
+    answer.num_digits -= uint32_t(trailing_zeros);
   }
   if(answer.num_digits > max_digits) {
     answer.truncated = true;
