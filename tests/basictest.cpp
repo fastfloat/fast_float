@@ -89,7 +89,7 @@ bool check_file(std::string file_name) {
 TEST_CASE("supplemental") {
     std::string path = SUPPLEMENTAL_TEST_DATA_DIR;
     for (const auto & entry : std::filesystem::directory_iterator(path)) {
-        CHECK(check_file(entry.path()));
+        CHECK(check_file(entry.path().string()));
     }
 }
 
