@@ -38,7 +38,6 @@ function(fast_float_add_cpp_test TEST_NAME)
       target_compile_options(${TEST_NAME} PUBLIC -Wsign-compare -Wshadow -Wwrite-strings -Wpointer-arith -Winit-self -Wconversion -Wsign-conversion)
     endif()
     target_link_libraries(${TEST_NAME} PUBLIC fast_float doctest supplemental-data)
-    target_compile_features(${TEST_NAME} PUBLIC cxx_std_11)
 endfunction(fast_float_add_cpp_test)
 
 

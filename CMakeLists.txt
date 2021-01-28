@@ -1,10 +1,17 @@
 cmake_minimum_required(VERSION 3.9)
 
 project(fast_float VERSION 0.7.0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
-
+if(FASTFLOAT_TEST)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+  enable_testing()
+  add_subdirectory(tests)
+else(FASTFLOAT_TEST)
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  message(STATUS "Tests are disabled. Set FASTFLOAT_TEST to ON to run tests.")
+endif(FASTFLOAT_TEST)
 
 option(FASTFLOAT_SANITIZE "Sanitize addresses" OFF)
 
@@ -28,9 +35,4 @@ if(FASTFLOAT_SANITIZE)
   endif()
 endif()
 
-if(FASTFLOAT_TEST)
-  enable_testing()
-  add_subdirectory(tests)
-else(FASTFLOAT_TEST)
-  message(STATUS "Tests are disabled. Set FASTFLOAT_TEST to ON to run tests.")
-endif(FASTFLOAT_TEST)
+

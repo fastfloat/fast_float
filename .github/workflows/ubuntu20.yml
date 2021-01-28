@@ -9,6 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Legacy/x86 compilers cause CI failures.
           #- {cxx: -DCMAKE_CXX_COMPILER=g++-8, arch:                         }
           - {cxx:                           , arch:                         } # default=gcc9
           #- {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9

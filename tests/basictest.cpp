@@ -26,19 +26,21 @@
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
-
 #if defined __has_include
 #if __has_include (<filesystem>)
 #else
+// filesystem is not available
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 #else
+// __has_include is not available
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
 // We also only run these tests on little endian systems.
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
+
 #include <iostream>
 #include <filesystem>
 #include <charconv>
@@ -105,7 +107,6 @@ TEST_CASE("supplemental") {
         CHECK(check_file(entry.path().string()));
     }
 }
-
 #endif
 
 
