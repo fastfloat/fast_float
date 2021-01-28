@@ -22,13 +22,16 @@
 #endif
 #endif
 
+
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
+#define FASTFLOAT_ODDPLATFORM 1
+#endif
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
 // We also only run these tests on little endian systems.
-#if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0)
+#if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
 #include <iostream>
 #include <filesystem>
 #include <charconv>
-
 
 // return true on succcess
 bool check_file(std::string file_name) {
