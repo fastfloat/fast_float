@@ -73,6 +73,7 @@ We support Visual Studio, macOS, Linux, freeBSD. We support big and little endia
 
 ## Other programming languages
 
+- [There is an R binding](https://github.com/eddelbuettel/rcppfastfloat) called `rcppfastfloat`.
 - [There is a Rust port of the fast_float library](https://github.com/aldanor/fast-float-rust/) called `fast-float-rust`.
 
 
