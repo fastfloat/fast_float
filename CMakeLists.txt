@@ -26,7 +26,12 @@ endif()
 
 
 add_library(fast_float INTERFACE)
-target_include_directories(fast_float INTERFACE include/)
+target_include_directories(
+  fast_float
+  INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 if(FASTFLOAT_SANITIZE)
   target_compile_options(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
   target_link_libraries(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
@@ -35,4 +40,24 @@ if(FASTFLOAT_SANITIZE)
   endif()
 endif()
 
+include(CMakePackageConfigHelpers)
 
+set(FASTFLOAT_VERSION_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfigVersion.cmake")
+set(FASTFLOAT_PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfig.cmake")
+set(FASTFLOAT_INSTALL_DIR "share/FastFloat")
+
+write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+configure_package_config_file("cmake/config.cmake.in"
+                              "${FASTFLOAT_PROJECT_CONFIG}"
+                              INSTALL_DESTINATION "${FASTFLOAT_INSTALL_DIR}")
+
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/fast_float" DESTINATION "include")
+install(FILES "${FASTFLOAT_PROJECT_CONFIG}" "${FASTFLOAT_VERSION_CONFIG}" DESTINATION "${FASTFLOAT_INSTALL_DIR}")
+install(EXPORT ${PROJECT_NAME}-targets NAMESPACE FastFloat:: DESTINATION "${FASTFLOAT_INSTALL_DIR}")
+
+install(TARGETS fast_float 
+        EXPORT ${PROJECT_NAME}-targets
+        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+)
