@@ -66,6 +66,17 @@ The default is  `fast_float::chars_format::general` which allows both `fixed` an
 
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
 
+## Reference
+
+- Daniel Lemire, [Number Parsing at a Gigabyte per Second](https://arxiv.org/abs/2101.11408), arXiv:2101.11408
+
+
+## Other programming languages
+
+- [There is an R binding](https://github.com/eddelbuettel/rcppfastfloat) called `rcppfastfloat`.
+- [There is a Rust port of the fast_float library](https://github.com/aldanor/fast-float-rust/) called `fast-float-rust`.
+
+
 ## Relation With Other Work
 
 The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an updated algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. The fast_double_parser library is part of the [Microsoft LightGBM machine-learning framework](https://github.com/microsoft/LightGBM).

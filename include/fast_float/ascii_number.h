@@ -249,6 +249,26 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     }
     answer.decimal_point = int32_t(first_after_period - p);
   }
+  // We want num_digits to be the number of significant digits, excluding
+  // leading *and* trailing zeros! Otherwise the truncated flag later is
+  // going to be misleading.
+  if(answer.num_digits > 0) {
+    // We potentially need the answer.num_digits > 0 guard because we
+    // prune leading zeros. So with answer.num_digits > 0, we know that
+    // we have at least one non-zero digit.
+    const char *preverse = p - 1;
+    int32_t trailing_zeros = 0;
+    while ((*preverse == '0') || (*preverse == '.')) {
+      if(*preverse == '0') { trailing_zeros++; };
+      --preverse;
+    }
+    answer.decimal_point += int32_t(answer.num_digits);
+    answer.num_digits -= uint32_t(trailing_zeros);
+  }
+  if(answer.num_digits > max_digits) {
+    answer.truncated = true;
+    answer.num_digits = max_digits;
+  }
   if ((p != pend) && (('e' == *p) || ('E' == *p))) {
     ++p;
     bool neg_exp = false;
@@ -267,11 +287,6 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
       ++p;
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
-  }
-  answer.decimal_point += int32_t(answer.num_digits);
-  if(answer.num_digits > max_digits) {
-    answer.truncated = true;
-    answer.num_digits = max_digits;
   }
   // In very rare cases, we may have fewer than 19 digits, we want to be able to reliably
   // assume that all digits up to max_digit_without_overflow have been initialized.

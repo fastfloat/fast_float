@@ -4,6 +4,110 @@
 
 #include "fast_float/fast_float.h"
 #include <iomanip>
+#include <string>
+
+#ifndef SUPPLEMENTAL_TEST_DATA_DIR
+#define SUPPLEMENTAL_TEST_DATA_DIR "data/"
+#endif
+
+#ifndef __cplusplus
+#error fastfloat requires a C++ compiler
+#endif
+
+#ifndef FASTFLOAT_CPLUSPLUS
+#if defined(_MSVC_LANG) && !defined(__clang__)
+#define FASTFLOAT_CPLUSPLUS (_MSC_VER == 1900 ? 201103L : _MSVC_LANG)
+#else
+#define FASTFLOAT_CPLUSPLUS __cplusplus
+#endif
+#endif
+
+
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
+#define FASTFLOAT_ODDPLATFORM 1
+#endif
+#if defined __has_include
+#if __has_include (<filesystem>)
+#else
+// filesystem is not available
+#define FASTFLOAT_ODDPLATFORM 1
+#endif
+#else
+// __has_include is not available
+#define FASTFLOAT_ODDPLATFORM 1
+#endif
+
+// C++ 17 because it is otherwise annoying to browse all files in a directory.
+// We also only run these tests on little endian systems.
+#if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
+
+#include <iostream>
+#include <filesystem>
+#include <charconv>
+
+// return true on succcess
+bool check_file(std::string file_name) {
+  std::cout << "Checking " << file_name << std::endl;
+  size_t number{0};
+  std::fstream newfile(file_name, std::ios::in);
+  if (newfile.is_open()) {
+    std::string str;
+    while (std::getline(newfile, str)) {
+      if (str.size() > 0) {
+        // Read 32-bit hex
+        uint32_t float32;
+        auto r32 = std::from_chars(str.data() + 5, str.data() + str.size(),
+                                   float32, 16);
+        if(r32.ec != std::errc()) { std::cerr << "32-bit parsing failure\n"; return false; }
+        // Read 64-bit hex
+        uint64_t float64;
+        auto r64 = std::from_chars(str.data() + 14, str.data() + str.size(),
+                                   float64, 16);
+        if(r64.ec != std::errc()) { std::cerr << "64-bit parsing failure\n"; return false; }
+        // The string to parse:
+        const char *number_string = str.data() + 31;
+        const char *end_of_string = str.data() + str.size();
+        // Parse as 32-bit float
+        float parsed_32;
+        auto fast_float_r32 = fast_float::from_chars(number_string, end_of_string, parsed_32);
+        if(fast_float_r32.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
+        // Parse as 64-bit float
+        double parsed_64;
+        auto fast_float_r64 = fast_float::from_chars(number_string, end_of_string, parsed_64);
+        if(fast_float_r64.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
+        // Convert the floats to unsigned ints.
+        uint32_t float32_parsed;
+        uint64_t float64_parsed;
+        ::memcpy(&float32_parsed, &parsed_32, sizeof(parsed_32));
+        ::memcpy(&float64_parsed, &parsed_64, sizeof(parsed_64));
+        // Compare with expected results
+        if (float32_parsed != float32) {
+          std::cout << "bad 32 " << str << std::endl;
+          return false;
+        }
+        if (float64_parsed != float64) {
+          std::cout << "bad 64 " << str << std::endl;
+          return false;
+        }
+        number++;
+      }
+    }
+    std::cout << "checked " << std::defaultfloat << number << " values" << std::endl;
+    newfile.close(); // close the file object
+  } else {
+    std::cout << "Could not read  " << file_name << std::endl;
+    return false;
+  }
+  return true;
+}
+
+TEST_CASE("supplemental") {
+    std::string path = SUPPLEMENTAL_TEST_DATA_DIR;
+    for (const auto & entry : std::filesystem::directory_iterator(path)) {
+        CHECK(check_file(entry.path().string()));
+    }
+}
+#endif
 
 
 TEST_CASE("leading_zeroes") {
@@ -238,6 +342,12 @@ uint64_t get_mantissa(double f) {
 }
 
 
+std::string append_zeros(std::string str, size_t number_of_zeros) {
+  std::string answer(str);
+  for(size_t i = 0; i < number_of_zeros; i++) { answer += "0"; }
+  return answer;
+}
+
 template<class T>
 void basic_test(std::string str, T expected) {
   T actual;
@@ -288,6 +398,12 @@ TEST_CASE("64bit.inf") {
 }
 
 TEST_CASE("64bit.general") {
+  verify("9007199254740993.0", 0x1p+53);
+  verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
+  verify(append_zeros("9007199254740993.0",1000), 0x1p+53);
+  verify("10000000000000000000", 0x1.158e460913dp+63);
+  verify("10000000000000000000000000000001000000000000", 0x1.cb2d6f618c879p+142);
+  verify("10000000000000000000000000000000000000000001", 0x1.cb2d6f618c879p+142);
   verify("1.1920928955078125e-07", 1.1920928955078125e-07);
   verify("9355950000000000000.00000000000000000000000000000000001844674407370955161600000184467440737095516161844674407370955161407370955161618446744073709551616000184467440737095516166000001844674407370955161618446744073709551614073709551616184467440737095516160001844674407370955161601844674407370955674451616184467440737095516140737095516161844674407370955161600018446744073709551616018446744073709551611616000184467440737095001844674407370955161600184467440737095516160018446744073709551168164467440737095516160001844073709551616018446744073709551616184467440737095516160001844674407536910751601611616000184467440737095001844674407370955161600184467440737095516160018446744073709551616184467440737095516160001844955161618446744073709551616000184467440753691075160018446744073709",0x1.03ae05e8fca1cp+63);
   verify("-0",-0.0);
@@ -355,6 +471,14 @@ TEST_CASE("32bit.inf") {
 }
 
 TEST_CASE("32bit.general") {
+  verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125", 0x1.2ced3p+0f);
+  verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38", 0x1.fffff8p-127f);
+  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
+  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
+  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
+  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655) + "e-38", 0x1.fffff8p-127f);
+  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656) + "e-38", 0x1.fffff8p-127f);
+  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000) + "e-38", 0x1.fffff8p-127f);
   verify32(1.00000006e+09f);
   verify32(1.4012984643e-45f);
   verify32(1.1754942107e-38f);
