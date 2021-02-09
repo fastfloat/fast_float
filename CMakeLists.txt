@@ -42,9 +42,9 @@ endif()
 
 include(CMakePackageConfigHelpers)
 
-set(FASTFLOAT_VERSION_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/fast_float-config-version.cmake")
-set(FASTFLOAT_PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/fast_float-config.cmake")
-set(FASTFLOAT_INSTALL_DIR "share/fast_float")
+set(FASTFLOAT_VERSION_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfigVersion.cmake")
+set(FASTFLOAT_PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfig.cmake")
+set(FASTFLOAT_INSTALL_DIR "share/FastFloat")
 
 write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
 configure_package_config_file("cmake/config.cmake.in"
@@ -53,10 +53,10 @@ configure_package_config_file("cmake/config.cmake.in"
 
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/fast_float" DESTINATION "include")
 install(FILES "${FASTFLOAT_PROJECT_CONFIG}" "${FASTFLOAT_VERSION_CONFIG}" DESTINATION "${FASTFLOAT_INSTALL_DIR}")
-install(EXPORT fast_float-targets NAMESPACE fast_float:: DESTINATION "${FASTFLOAT_INSTALL_DIR}")
+install(EXPORT ${PROJECT_NAME}-targets NAMESPACE FastFloat:: DESTINATION "${FASTFLOAT_INSTALL_DIR}")
 
 install(TARGETS fast_float 
-        EXPORT fast_float-targets
+        EXPORT ${PROJECT_NAME}-targets
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
