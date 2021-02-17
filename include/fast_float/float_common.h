@@ -32,6 +32,8 @@
 #else
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #include <machine/endian.h>
+#elif defined(sun) || defined(__sun)
+#include <sys/byteorder.h>
 #else
 #include <endian.h>
 #endif
