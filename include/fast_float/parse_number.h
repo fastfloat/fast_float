@@ -49,7 +49,7 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
       }
 
       if (fastfloat_strncasecmp(first, "+inf", 4) || fastfloat_strncasecmp(first, "-inf", 4)) {
-        if ((last - first >= 8) && fastfloat_strncasecmp(first + 1, "infinity", 8)) {
+        if ((last - first >= 9) && fastfloat_strncasecmp(first + 1, "infinity", 8)) {
           answer.ptr = first + 9;
         } else {
           answer.ptr = first + 4;
