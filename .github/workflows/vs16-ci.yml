@@ -15,20 +15,13 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      - name: Configure
+      - name: Use cmake
         run: |
-          mkdir build
-          cd build && cmake -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
-      - name: Build
-        run: cmake --build build --config Release --parallel
-      - name: Run tests
-        run: |
-          cd build
-          ctest -C Release --output-on-failure
-      - name: Install
-        run: |
-          cmake --install build --config Release
-      - name: Test Installation
-        run: |
-          cmake -G "${{matrix.gen}}" -A ${{matrix.arch}}  -B build_install_test tests/installation_tests/find
-          cmake --build build_install_test --config Release
+          mkdir build &&
+          cd build &&
+          cmake  ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination ..  &&
+          cmake --build .   &&
+          ctest --output-on-failure  &&
+          cmake --install . &&
+          cd ../tests/installation_tests/find  &&
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .
