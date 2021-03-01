@@ -22,48 +22,43 @@ namespace {
 template <typename T>
 from_chars_result parse_infnan(const char *first, const char *last, T &value)  noexcept  {
   from_chars_result answer;
+  answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
+  bool minusSign = false;
+  if (*first == '-') { // assume first < last, so dereference without checks
+      minusSign = true;
+      ++first;
+  } else if( *first == '+' ) { // C++17 20.19.3.7 explicitly forbids '+' here, but anyway
+      ++first;
+  }
   if (last - first >= 3) {
     if (fastfloat_strncasecmp(first, "nan", 3)) {
-      answer.ptr = first + 3;
-      value = std::numeric_limits<T>::quiet_NaN();
+      answer.ptr = (first += 3);
+      value = minusSign ? -std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::quiet_NaN();
+      // Check for possible nan(n-char-seq-opt), C++17 20.19.3.7, C11 7.20.1.3.3. At least MSVC produces nan(ind) and nan(snan).
+      if(first != last && *first == '(') {
+        for(const char* ptr = first + 1; ptr != last; ++ptr) {
+          if (*ptr == ')') {
+            answer.ptr = ptr + 1; // valid nan(n-char-seq-opt)
+            break;
+          }
+          else if(!(('a' <= *ptr && *ptr <= 'z') || ('A' <= *ptr && *ptr <= 'Z') || ('0' <= *ptr && *ptr <= '9') || *ptr == '_'))
+            break; // forbidden char, not nan(n-char-seq-opt)
+        }
+      }
       return answer;
     }
     if (fastfloat_strncasecmp(first, "inf", 3)) {
-      if ((last - first >= 8) && fastfloat_strncasecmp(first, "infinity", 8)) {
+      if ((last - first >= 8) && fastfloat_strncasecmp(first + 3, "inity", 5)) {
         answer.ptr = first + 8;
       } else {
         answer.ptr = first + 3;
       }
-      value = std::numeric_limits<T>::infinity();
+      value = minusSign ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::infinity();
       return answer;
-    }
-    if (last - first >= 4) {
-      if (fastfloat_strncasecmp(first, "+nan", 4) || fastfloat_strncasecmp(first, "-nan", 4)) {
-        answer.ptr = first + 4;
-        value = std::numeric_limits<T>::quiet_NaN();
-        if (first[0] == '-') {
-          value = -value;
-        }
-        return answer;
-      }
-
-      if (fastfloat_strncasecmp(first, "+inf", 4) || fastfloat_strncasecmp(first, "-inf", 4)) {
-        if ((last - first >= 9) && fastfloat_strncasecmp(first + 1, "infinity", 8)) {
-          answer.ptr = first + 9;
-        } else {
-          answer.ptr = first + 4;
-        }
-        value = std::numeric_limits<T>::infinity();
-        if (first[0] == '-') {
-          value = -value;
-        }
-        return answer;
-      }
     }
   }
   answer.ec = std::errc::invalid_argument;
-  answer.ptr = first;
   return answer;
 }
 
