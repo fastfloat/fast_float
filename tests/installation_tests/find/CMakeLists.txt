@@ -5,7 +5,7 @@ project(test_simdjson_install VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(fast_float REQUIRED)
+find_package(FastFloat REQUIRED)
 
 
 
@@ -17,7 +17,7 @@ int main() {
     const std::string input =  \"3.1416 xyz \";
     double result;
     auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
-    if(answer.ec != std::errc()) { std::cerr << \"parsing failure\n\"; return EXIT_FAILURE; }
+    if(answer.ec != std::errc()) { std::cerr << \"parsing failure\\n\"; return EXIT_FAILURE; }
     std::cout << \"parsed the number \" << result << std::endl;
     return EXIT_SUCCESS;
 }")
@@ -25,4 +25,4 @@ int main() {
 
 
 add_executable(repro main.cpp)
-target_link_libraries(repro PUBLIC fast_float::fast_float)
+target_link_libraries(repro PUBLIC FastFloat::fast_float)
