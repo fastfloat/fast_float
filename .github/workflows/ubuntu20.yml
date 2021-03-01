@@ -15,20 +15,13 @@ jobs:
           #- {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9
     steps:
       - uses: actions/checkout@v2
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.4
-        with:
-          cmake-version: '3.11.x'
-      #- name: install older compilers
-      #  run: |
-      #    sudo -E dpkg --add-architecture i386
-      #    sudo -E apt-get update
-      #    sudo -E apt-get install -y g++-8 g++-8-multilib g++-multilib linux-libc-dev:i386 libc6:i386 libc6-dev:i386 libc6-dbg:i386
-      - name: Prepare build dir
-        run: mkdir build
-      - name: Configure
-        run: cd build && cmake ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
-      - name: Build
-        run: cmake --build build
-      - name: Run basic tests
-        run: cd build && ctest --output-on-failure -R basictest
+      - name: Use cmake
+        run: |
+          mkdir build &&
+          cd build &&
+          cmake  ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination ..  &&
+          cmake --build .   &&
+          ctest --output-on-failure  &&
+          cmake --install . &&
+          cd ../tests/installation_tests/find &&
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .

@@ -21,7 +21,14 @@ jobs:
           cd build && cmake -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
       - name: Build
         run: cmake --build build --config Release --parallel
-      - name: Run basic tests
+      - name: Run tests
         run: |
           cd build
-          ctest -C Release --output-on-failure -R basictest
+          ctest -C Release --output-on-failure
+      - name: Install
+        run: |
+          cmake --install build --config Release
+      - name: Test Installation
+        run: |
+          cmake -G "${{matrix.gen}}" -A ${{matrix.arch}}  -B build_install_test tests/installation_tests/find
+          cmake --build build_install_test --config Release
