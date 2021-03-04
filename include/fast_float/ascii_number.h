@@ -62,7 +62,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   answer.valid = false;
   answer.too_many_digits = false;
   answer.negative = (*p == '-');
-  if ((*p == '-') || (*p == '+')) {
+  if (*p == '-') { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
     ++p;
     if (p == pend) {
       return answer;
@@ -118,7 +118,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     if ((p != pend) && ('-' == *p)) {
       neg_exp = true;
       ++p;
-    } else if ((p != pend) && ('+' == *p)) {
+    } else if ((p != pend) && ('+' == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
       ++p;
     }
     if ((p == pend) || !is_integer(*p)) {
@@ -200,9 +200,8 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
   answer.num_digits = 0;
   answer.decimal_point = 0;
   answer.truncated = false;
-  // any whitespace has been skipped.
   answer.negative = (*p == '-');
-  if ((*p == '-') || (*p == '+')) {
+  if (*p == '-') { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
     ++p;
   }
   // skip leading zeroes
@@ -275,7 +274,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     if ((p != pend) && ('-' == *p)) {
       neg_exp = true;
       ++p;
-    } else if ((p != pend) && ('+' == *p)) {
+    } else if ((p != pend) && ('+' == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
       ++p;
     }
     int32_t exp_number = 0; // exponential part
