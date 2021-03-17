@@ -64,6 +64,8 @@ the type `fast_float::chars_format`. It is a bitset value: we check whether
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
+The library seeks to follow the C++17 (see 20.19.3.(7.1))  specification. In particular, it forbids leading spaces and the leading '+' sign.
+
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
 
 ## Reference
