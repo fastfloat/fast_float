@@ -25,10 +25,8 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
   bool minusSign = false;
-  if (*first == '-') { // assume first < last, so dereference without checks
+  if (*first == '-') { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
       minusSign = true;
-      ++first;
-  } else if( *first == '+' ) { // C++17 20.19.3.7 explicitly forbids '+' here, but anyway
       ++first;
   }
   if (last - first >= 3) {
@@ -91,9 +89,6 @@ from_chars_result from_chars(const char *first, const char *last,
 
 
   from_chars_result answer;
-  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
-    first++;
-  }
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
