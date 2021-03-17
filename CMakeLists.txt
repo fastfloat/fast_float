@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(fast_float VERSION 0.9.0 LANGUAGES CXX)
+project(fast_float VERSION 1.0.0 LANGUAGES CXX)
 option(FASTFLOAT_TEST "Enable tests" OFF)
 if(FASTFLOAT_TEST)
   set(CMAKE_CXX_STANDARD 17)
