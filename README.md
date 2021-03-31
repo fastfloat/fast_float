@@ -142,18 +142,6 @@ target_link_libraries(myprogram PUBLIC fast_float)
 ```
 
 
-## Requirements and Limitations
-
-In many cases, this library can be used as a drop-in replacement for the C++17 `from_chars` function, especially when performance is a concerned. Thus we expect C++17 support. Though it might be reasonable to want C++17 features as part of old compilers, support old systems is not an objective of this library.
-
-The `from_chars` is meant to be locale-independent. Thus it is not an objective of this library to support
-locale-sensitive parsing.
-
-The performance is optimized for 19 or fewer significant digits. In practice, there should
-never be more than 17 digits since it is enough to identify exactly all possible 64-bit numbers (double).
-In fact, for many numbers, far fewer than 17 digits are needed.
-
-
 ## Credit
 
 Though this work is inspired by many different people, this work benefited especially from exchanges with 
