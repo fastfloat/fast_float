@@ -62,6 +62,32 @@
 #define fastfloat_really_inline inline __attribute__((always_inline))
 #endif
 
+
+#ifndef __cplusplus
+#error fast_float requires a C++ compiler
+#endif
+
+#ifndef FASTFLOAT_CPLUSPLUS
+#if defined(_MSVC_LANG) && !defined(__clang__)
+#define FASTFLOAT_CPLUSPLUS (_MSC_VER == 1900 ? 201103L : _MSVC_LANG)
+#else
+#define FASTFLOAT_CPLUSPLUS __cplusplus
+#endif
+#endif
+
+// C++ 17
+#if !defined(FASTFLOAT_CPLUSPLUS17) && (FASTFLOAT_CPLUSPLUS >= 201703L)
+#define FASTFLOAT_CPLUSPLUS17 1
+#endif
+
+#ifndef FASTFLOAT_CPLUSPLUS17_INLINE
+#if FASTFLOAT_CPLUSPLUS17
+#define FASTFLOAT_CPLUSPLUS17_INLINE inline
+#else
+#define FASTFLOAT_CPLUSPLUS17_INLINE
+#endif
+#endif
+
 namespace fast_float {
 
 // Compares two ASCII strings in a case insensitive manner.

@@ -31,6 +31,8 @@ namespace fast_float {
 constexpr int smallest_power_of_five = -342;
 constexpr int largest_power_of_five = 308;
 // Powers of five from 5^-342 all the way to 5^308 rounded toward one.
+// For C++17, we define power_of_five_128 once.
+FASTFLOAT_CPLUSPLUS17_INLINE
 const uint64_t power_of_five_128[]= {
         0xeef453d6923bd65a,0x113faa2906a13b3f,
         0x9558b4661b6565f8,0x4ac7ca59a424c507,
