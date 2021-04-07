@@ -40,7 +40,7 @@ value128 compute_product_approximation(int64_t q, uint64_t w) {
   return firstproduct;
 }
 
-namespace {
+namespace detail {
 /**
  * For q in (0,350), we have that
  *  f = (((152170 + 65536) * q ) >> 16);
@@ -59,7 +59,7 @@ namespace {
   fastfloat_really_inline int power(int q)  noexcept  {
     return (((152170 + 65536) * q) >> 16) + 63;
   }
-} // namespace
+} // namespace detail
 
 
 // w * 10 ** q
@@ -114,7 +114,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
 
   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
 
-  answer.power2 = int(power(int(q)) + upperbit - lz - binary::minimum_exponent());
+  answer.power2 = int(detail::power(int(q)) + upperbit - lz - binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal?
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if(-answer.power2 + 1 >= 64) { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.

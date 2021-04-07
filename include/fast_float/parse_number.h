@@ -13,7 +13,7 @@
 namespace fast_float {
 
 
-namespace {
+namespace detail {
 /**
  * Special case +inf, -inf, nan, infinity, -infinity.
  * The case comparisons could be made much faster given that we know that the
@@ -78,7 +78,7 @@ fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &va
 #endif
 }
 
-} // namespace
+} // namespace detail
 
 
 
@@ -96,7 +96,7 @@ from_chars_result from_chars(const char *first, const char *last,
   }
   parsed_number_string pns = parse_number_string(first, last, fmt);
   if (!pns.valid) {
-    return parse_infnan(first, last, value);
+    return detail::parse_infnan(first, last, value);
   }
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
@@ -117,7 +117,7 @@ from_chars_result from_chars(const char *first, const char *last,
   // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
   // then we need to go the long way around again. This is very uncommon.
   if(am.power2 < 0) { am = parse_long_mantissa<binary_format<T>>(first,last); }
-  to_float(pns.negative, am, value);
+  detail::to_float(pns.negative, am, value);
   return answer;
 }
 
