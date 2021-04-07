@@ -20,18 +20,18 @@ namespace fast_float {
 template <int bit_precision>
 fastfloat_really_inline
 value128 compute_product_approximation(int64_t q, uint64_t w) {
-  const int index = 2 * int(q - smallest_power_of_five);
+  const int index = 2 * int(q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact because
   // The line value128 firstproduct = full_multiplication(w, power_of_five_128[index]);
   // gives the exact answer.
-  value128 firstproduct = full_multiplication(w, power_of_five_128[index]);
+  value128 firstproduct = full_multiplication(w, powers::power_of_five_128[index]);
   static_assert((bit_precision >= 0) && (bit_precision <= 64), " precision should  be in (0,64]");
   constexpr uint64_t precision_mask = (bit_precision < 64) ?
                (uint64_t(0xFFFFFFFFFFFFFFFF) >> bit_precision)
                : uint64_t(0xFFFFFFFFFFFFFFFF);
   if((firstproduct.high & precision_mask) == precision_mask) { // could further guard with  (lower + w < lower)
     // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
-    value128 secondproduct = full_multiplication(w, power_of_five_128[index + 1]);
+    value128 secondproduct = full_multiplication(w, powers::power_of_five_128[index + 1]);
     firstproduct.low += secondproduct.high;
     if(secondproduct.high > firstproduct.low) {
       firstproduct.high++;
@@ -83,7 +83,7 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
     answer.mantissa = 0;
     return answer;
   }
-  // At this point in time q is in [smallest_power_of_five, largest_power_of_five].
+  // At this point in time q is in [powers::smallest_power_of_five, powers::largest_power_of_five].
 
   // We want the most significant bit of i to be 1. Shift if needed.
   int lz = leading_zeroes(w);
