@@ -398,6 +398,7 @@ TEST_CASE("64bit.inf") {
 }
 
 TEST_CASE("64bit.general") {
+  verify("-2.2222222222223e-322",-0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
   verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
   verify(append_zeros("9007199254740993.0",1000), 0x1p+53);
