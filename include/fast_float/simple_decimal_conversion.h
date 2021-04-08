@@ -273,14 +273,14 @@ adjusted_mantissa compute_float(decimal &d) {
   }
   static const uint32_t max_shift = 60;
   static const uint32_t num_powers = 19;
-  static const uint8_t powers[19] = {
+  static const uint8_t decimal_powers[19] = {
       0,  3,  6,  9,  13, 16, 19, 23, 26, 29, //
       33, 36, 39, 43, 46, 49, 53, 56, 59,     //
   };
   int32_t exp2 = 0;
   while (d.decimal_point > 0) {
     uint32_t n = uint32_t(d.decimal_point);
-    uint32_t shift = (n < num_powers) ? powers[n] : max_shift;
+    uint32_t shift = (n < num_powers) ? decimal_powers[n] : max_shift;
     detail::decimal_right_shift(d, shift);
     if (d.decimal_point < -decimal_point_range) {
       // should be zero
@@ -300,7 +300,7 @@ adjusted_mantissa compute_float(decimal &d) {
       shift = (d.digits[0] < 2) ? 2 : 1;
     } else {
       uint32_t n = uint32_t(-d.decimal_point);
-      shift = (n < num_powers) ? powers[n] : max_shift;
+      shift = (n < num_powers) ? decimal_powers[n] : max_shift;
     }
     detail::decimal_left_shift(d, shift);
     if (d.decimal_point > decimal_point_range) {
