@@ -24,4 +24,6 @@ jobs:
           ctest --output-on-failure  &&
           cmake --install . &&
           cd ../tests/installation_tests/find &&
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build . &&
+          cd ../../issue72_installation  &&
           mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .
