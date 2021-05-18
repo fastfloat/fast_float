@@ -62,3 +62,4 @@ if (FASTFLOAT_EXHAUSTIVE)
   fast_float_add_cpp_test(random64)
 endif(FASTFLOAT_EXHAUSTIVE)
 
+add_subdirectory(build_tests)
