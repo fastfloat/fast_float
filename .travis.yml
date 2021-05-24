@@ -10,6 +10,8 @@ env:
   global:
     - fastfloat_DEPENDENCY_CACHE_DIR=$HOME/.dep_cache
 
+services:
+  - docker
 
 # the ppc64le and s390x images use cmake 3.10, but fast_float requires 3.11.
 # so we compile cmake from source in those images.
@@ -186,8 +188,22 @@ matrix:
         - SANITIZE="on"
       compiler: clang-10-sanitize
 
+    - arch: amd64
+      os: linux
+      env:
+        - TOOLCHAIN="mips64"
+
+    - arch: amd64
+      os: linux
+      env:
+        - TOOLCHAIN="riscv64"
+
 before_install:
   - eval "${COMPILER}"
+  - |
+    if [ "$TOOLCHAIN" != "" ] ; then
+      docker pull ahuszagh/cross:"$TOOLCHAIN"
+    fi
 
 install:
   - |
@@ -218,8 +234,9 @@ install:
   - ${CXX} --version
 
 script:
-  - mkdir build
-  - cd build
-  - cmake -DFASTFLOAT_TEST=ON  ..
-  - make -j2
-  - ctest --output-on-failure -R basictest
+  - |
+    if [ "$TOOLCHAIN" != "" ] ; then
+      docker run -v "$(pwd)":/ff ahuszagh/cross:"$TOOLCHAIN" /bin/bash -c "cd ff && ci/script.sh $TOOLCHAIN"
+    else
+      ci/script.sh
+    fi
