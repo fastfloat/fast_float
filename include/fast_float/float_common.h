@@ -17,7 +17,18 @@
      || defined(__MINGW32__))
 #define FASTFLOAT_32BIT
 #else
-#error Unknown platform (not 32-bit, not 64-bit?)
+  // Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
+  // We can never tell the register width, but the SIZE_MAX is a good approximation.
+  // UINTPTR_MAX and INTPTR_MAX are optional, so avoid them for max portability.
+  #if SIZE_MAX == 0xffff
+    #error Unknown platform (16-bit, unsupported)
+  #elif SIZE_MAX == 0xffffffff
+    #define FASTFLOAT_32BIT
+  #elif SIZE_MAX == 0xffffffffffffffff
+    #define FASTFLOAT_64BIT
+  #else
+    #error Unknown platform (not 32-bit, not 64-bit?)
+  #endif
 #endif
 
 #if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__))
