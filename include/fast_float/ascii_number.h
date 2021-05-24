@@ -14,6 +14,34 @@ namespace fast_float {
 // able to optimize it well.
 fastfloat_really_inline bool is_integer(char c)  noexcept  { return c >= '0' && c <= '9'; }
 
+fastfloat_really_inline uint64_t byteswap(uint64_t val) {
+  return (val & 0xFF00000000000000) >> 56
+    | (val & 0x00FF000000000000) >> 40
+    | (val & 0x0000FF0000000000) >> 24
+    | (val & 0x000000FF00000000) >> 8
+    | (val & 0x00000000FF000000) << 8
+    | (val & 0x0000000000FF0000) << 24
+    | (val & 0x000000000000FF00) << 40
+    | (val & 0x00000000000000FF) << 56;
+}
+
+fastfloat_really_inline uint64_t read_u64(const char *chars) {
+  uint64_t val;
+  ::memcpy(&val, chars, sizeof(uint64_t));
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+  // Need to read as-if the number was in little-endian order.
+  val = byteswap(val);
+#endif
+  return val;
+}
+
+fastfloat_really_inline void write_u64(uint8_t *chars, uint64_t val) {
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+  // Need to read as-if the number was in little-endian order.
+  val = byteswap(val);
+#endif
+  ::memcpy(chars, &val, sizeof(uint64_t));
+}
 
 // credit  @aqrit
 fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
@@ -27,21 +55,17 @@ fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
 }
 
 fastfloat_really_inline uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
-  uint64_t val;
-  ::memcpy(&val, chars, sizeof(uint64_t));
-  return parse_eight_digits_unrolled(val);
+  return parse_eight_digits_unrolled(read_u64(chars));
 }
 
 // credit @aqrit
 fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
-     0x8080808080808080)); 
+     0x8080808080808080));
 }
 
 fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
-  uint64_t val;
-  ::memcpy(&val, chars, 8);
-  return is_made_of_eight_digits_fast(val);
+  return is_made_of_eight_digits_fast(read_u64(chars));
 }
 
 struct parsed_number_string {
@@ -87,17 +111,15 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   int64_t exponent = 0;
   if ((p != pend) && (*p == '.')) {
     ++p;
-#if FASTFLOAT_IS_BIG_ENDIAN == 0
-    // Fast approach only tested under little endian systems
+  // Fast approach only tested under little endian systems
+  if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
+    p += 8;
     if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
       i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
       p += 8;
-      if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
-        i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
-        p += 8;
-      }
     }
-#endif
+  }
     while ((p != pend) && is_integer(*p)) {
       uint8_t digit = uint8_t(*p - '0');
       ++p;
@@ -225,20 +247,17 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
        ++p;
       }
     }
-#if FASTFLOAT_IS_BIG_ENDIAN == 0
     // We expect that this loop will often take the bulk of the running time
     // because when a value has lots of digits, these digits often
     while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
-      uint64_t val;
-      ::memcpy(&val, p, sizeof(uint64_t));
+      uint64_t val = read_u64(p);
       if(! is_made_of_eight_digits_fast(val)) { break; }
       // We have eight digits, process them in one go!
       val -= 0x3030303030303030;
-      ::memcpy(answer.digits + answer.num_digits, &val, sizeof(uint64_t));
+      write_u64(answer.digits + answer.num_digits, val);
       answer.num_digits += 8;
       p += 8;
     }
-#endif
     while ((p != pend) && is_integer(*p)) {
       if (answer.num_digits < max_digits) {
         answer.digits[answer.num_digits] = uint8_t(*p - '0');
@@ -282,7 +301,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
       uint8_t digit = uint8_t(*p - '0');
       if (exp_number < 0x10000) {
         exp_number = 10 * exp_number + digit;
-      }    
+      }
       ++p;
     }
     answer.decimal_point += (neg_exp ? -exp_number : exp_number);
