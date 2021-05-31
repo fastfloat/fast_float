@@ -5,6 +5,7 @@
 ![Alpine Linux](https://github.com/lemire/fast_float/workflows/Alpine%20Linux/badge.svg)
 ![MSYS2-CI](https://github.com/lemire/fast_float/workflows/MSYS2-CI/badge.svg)
 ![VS16-CLANG-CI](https://github.com/lemire/fast_float/workflows/VS16-CLANG-CI/badge.svg)
+[![VS16-CI](https://github.com/fastfloat/fast_float/actions/workflows/vs16-ci.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/vs16-ci.yml)
 
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
