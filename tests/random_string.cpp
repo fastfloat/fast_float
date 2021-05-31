@@ -1,8 +1,10 @@
 #include "fast_float/fast_float.h"
+
+#include <iostream>
 #include <cstdint>
 #include <random>
 
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
 // Anything at all that is related to cygwin, msys and so forth will
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
@@ -15,7 +17,21 @@ double cygwin_strtod_l(const char* start, char** end) {
     ss.imbue(std::locale::classic());
     ss << start;
     ss >> d;
-    size_t nread = ss.tellg();
+    if(ss.fail()) { *end = nullptr; }
+    if(ss.eof()) { ss.clear(); }
+    auto nread = ss.tellg();
+    *end = const_cast<char*>(start) + nread;
+    return d;
+}
+float cygwin_strtof_l(const char* start, char** end) {
+    float d;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << start;
+    ss >> d;
+    if(ss.fail()) { *end = nullptr; }
+    if(ss.eof()) { ss.clear(); }
+    auto nread = ss.tellg();
     *end = const_cast<char*>(start) + nread;
     return d;
 }
@@ -24,7 +40,7 @@ double cygwin_strtod_l(const char* start, char** end) {
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(int new_seed) { wyhash64_x_ = new_seed; };
+  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed) {};
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
     // Inspired from
@@ -47,7 +63,7 @@ public:
     /*  if (min == max) {
          return min;
     }*/
-    int s = max - min + 1;
+    uint64_t s = uint64_t(max - min + 1);
     uint64_t x = next();
     fast_float::value128 m =  fast_float::full_multiplication(x, s);
     uint64_t l = m.low;
@@ -59,7 +75,7 @@ public:
         l = m.low;
       }
     }
-    return (m.high) + min;
+    return int(m.high) + min;
   }
   int next_digit() { return next_ranged_int(0, 9); }
 
@@ -78,8 +94,8 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
     number_of_digits = rand.next_ranged_int(1, 2000);
   }
   int location_of_decimal_separator = rand.next_ranged_int(1, number_of_digits);
-  for (size_t i = 0; i < number_of_digits; i++) {
-    if (i == location_of_decimal_separator) {
+  for (size_t i = 0; i < size_t(number_of_digits); i++) {
+    if (i == size_t(location_of_decimal_separator)) {
       buffer[pos++] = '.';
     }
     buffer[pos++] = char(rand.next_digit() + '0');
@@ -98,7 +114,7 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
       }
     }
     number_of_digits = rand.next_ranged_int(1, 3);
-    for (size_t i = 0; i < number_of_digits; i++) {
+    for (size_t i = 0; i < size_t(number_of_digits); i++) {
       buffer[pos++] = char(rand.next_digit() + '0');
     }
   }
@@ -109,7 +125,9 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
 std::pair<double, bool> strtod_from_string(char *st) {
   double d;
   char *pr;
-#ifdef _WIN32
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+    d = cygwin_strtod_l(st, &pr);
+#elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtod_l(st, &pr, c_locale);
 #else
@@ -126,8 +144,8 @@ std::pair<double, bool> strtod_from_string(char *st) {
 std::pair<float, bool> strtof_from_string(char *st) {
   float d;
   char *pr;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-    d = cygwin_strtod_l(st, &pr);
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+    d = cygwin_strtof_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtof_l(st, &pr, c_locale);
@@ -146,7 +164,7 @@ std::pair<float, bool> strtof_from_string(char *st) {
  * We generate random strings and we try to parse them with both strtod/strtof,
  * and we verify that we get the same answer with with fast_float::from_chars.
  */
-bool tester(int seed, size_t volume) {
+bool tester(uint64_t seed, size_t volume) {
   char buffer[4096]; // large buffer (can't overflow)
   RandomEngine rand(seed);
   for (size_t i = 0; i < volume; i++) {
@@ -203,13 +221,17 @@ bool tester(int seed, size_t volume) {
 }
 
 int main() {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
-  std::cout << "Warning: msys/cygwin detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library." << std::endl;
-#endif
+
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+  std::cout << "Warning: msys/cygwin or solaris detected." << std::endl;
+  return EXIT_SUCCESS;
+#else
   if (tester(1234344, 100000000)) {
     std::cout << "All tests ok." << std::endl;
     return EXIT_SUCCESS;
   }
   std::cout << "Failure." << std::endl;
   return EXIT_FAILURE;
+
+#endif
 }

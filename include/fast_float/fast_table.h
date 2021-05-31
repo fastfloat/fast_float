@@ -28,10 +28,18 @@ namespace fast_float {
  * infinite in binary64 so we never need to worry about powers
  * of 5 greater than 308.
  */
-constexpr int smallest_power_of_five = -342;
-constexpr int largest_power_of_five = 308;
+template <class unused = void>
+struct powers_template {
+
+constexpr static int smallest_power_of_five = binary_format<double>::smallest_power_of_ten();
+constexpr static int largest_power_of_five = binary_format<double>::largest_power_of_ten();
+constexpr static int number_of_entries = 2 * (largest_power_of_five - smallest_power_of_five + 1);
 // Powers of five from 5^-342 all the way to 5^308 rounded toward one.
-const uint64_t power_of_five_128[]= {
+static const uint64_t power_of_five_128[number_of_entries];
+};
+
+template <class unused>
+const uint64_t powers_template<unused>::power_of_five_128[number_of_entries] = {
         0xeef453d6923bd65a,0x113faa2906a13b3f,
         0x9558b4661b6565f8,0x4ac7ca59a424c507,
         0xbaaee17fa23ebf76,0x5d79bcf00d2df649,
@@ -347,16 +355,16 @@ const uint64_t power_of_five_128[]= {
         0xa2425ff75e14fc31,0xa1258379a94d028d,
         0xcad2f7f5359a3b3e,0x96ee45813a04330,
         0xfd87b5f28300ca0d,0x8bca9d6e188853fc,
-        0x9e74d1b791e07e48,0x775ea264cf55347d,
-        0xc612062576589dda,0x95364afe032a819d,
-        0xf79687aed3eec551,0x3a83ddbd83f52204,
-        0x9abe14cd44753b52,0xc4926a9672793542,
-        0xc16d9a0095928a27,0x75b7053c0f178293,
-        0xf1c90080baf72cb1,0x5324c68b12dd6338,
-        0x971da05074da7bee,0xd3f6fc16ebca5e03,
-        0xbce5086492111aea,0x88f4bb1ca6bcf584,
-        0xec1e4a7db69561a5,0x2b31e9e3d06c32e5,
-        0x9392ee8e921d5d07,0x3aff322e62439fcf,
+        0x9e74d1b791e07e48,0x775ea264cf55347e,
+        0xc612062576589dda,0x95364afe032a819e,
+        0xf79687aed3eec551,0x3a83ddbd83f52205,
+        0x9abe14cd44753b52,0xc4926a9672793543,
+        0xc16d9a0095928a27,0x75b7053c0f178294,
+        0xf1c90080baf72cb1,0x5324c68b12dd6339,
+        0x971da05074da7bee,0xd3f6fc16ebca5e04,
+        0xbce5086492111aea,0x88f4bb1ca6bcf585,
+        0xec1e4a7db69561a5,0x2b31e9e3d06c32e6,
+        0x9392ee8e921d5d07,0x3aff322e62439fd0,
         0xb877aa3236a4b449,0x9befeb9fad487c3,
         0xe69594bec44de15b,0x4c2ebe687989a9b4,
         0x901d7cf73ab0acd9,0xf9d37014bf60a11,
@@ -683,6 +691,7 @@ const uint64_t power_of_five_128[]= {
         0xb6472e511c81471d,0xe0133fe4adf8e952,
         0xe3d8f9e563a198e5,0x58180fddd97723a6,
         0x8e679c2f5e44ff8f,0x570f09eaa7ea7648,};
+using powers = powers_template<>;
 
 }
 

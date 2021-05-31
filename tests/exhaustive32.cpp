@@ -1,7 +1,7 @@
 
 #include "fast_float/fast_float.h"
 
-
+#include <iostream>
 #include <cassert>
 #include <cmath>
 
@@ -19,7 +19,7 @@ void allvalues() {
       std::cout << ".";
       std::cout.flush();
     }
-    uint32_t word = w;
+    uint32_t word = uint32_t(w);
     memcpy(&v, &word, sizeof(v));
 
     {
@@ -30,15 +30,15 @@ void allvalues() {
         std::cerr << "parsing error ? " << buffer << std::endl;
         abort();
       }
-      if(copysign(1,result_value) != copysign(1,v)) {
-        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
-              << std::endl;
-        abort();
-      } else if (std::isnan(v)) {
+      if (std::isnan(v)) {
         if (!std::isnan(result_value)) {
           std::cerr << "not nan" << buffer << std::endl;
           abort();
         }
+      } else if(copysign(1,result_value) != copysign(1,v)) {
+        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
+              << std::endl;
+        abort();
       } else if (result_value != v) {
         std::cerr << "no match ? " << buffer << std::endl;
         std::cout << "started with " << std::hexfloat << v << std::endl;

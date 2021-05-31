@@ -1,8 +1,7 @@
-## fast_float number parsing library
+## fast_float number parsing library: 4x faster than strtod
 
 ![Ubuntu 20.04 CI (GCC 9)](https://github.com/lemire/fast_float/workflows/Ubuntu%2020.04%20CI%20(GCC%209)/badge.svg)
 ![Ubuntu 18.04 CI (GCC 7)](https://github.com/lemire/fast_float/workflows/Ubuntu%2018.04%20CI%20(GCC%207)/badge.svg)
-![VS16-CI](https://github.com/lemire/fast_float/workflows/VS16-CI/badge.svg)
 ![Alpine Linux](https://github.com/lemire/fast_float/workflows/Alpine%20Linux/badge.svg)
 ![MSYS2-CI](https://github.com/lemire/fast_float/workflows/MSYS2-CI/badge.svg)
 ![VS16-CLANG-CI](https://github.com/lemire/fast_float/workflows/VS16-CLANG-CI/badge.svg)
@@ -10,7 +9,7 @@
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
 decimal values (e.g., `1.3e10`) into binary types. We provide exact rounding (including
-round to even). In our experience, these `fast_float` functions are faster than any other comparable number-parsing functions. 
+round to even). In our experience, these `fast_float` functions many times faster than comparable number-parsing functions from existing C++ standard libraries.
 
 Specifically, `fast_float` provides the following two functions with a C++17-like syntax (the library itself only requires C++11):
 
@@ -28,7 +27,7 @@ struct from_chars_result {
 ```
 
 It parses the character sequence [first,last) for a number. It parses floating-point numbers expecting
-a locale-indepent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
+a locale-independent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
 The resulting floating-point value is the closest floating-point values (using either float or double), 
 using the "round to even" convention for values that would otherwise fall right in-between two values.
 That is, we provide exact parsing according to the IEEE standard.
@@ -64,20 +63,37 @@ the type `fast_float::chars_format`. It is a bitset value: we check whether
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
-We support Visual Studio, macOS, Linux, freeBSD.
+The library seeks to follow the C++17 (see 20.19.3.(7.1))  specification. In particular, it forbids leading spaces and the leading '+' sign.
+
+We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
+
+## Reference
+
+- Daniel Lemire, [Number Parsing at a Gigabyte per Second](https://arxiv.org/abs/2101.11408), Software: Pratice and Experience (to appear)
+
+
+## Other programming languages
+
+- [There is an R binding](https://github.com/eddelbuettel/rcppfastfloat) called `rcppfastfloat`.
+- [There is a Rust port of the fast_float library](https://github.com/aldanor/fast-float-rust/) called `fast-float-rust`.
+- [There is a Java port of the fast_float library](https://github.com/wrandelshofer/FastDoubleParser) called `FastDoubleParser`.
+- [There is a C# port of the fast_float library](https://github.com/CarlVerret/csFastFloat) called `csFastFloat`.
+
 
 ## Relation With Other Work
 
-The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an novel algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. 
+The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an updated algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. The fast_double_parser library is part of the [Microsoft LightGBM machine-learning framework](https://github.com/microsoft/LightGBM).
 
 ## Users
 
-This library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times.
+The fast_float library is used by [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times. It is also used by [Yandex ClickHouse](https://github.com/ClickHouse/ClickHouse) and by [Google Jsonnet](https://github.com/google/jsonnet).
 
 
 ## How fast is it?
 
 It can parse random floating-point numbers at a speed of 1 GB/s on some systems. We find that it is often twice as fast as the best available competitor, and many times faster than many standard-library implementations.
+
+<img src="http://lemire.me/blog/wp-content/uploads/2020/11/fastfloat_speed.png" width="400">
 
 ```
 $ ./build/benchmarks/benchmark 
@@ -91,6 +107,11 @@ fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfl
 ```
 
 See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.
+
+
+## Video
+
+[![Go Systems 2020](http://img.youtube.com/vi/AVXgvlMeIm4/0.jpg)](http://www.youtube.com/watch?v=AVXgvlMeIm4)<br />
 
 ## Using as a CMake dependency
 
@@ -120,17 +141,6 @@ target_link_libraries(myprogram PUBLIC fast_float)
 ```
 
 
-## Requirements and Limitations
-
-In many cases, this library can be used as a drop-in replacement for the C++17 `from_chars` function, especially when performance is a concerned. Thus we expect C++17 support. Though it might be reasonable to want C++17 features as part of old compilers, support old systems is not an objective of this library.
-
-The `from_chars` is meant to be locale-independent. Thus it is not an objective of this library to support
-locale-sensitive parsing.
-
-The performance is optimized for 19 or fewer significant digits. In practice, there should
-never be more than 17 digits since it is enough to identify exactly all possible 64-bit numbers (double).
-In fact, for many numbers, far fewer than 17 digits are needed.
-
 ## Credit
 
 Though this work is inspired by many different people, this work benefited especially from exchanges with 
@@ -139,3 +149,18 @@ invaluable feedback. Rémy Oudompheng first implemented a fast path we use in th
 
 The library includes code adapted from Google Wuffs (written by Nigel Tao) which was originally published 
 under the Apache 2.0 license.
+
+## License
+
+<sup>
+Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
+2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
+</sup>
+
+<br>
+
+<sub>
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this repository by you, as defined in the Apache-2.0 license,
+shall be dual licensed as above, without any additional terms or conditions.
+</sub>

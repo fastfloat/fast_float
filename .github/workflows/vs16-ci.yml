@@ -6,20 +6,24 @@ jobs:
   ci:
     name: windows-vs16
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 16 2019, arch: Win32}
+          - {gen: Visual Studio 16 2019, arch: x64}
     steps:
-    - uses: actions/checkout@v2
-    - name: 'Run CMake with VS16'
-      uses: lukka/run-cmake@v2
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        buildDirectory: "${{ github.workspace }}/../../_temp/windows"
-        cmakeBuildType: Release
-        buildWithCMake: true
-        cmakeGenerator: VS16Win64
-        cmakeAppendedArgs: -DFASTFLOAT_TEST=ON
-        buildWithCMakeArgs:  --config Release  
-
-    - name: 'Run CTest'
-      run: ctest -C Release    --output-on-failure  -R basictest
-      working-directory: "${{ github.workspace }}/../../_temp/windows"
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Use cmake
+        run: |
+          mkdir build &&
+          cd build &&
+          cmake  ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination ..  &&
+          cmake --build .   &&
+          ctest --output-on-failure  &&
+          cmake --install . &&
+          cd ../tests/installation_tests/find  &&
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .
+          cd ../../issue72_installation  &&
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .
