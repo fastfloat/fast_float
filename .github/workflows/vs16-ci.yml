@@ -20,10 +20,10 @@ jobs:
           mkdir build &&
           cd build &&
           cmake  ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination ..  &&
-          cmake --build .   &&
+          cmake --build .  --verbose &&
           ctest --output-on-failure  &&
           cmake --install . &&
           cd ../tests/installation_tests/find  &&
-          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake  --verbose --build .
           cd ../../issue72_installation  &&
-          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .
+          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake  --verbose --build .
