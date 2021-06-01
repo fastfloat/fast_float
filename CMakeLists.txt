@@ -37,6 +37,10 @@ if(FASTFLOAT_SANITIZE)
     target_link_libraries(fast_float INTERFACE -fuse-ld=gold)
   endif()
 endif()
+if(MSVC_VERSION GREATER 1910)
+  target_compile_options(fast_float INTERFACE /permissive-)
+endif()
+
 
 include(CMakePackageConfigHelpers)
 

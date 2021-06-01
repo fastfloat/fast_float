@@ -22,7 +22,7 @@ jobs:
           mkdir build
           cd build && cmake  -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON ..
     - name: Build
-      run: cmake --build build --config Release --parallel
+      run: cmake --build build --verbose --config Release --parallel
     - name: 'Run CTest'
       run: |
           cd build
