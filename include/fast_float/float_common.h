@@ -129,7 +129,7 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 
 #ifdef FASTFLOAT_32BIT
 
-#if (!defined(_WIN32)) || defined(__MINGW32__)
+#if (!defined(_WIN32)) || defined(__MINGW32__) || defined(_M_ARM) || defined(_M_ARM64)
 // slow emulation routine for 32-bit
 fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
     return x * (uint64_t)y;
