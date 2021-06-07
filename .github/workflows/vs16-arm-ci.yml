@@ -6,10 +6,16 @@ jobs:
   ci:
     name: windows-vs16
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {arch: ARM}
+          - {arch: ARM64}
     steps:
       - name: checkout
         uses: actions/checkout@v2
       - name: Use cmake
         run: |
-          cmake -A ARM64 -DCMAKE_CROSSCOMPILING=1 -DFASTFLOAT_TEST=ON -B build  &&
-          cmake --build build  --verbose
+          cmake -A ${{ matrix.arch }} -DCMAKE_CROSSCOMPILING=1 -DFASTFLOAT_TEST=ON -B build  &&
+          cmake --build build --verbose
