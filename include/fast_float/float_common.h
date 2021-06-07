@@ -129,23 +129,21 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 
 #ifdef FASTFLOAT_32BIT
 
-#if (!defined(_WIN32)) || defined(__MINGW32__)
 // slow emulation routine for 32-bit
-fastfloat_really_inline uint64_t __emulu(uint32_t x, uint32_t y) {
+fastfloat_really_inline uint64_t emulu(uint32_t x, uint32_t y) {
     return x * (uint64_t)y;
 }
-#endif
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
 fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
-  uint64_t ad = __emulu((uint32_t)(ab >> 32), (uint32_t)cd);
-  uint64_t bd = __emulu((uint32_t)ab, (uint32_t)cd);
-  uint64_t adbc = ad + __emulu((uint32_t)ab, (uint32_t)(cd >> 32));
+  uint64_t ad = emulu((uint32_t)(ab >> 32), (uint32_t)cd);
+  uint64_t bd = emulu((uint32_t)ab, (uint32_t)cd);
+  uint64_t adbc = ad + emulu((uint32_t)ab, (uint32_t)(cd >> 32));
   uint64_t adbc_carry = !!(adbc < ad);
   uint64_t lo = bd + (adbc << 32);
-  *hi = __emulu((uint32_t)(ab >> 32), (uint32_t)(cd >> 32)) + (adbc >> 32) +
+  *hi = emulu((uint32_t)(ab >> 32), (uint32_t)(cd >> 32)) + (adbc >> 32) +
         (adbc_carry << 32) + !!(lo < bd);
   return lo;
 }

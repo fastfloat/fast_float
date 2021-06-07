@@ -6,7 +6,7 @@ include(FetchContent)
 
 FetchContent_Declare(doctest
   GIT_REPOSITORY https://github.com/onqtam/doctest.git
-  GIT_TAG 2.4.1)
+  GIT_TAG 2.4.6)
 FetchContent_Declare(supplemental_test_files
   GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git
   GIT_TAG origin/main)
@@ -33,6 +33,9 @@ target_compile_definitions(supplemental-data INTERFACE SUPPLEMENTAL_TEST_DATA_DI
 function(fast_float_add_cpp_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
     add_test(${TEST_NAME} ${TEST_NAME})
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+      target_compile_options(${TEST_NAME} PUBLIC /EHsc)
+    endif()
     if(NOT WIN32)
       target_compile_options(${TEST_NAME} PUBLIC -Werror -Wall -Wextra -Weffc++)
       target_compile_options(${TEST_NAME} PUBLIC -Wsign-compare -Wshadow -Wwrite-strings -Wpointer-arith -Winit-self -Wconversion -Wsign-conversion)
