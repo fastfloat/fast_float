@@ -6,7 +6,7 @@ include(FetchContent)
 
 FetchContent_Declare(doctest
   GIT_REPOSITORY https://github.com/onqtam/doctest.git
-  GIT_TAG 2.4.1)
+  GIT_TAG 2.4.6)
 FetchContent_Declare(supplemental_test_files
   GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git
   GIT_TAG origin/main)
