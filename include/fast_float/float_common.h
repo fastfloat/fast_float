@@ -13,7 +13,7 @@
        || defined(__EMSCRIPTEN__))
 #define FASTFLOAT_64BIT
 #elif (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
-     || defined(__arm__)                                        \
+     || defined(__arm__) || defined(_M_ARM)                   \
      || defined(__MINGW32__))
 #define FASTFLOAT_32BIT
 #else
