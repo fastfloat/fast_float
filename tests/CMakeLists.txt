@@ -4,9 +4,13 @@ cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 
 include(FetchContent)
 
-FetchContent_Declare(doctest
-  GIT_REPOSITORY https://github.com/onqtam/doctest.git
-  GIT_TAG 2.4.6)
+option(SYSTEM_DOCTEST "Use system copy of doctest" OFF)
+
+if (NOT SYSTEM_DOCTEST)
+  FetchContent_Declare(doctest
+    GIT_REPOSITORY https://github.com/onqtam/doctest.git
+    GIT_TAG 2.4.6)
+endif()
 FetchContent_Declare(supplemental_test_files
   GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git
   GIT_TAG origin/main)
@@ -16,10 +20,12 @@ FetchContent_Declare(supplemental_test_files
 # FetchContent_MakeAvailable() was only introduced in 3.14
 # https://cmake.org/cmake/help/v3.14/release/3.14.html#modules
 # FetchContent_MakeAvailable(doctest)
-FetchContent_GetProperties(doctest)
-if(NOT doctest_POPULATED)
-  FetchContent_Populate(doctest)
-  add_subdirectory(${doctest_SOURCE_DIR} ${doctest_BINARY_DIR})
+if (NOT SYSTEM_DOCTEST)
+  FetchContent_GetProperties(doctest)
+  if(NOT doctest_POPULATED)
+    FetchContent_Populate(doctest)
+    add_subdirectory(${doctest_SOURCE_DIR} ${doctest_BINARY_DIR})
+  endif()
 endif()
 FetchContent_GetProperties(supplemental_test_files)
 if(NOT supplemental_test_files_POPULATED)
@@ -40,7 +46,10 @@ function(fast_float_add_cpp_test TEST_NAME)
       target_compile_options(${TEST_NAME} PUBLIC -Werror -Wall -Wextra -Weffc++)
       target_compile_options(${TEST_NAME} PUBLIC -Wsign-compare -Wshadow -Wwrite-strings -Wpointer-arith -Winit-self -Wconversion -Wsign-conversion)
     endif()
-    target_link_libraries(${TEST_NAME} PUBLIC fast_float doctest supplemental-data)
+    target_link_libraries(${TEST_NAME} PUBLIC fast_float supplemental-data)
+    if (NOT SYSTEM_DOCTEST)
+      target_link_libraries(${TEST_NAME} PUBLIC doctest)
+    endif()
 endfunction(fast_float_add_cpp_test)
 
 
