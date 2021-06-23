@@ -149,6 +149,10 @@ Just run the script from the root directory of this repository.
 You can customize the license type and output file if desired as described in
 the command line help.
 
+You may directly download automatically generated single-header files:
+
+https://github.com/fastfloat/fast_float/releases/download/v1.1.2/fast_float.h
+
 ## Credit
 
 Though this work is inspired by many different people, this work benefited especially from exchanges with 
