@@ -19,7 +19,7 @@ jobs:
         run: |
           mkdir build &&
           mkdir build/fast_float &&
-          python3 ./scripts/amalgamate.py > build/fast_float/fast_float.h &&
+          python3 ./script/amalgamate.py > build/fast_float/fast_float.h &&
           cp tests/string_test.cpp build/ &&
           cd build &&
           g++ string_test.cpp

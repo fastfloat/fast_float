@@ -143,7 +143,7 @@ target_link_libraries(myprogram PUBLIC fast_float)
 
 ## Using as single header
 
-The script `scripts/amalgamate.py` may be used to generate a single header 
+The script `script/amalgamate.py` may be used to generate a single header 
 version of the library if so desired.
 Just run the script from the root directory of this repository. 
 You can customize the license type and output file if desired as described in
