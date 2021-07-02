@@ -70,8 +70,7 @@ We support Visual Studio, macOS, Linux, freeBSD. We support big and little endia
 
 ## Reference
 
-- Daniel Lemire, [Number Parsing at a Gigabyte per Second](https://arxiv.org/abs/2101.11408), Software: Pratice and Experience (to appear)
-
+- Daniel Lemire, [Number Parsing at a Gigabyte per Second](https://arxiv.org/abs/2101.11408), Software: Pratice and Experience 51 (8), 2021.
 
 ## Other programming languages
 
