@@ -132,13 +132,15 @@ Or you may want to retrieve the dependency automatically if you have a sufficien
 FetchContent_Declare(
   fast_float
   GIT_REPOSITORY https://github.com/lemire/fast_float.git
-  GIT_TAG origin/main
+  GIT_TAG tags/v1.1.2
   GIT_SHALLOW TRUE)
 
 FetchContent_MakeAvailable(fast_float)
 target_link_libraries(myprogram PUBLIC fast_float)
 
 ```
+
+You should change the `GIT_TAG` line so that you recover the version you wish to use.
 
 ## Using as single header
 
