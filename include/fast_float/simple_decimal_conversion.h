@@ -351,8 +351,8 @@ adjusted_mantissa compute_float(decimal &d) {
 }
 
 template <typename binary>
-adjusted_mantissa parse_long_mantissa(const char *first, const char* last) {
-    decimal d = parse_decimal(first, last);
+adjusted_mantissa parse_long_mantissa(const char *first, const char* last, parse_options options) {
+    decimal d = parse_decimal(first, last, options);
     return compute_float<binary>(d);
 }
 

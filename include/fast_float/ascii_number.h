@@ -81,7 +81,10 @@ struct parsed_number_string {
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
 fastfloat_really_inline
-parsed_number_string parse_number_string(const char *p, const char *pend, chars_format fmt) noexcept {
+parsed_number_string parse_number_string(const char *p, const char *pend, parse_options options) noexcept {
+  const chars_format fmt = options.format;
+  const char decimal_point = options.decimal_point;
+
   parsed_number_string answer;
   answer.valid = false;
   answer.too_many_digits = false;
@@ -91,7 +94,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     if (p == pend) {
       return answer;
     }
-    if (!is_integer(*p) && (*p != '.')) { // a  sign must be followed by an integer or the dot
+    if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
       return answer;
     }
   }
@@ -109,7 +112,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
   const char *const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   int64_t exponent = 0;
-  if ((p != pend) && (*p == '.')) {
+  if ((p != pend) && (*p == decimal_point)) {
     ++p;
   // Fast approach only tested under little endian systems
   if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
@@ -179,7 +182,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
     const char *start = start_digits;
-    while ((start != pend) && (*start == '0' || *start == '.')) {
+    while ((start != pend) && (*start == '0' || *start == decimal_point)) {
       if(*start == '0') { digit_count --; }
       start++;
     }
@@ -196,7 +199,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
       if (i >= minimal_nineteen_digit_integer) { // We have a big integers
         exponent = end_of_integer_part - p + exp_number;
       } else { // We have a value with a fractional component.
-          p++; // skip the '.'
+          p++; // skip the dot
           const char *first_after_period = p;
           while((i < minimal_nineteen_digit_integer) && (p != pend) && is_integer(*p)) {
             i = i * 10 + uint64_t(*p - '0');
@@ -217,7 +220,9 @@ parsed_number_string parse_number_string(const char *p, const char *pend, chars_
 // This function could be optimized. In particular, we could stop after 19 digits
 // and try to bail out. Furthermore, we should be able to recover the computed
 // exponent from the pass in parse_number_string.
-fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) noexcept {
+fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend, parse_options options) noexcept {
+  const char decimal_point = options.decimal_point;
+
   decimal answer;
   answer.num_digits = 0;
   answer.decimal_point = 0;
@@ -237,7 +242,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     answer.num_digits++;
     ++p;
   }
-  if ((p != pend) && (*p == '.')) {
+  if ((p != pend) && (*p == decimal_point)) {
     ++p;
     const char *first_after_period = p;
     // if we have not yet encountered a zero, we have to skip it as well
@@ -276,7 +281,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend) n
     // we have at least one non-zero digit.
     const char *preverse = p - 1;
     int32_t trailing_zeros = 0;
-    while ((*preverse == '0') || (*preverse == '.')) {
+    while ((*preverse == '0') || (*preverse == decimal_point)) {
       if(*preverse == '0') { trailing_zeros++; };
       --preverse;
     }

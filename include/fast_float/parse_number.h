@@ -85,6 +85,13 @@ fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &va
 template<typename T>
 from_chars_result from_chars(const char *first, const char *last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
+  return from_chars_advanced(first, last, value, parse_options{fmt});
+}
+
+template<typename T>
+from_chars_result from_chars_advanced(const char *first, const char *last,
+                                      T &value, parse_options options)  noexcept  {
+
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
 
@@ -94,7 +101,7 @@ from_chars_result from_chars(const char *first, const char *last,
     answer.ptr = first;
     return answer;
   }
-  parsed_number_string pns = parse_number_string(first, last, fmt);
+  parsed_number_string pns = parse_number_string(first, last, options);
   if (!pns.valid) {
     return detail::parse_infnan(first, last, value);
   }
@@ -116,7 +123,7 @@ from_chars_result from_chars(const char *first, const char *last,
   }
   // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
   // then we need to go the long way around again. This is very uncommon.
-  if(am.power2 < 0) { am = parse_long_mantissa<binary_format<T>>(first,last); }
+  if(am.power2 < 0) { am = parse_long_mantissa<binary_format<T>>(first, last, options); }
   detail::to_float(pns.negative, am, value);
   return answer;
 }
