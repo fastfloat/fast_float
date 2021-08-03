@@ -54,6 +54,7 @@ endfunction(fast_float_add_cpp_test)
 
 
 fast_float_add_cpp_test(example_test)
+fast_float_add_cpp_test(example_comma_test)
 fast_float_add_cpp_test(basictest)
 
 

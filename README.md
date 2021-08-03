@@ -68,6 +68,32 @@ The library seeks to follow the C++17 (see 20.19.3.(7.1))  specification. In par
 
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
 
+## Using commas as decimal separator
+
+
+The C++ standard stipulate that `from_chars` has to be locale-independent. In
+particular, the decimal separator has to be the period (`.`). However, 
+some users still want to use the `fast_float` library with in a locale-dependent 
+manner. Using a separate function called `from_chars_advanced`, we allow the users
+to pass a `parse_options` instance which contains a custom decimal separator (e.g., 
+the comma). You may use it as follows.
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+ 
+int main() {
+    const std::string input =  "3,1416 xyz ";
+    double result;
+    fast_float::parse_options options{fast_float::chars_format::general, ','};
+    auto answer = fast_float::from_chars_advanced(input.data(), input.data()+input.size(), result, options);
+    if((answer.ec != std::errc()) || ((result != 3.1416))) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
+    std::cout << "parsed the number " << result << std::endl;
+    return EXIT_SUCCESS;
+}
+```
+
+
 ## Reference
 
 - Daniel Lemire, [Number Parsing at a Gigabyte per Second](https://arxiv.org/abs/2101.11408), Software: Pratice and Experience 51 (8), 2021.
