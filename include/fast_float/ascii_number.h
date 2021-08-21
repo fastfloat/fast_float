@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 
 #include "float_common.h"
 
@@ -115,10 +116,10 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
   if ((p != pend) && (*p == decimal_point)) {
     ++p;
   // Fast approach only tested under little endian systems
-  if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
+  if ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
     i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
     p += 8;
-    if ((p + 8 <= pend) && is_made_of_eight_digits_fast(p)) {
+    if ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
       i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
       p += 8;
     }
@@ -254,7 +255,7 @@ fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend, p
     }
     // We expect that this loop will often take the bulk of the running time
     // because when a value has lots of digits, these digits often
-    while ((p + 8 <= pend) && (answer.num_digits + 8 < max_digits)) {
+    while ((std::distance(p, pend) >= 8) && (answer.num_digits + 8 < max_digits)) {
       uint64_t val = read_u64(p);
       if(! is_made_of_eight_digits_fast(val)) { break; }
       // We have eight digits, process them in one go!
