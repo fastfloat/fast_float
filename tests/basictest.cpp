@@ -5,6 +5,7 @@
 #include "fast_float/fast_float.h"
 #include <iomanip>
 #include <string>
+#include <version>
 
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
@@ -35,6 +36,11 @@
 #else
 // __has_include is not available
 #define FASTFLOAT_ODDPLATFORM 1
+#endif
+
+#if defined(__cpp_lib_bit_cast)
+#include <bit>
+#include <string_view>
 #endif
 
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
@@ -101,6 +107,7 @@ bool check_file(std::string file_name) {
   return true;
 }
 
+
 TEST_CASE("supplemental") {
     std::string path = SUPPLEMENTAL_TEST_DATA_DIR;
     for (const auto & entry : std::filesystem::directory_iterator(path)) {
@@ -109,6 +116,27 @@ TEST_CASE("supplemental") {
 }
 #endif
 
+#if defined(__cpp_lib_bit_cast)
+
+constexpr double tryParse(std::string_view input)
+{
+    double result{};
+    fast_float::from_chars_result parseResult = fast_float::from_chars(input.data(), input.data() + input.size(), result);
+    if (parseResult.ec != std::errc()) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    return result;
+}
+
+static_assert(tryParse("1.0") == 1.0);
+static_assert(tryParse("2.0") == 2.0);
+static_assert(tryParse("3.14156") == 3.14156);
+static_assert(tryParse("3.14156") != 3.1415600000001);
+#if !defined(_MSVC_LANG)
+static_assert(std::isnan(tryParse("hellothere")));    // technically isnan is not constexpr but GCC and clang allow it
+#endif
+
+#endif  //#if defined(__cpp_lib_bit_cast)
 
 TEST_CASE("leading_zeroes") {
   constexpr const uint64_t bit = 1;
