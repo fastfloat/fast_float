@@ -81,6 +81,7 @@
       #if defined(__cpp_lib_bit_cast)
         #undef CXX20_CONSTEXPR
         #define CXX20_CONSTEXPR constexpr
+        #define HAS_CXX20_CONSTEXPR 1
       #endif
     #endif
   #endif

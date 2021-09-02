@@ -5,7 +5,6 @@
 #include "fast_float/fast_float.h"
 #include <iomanip>
 #include <string>
-#include <version>
 
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
@@ -38,7 +37,7 @@
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
-#if defined(__cpp_lib_bit_cast)
+#if HAS_CXX20_CONSTEXPR
 #include <bit>
 #include <string_view>
 #endif
@@ -116,7 +115,7 @@ TEST_CASE("supplemental") {
 }
 #endif
 
-#if defined(__cpp_lib_bit_cast)
+#if HAS_CXX20_CONSTEXPR
 
 constexpr double tryParse(std::string_view input)
 {
@@ -136,7 +135,7 @@ static_assert(tryParse("3.14156") != 3.1415600000001);
 static_assert(std::isnan(tryParse("hellothere")));    // technically isnan is not constexpr but GCC and clang allow it
 #endif
 
-#endif  //#if defined(__cpp_lib_bit_cast)
+#endif  //#if HAS_CXX20_CONSTEXPR
 
 TEST_CASE("leading_zeroes") {
   constexpr const uint64_t bit = 1;
