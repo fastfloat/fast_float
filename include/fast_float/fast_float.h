@@ -4,13 +4,17 @@
 
 #include <system_error>
 
-#if !defined(CXX20_CONSTEXPR) && defined(__has_include) && __has_include(<version>)
-#include <version>
-#if defined(__cpp_lib_bit_cast)
-#define CXX20_CONSTEXPR constexpr
-#else
-#define CXX20_CONSTEXPR
-#endif
+#if !defined(CXX20_CONSTEXPR)
+  #define CXX20_CONSTEXPR
+  #if defined __has_include
+    #if __has_include(<version>)
+      #include <version>
+      #if defined(__cpp_lib_bit_cast)
+        #undef CXX20_CONSTEXPR
+        #define CXX20_CONSTEXPR constexpr
+      #endif
+    #endif
+  #endif
 #endif
 
 namespace fast_float {

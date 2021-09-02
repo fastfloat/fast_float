@@ -7,11 +7,13 @@
 #include <cstring>
 #include <iterator>
 
-#if defined(__has_include) && __has_include(<version>)
-#include <version>
-#if defined(__cpp_lib_bit_cast)
-#include <bit>
-#endif
+#if defined __has_include
+  #if __has_include(<version>)
+    #include <version>
+    #if defined(__cpp_lib_bit_cast)
+      #include <bit>
+    #endif
+  #endif
 #endif
 
 #include "float_common.h"
