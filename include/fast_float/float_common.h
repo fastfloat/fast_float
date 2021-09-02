@@ -4,7 +4,6 @@
 #include <cfloat>
 #include <cstdint>
 #include <cassert>
-#include <version>
 
 #if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
        || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
@@ -74,7 +73,8 @@
 #define fastfloat_really_inline inline __attribute__((always_inline))
 #endif
 
-#if !defined(CXX20_CONSTEXPR)
+#if !defined(CXX20_CONSTEXPR) && defined(__has_include) && __has_include(<version>)
+#include <version>
 #if defined(__cpp_lib_bit_cast)
 #define CXX20_CONSTEXPR constexpr
 #else
