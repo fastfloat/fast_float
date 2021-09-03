@@ -20,7 +20,7 @@ namespace detail {
  * strings a null-free and fixed.
  **/
 template <typename T>
-from_chars_result parse_infnan(const char *first, const char *last, T &value)  noexcept  {
+CXX20_CONSTEXPR from_chars_result parse_infnan(const char *first, const char *last, T &value)  noexcept  {
   from_chars_result answer;
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
@@ -61,7 +61,7 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
 }
 
 template<typename T>
-fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
+CXX20_CONSTEXPR fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
   uint64_t word = am.mantissa;
   word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
   word = negative
@@ -83,13 +83,13 @@ fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &va
 
 
 template<typename T>
-from_chars_result from_chars(const char *first, const char *last,
+CXX20_CONSTEXPR from_chars_result from_chars(const char *first, const char *last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
   return from_chars_advanced(first, last, value, parse_options{fmt});
 }
 
 template<typename T>
-from_chars_result from_chars_advanced(const char *first, const char *last,
+CXX20_CONSTEXPR from_chars_result from_chars_advanced(const char *first, const char *last,
                                       T &value, parse_options options)  noexcept  {
 
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");

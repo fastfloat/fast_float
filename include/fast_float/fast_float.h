@@ -1,7 +1,22 @@
 #ifndef FASTFLOAT_FAST_FLOAT_H
 #define FASTFLOAT_FAST_FLOAT_H
 
+
 #include <system_error>
+
+#if !defined(CXX20_CONSTEXPR)
+  #define CXX20_CONSTEXPR
+  #if defined __has_include
+    #if __has_include(<version>)
+      #include <version>
+      #if defined(__cpp_lib_bit_cast)
+        #undef CXX20_CONSTEXPR
+        #define CXX20_CONSTEXPR constexpr
+        #define HAS_CXX20_CONSTEXPR 1
+      #endif
+    #endif
+  #endif
+#endif
 
 namespace fast_float {
 enum chars_format {
@@ -18,7 +33,7 @@ struct from_chars_result {
 };
 
 struct parse_options {
-  explicit parse_options(chars_format fmt = chars_format::general,
+  constexpr explicit parse_options(chars_format fmt = chars_format::general,
                          char dot = '.')
     : format(fmt), decimal_point(dot) {}
 
@@ -48,14 +63,14 @@ struct parse_options {
  * The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
  */
 template<typename T>
-from_chars_result from_chars(const char *first, const char *last,
+CXX20_CONSTEXPR from_chars_result from_chars(const char *first, const char *last,
                              T &value, chars_format fmt = chars_format::general)  noexcept;
 
 /**
  * Like from_chars, but accepts an `options` argument to govern number parsing.
  */
 template<typename T>
-from_chars_result from_chars_advanced(const char *first, const char *last,
+CXX20_CONSTEXPR from_chars_result from_chars_advanced(const char *first, const char *last,
                                       T &value, parse_options options)  noexcept;
 
 }

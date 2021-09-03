@@ -18,7 +18,7 @@ namespace fast_float {
 // low part corresponding to the least significant bits.
 //
 template <int bit_precision>
-fastfloat_really_inline
+CXX20_CONSTEXPR fastfloat_really_inline
 value128 compute_product_approximation(int64_t q, uint64_t w) {
   const int index = 2 * int(q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact because
@@ -56,7 +56,7 @@ namespace detail {
  * where
  *   p = log(5**-q)/log(2) = -q * log(5)/log(2)
  */
-  fastfloat_really_inline int power(int q)  noexcept  {
+  constexpr fastfloat_really_inline int power(int q)  noexcept  {
     return (((152170 + 65536) * q) >> 16) + 63;
   }
 } // namespace detail
@@ -68,7 +68,7 @@ namespace detail {
 // return an adjusted_mantissa with a negative power of 2: the caller should recompute
 // in such cases.
 template <typename binary>
-fastfloat_really_inline
+CXX20_CONSTEXPR fastfloat_really_inline
 adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   adjusted_mantissa answer;
   if ((w == 0) || (q < binary::smallest_power_of_ten())) {
