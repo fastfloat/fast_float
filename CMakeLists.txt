@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 project(fast_float VERSION 2.0.0 LANGUAGES CXX)
 option(FASTFLOAT_TEST "Enable tests" OFF)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ standard to be used")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(FASTFLOAT_TEST)
   enable_testing()
