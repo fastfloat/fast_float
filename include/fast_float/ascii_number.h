@@ -7,15 +7,24 @@
 #include <cstring>
 #include <iterator>
 
+#if defined __has_include
+  #if __has_include(<version>)
+    #include <version>
+    #if defined(__cpp_lib_bit_cast)
+      #include <bit>
+    #endif
+  #endif
+#endif
+
 #include "float_common.h"
 
 namespace fast_float {
 
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
-fastfloat_really_inline bool is_integer(char c)  noexcept  { return c >= '0' && c <= '9'; }
+CXX20_CONSTEXPR fastfloat_really_inline bool is_integer(char c)  noexcept  { return c >= '0' && c <= '9'; }
 
-fastfloat_really_inline uint64_t byteswap(uint64_t val) {
+CXX20_CONSTEXPR fastfloat_really_inline uint64_t byteswap(uint64_t val) {
   return (val & 0xFF00000000000000) >> 56
     | (val & 0x00FF000000000000) >> 40
     | (val & 0x0000FF0000000000) >> 24
@@ -26,9 +35,13 @@ fastfloat_really_inline uint64_t byteswap(uint64_t val) {
     | (val & 0x00000000000000FF) << 56;
 }
 
-fastfloat_really_inline uint64_t read_u64(const char *chars) {
+CXX20_CONSTEXPR fastfloat_really_inline uint64_t read_u64(const char *chars) {
   uint64_t val;
+#if defined(__cpp_lib_bit_cast)
+  val = std::bit_cast<uint64_t>(reinterpret_cast<const char (&)[8]>(chars));
+#else
   ::memcpy(&val, chars, sizeof(uint64_t));
+#endif
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
   val = byteswap(val);
@@ -36,16 +49,26 @@ fastfloat_really_inline uint64_t read_u64(const char *chars) {
   return val;
 }
 
-fastfloat_really_inline void write_u64(uint8_t *chars, uint64_t val) {
+CXX20_CONSTEXPR fastfloat_really_inline void write_u64(uint8_t *chars, uint64_t val) {
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
   val = byteswap(val);
 #endif
+#if defined(__cpp_lib_bit_cast)
+  if (std::is_constant_evaluated()) {
+    char (&dst)[8] = reinterpret_cast<char (&)[8]>(chars);
+    const char (&src)[8] = reinterpret_cast<const char (&)[8]>(val);
+    std::copy(std::begin(src), std::end(src), std::begin(dst));
+  } else {
+    ::memcpy(chars, &val, sizeof(uint64_t));
+  }
+#else
   ::memcpy(chars, &val, sizeof(uint64_t));
+#endif
 }
 
 // credit  @aqrit
-fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
+CXX20_CONSTEXPR fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
   const uint64_t mask = 0x000000FF000000FF;
   const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
   const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
@@ -55,17 +78,17 @@ fastfloat_really_inline uint32_t  parse_eight_digits_unrolled(uint64_t val) {
   return uint32_t(val);
 }
 
-fastfloat_really_inline uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
+CXX20_CONSTEXPR fastfloat_really_inline uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
   return parse_eight_digits_unrolled(read_u64(chars));
 }
 
 // credit @aqrit
-fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
+CXX20_CONSTEXPR fastfloat_really_inline bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
      0x8080808080808080));
 }
 
-fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
+CXX20_CONSTEXPR fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
   return is_made_of_eight_digits_fast(read_u64(chars));
 }
 
@@ -81,7 +104,7 @@ struct parsed_number_string {
 
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
-fastfloat_really_inline
+CXX20_CONSTEXPR fastfloat_really_inline
 parsed_number_string parse_number_string(const char *p, const char *pend, parse_options options) noexcept {
   const chars_format fmt = options.format;
   const char decimal_point = options.decimal_point;
@@ -221,7 +244,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
 // This function could be optimized. In particular, we could stop after 19 digits
 // and try to bail out. Furthermore, we should be able to recover the computed
 // exponent from the pass in parse_number_string.
-fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend, parse_options options) noexcept {
+CXX20_CONSTEXPR fastfloat_really_inline decimal parse_decimal(const char *p, const char *pend, parse_options options) noexcept {
   const char decimal_point = options.decimal_point;
 
   decimal answer;
