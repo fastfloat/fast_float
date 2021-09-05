@@ -1,7 +1,6 @@
 #ifndef FASTFLOAT_ASCII_NUMBER_H
 #define FASTFLOAT_ASCII_NUMBER_H
 
-#include <cstdio>
 #include <cctype>
 #include <cstdint>
 #include <cstring>

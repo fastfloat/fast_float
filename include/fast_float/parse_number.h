@@ -1,10 +1,10 @@
 #ifndef FASTFLOAT_PARSE_NUMBER_H
 #define FASTFLOAT_PARSE_NUMBER_H
+
 #include "ascii_number.h"
 #include "decimal_to_binary.h"
 #include "simple_decimal_conversion.h"
 
-#include <cassert>
 #include <cmath>
 #include <cstring>
 #include <limits>
