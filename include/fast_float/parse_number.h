@@ -3,7 +3,7 @@
 
 #include "ascii_number.h"
 #include "decimal_to_binary.h"
-#include "simple_decimal_conversion.h"
+#include "digit_comparison.h"
 
 #include <cmath>
 #include <cstring>
@@ -60,27 +60,7 @@ CXX20_CONSTEXPR from_chars_result parse_infnan(const char *first, const char *la
   return answer;
 }
 
-template<typename T>
-CXX20_CONSTEXPR fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
-  uint64_t word = am.mantissa;
-  word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
-  word = negative
-  ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
-#if FASTFLOAT_IS_BIG_ENDIAN == 1
-   if (std::is_same<T, float>::value) {
-     ::memcpy(&value, (char *)&word + 4, sizeof(T)); // extract value at offset 4-7 if float on big-endian
-   } else {
-     ::memcpy(&value, &word, sizeof(T));
-   }
-#else
-   // For little-endian systems:
-   ::memcpy(&value, &word, sizeof(T));
-#endif
-}
-
 } // namespace detail
-
-
 
 template<typename T>
 CXX20_CONSTEXPR from_chars_result from_chars(const char *first, const char *last,
@@ -116,15 +96,15 @@ CXX20_CONSTEXPR from_chars_result from_chars_advanced(const char *first, const c
     return answer;
   }
   adjusted_mantissa am = compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
-  if(pns.too_many_digits) {
+  if(pns.too_many_digits && am.power2 >= 0) {
     if(am != compute_float<binary_format<T>>(pns.exponent, pns.mantissa + 1)) {
-      am.power2 = -1; // value is invalid.
+      am = compute_error<binary_format<T>>(pns.exponent, pns.mantissa);
     }
   }
   // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
   // then we need to go the long way around again. This is very uncommon.
-  if(am.power2 < 0) { am = parse_long_mantissa<binary_format<T>>(first, last, options); }
-  detail::to_float(pns.negative, am, value);
+  if(am.power2 < 0) { am = digit_comp<T>(pns, am); }
+  to_float(pns.negative, am, value);
   return answer;
 }
 
