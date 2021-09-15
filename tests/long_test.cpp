@@ -1,5 +1,6 @@
 #include "fast_float/fast_float.h"
 
+#include <iostream>
 #include <vector>
 
 inline void Assert(bool Assertion) {
@@ -14,6 +15,7 @@ bool test() {
   const char * end = input.data() + input.size();
   for(size_t i = 0; i < answers.size(); i++) {
     T result_value;
+    while((begin < end) && (std::isspace(*begin))) { begin++; }
     auto result = fast_float::from_chars(begin, end,
                                       result_value);
     if (result.ec != std::errc()) {
