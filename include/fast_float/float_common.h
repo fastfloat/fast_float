@@ -124,7 +124,7 @@ struct span {
   span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
   span() : ptr(nullptr), length(0) {}
 
-  constexpr size_t len() noexcept {
+  constexpr size_t len() const noexcept {
     return length;
   }
 
