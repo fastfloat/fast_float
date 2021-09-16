@@ -1,5 +1,12 @@
 #include "fast_float/fast_float.h"
+
+#include <cctype>
+#include <cstdio>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <system_error>
 #include <vector>
 
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)

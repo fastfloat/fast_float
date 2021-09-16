@@ -1,6 +1,10 @@
 #include "fast_float/fast_float.h"
 
+#include <cctype>
 #include <iostream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
 #include <vector>
 
 inline void Assert(bool Assertion) {
