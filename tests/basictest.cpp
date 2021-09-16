@@ -3,8 +3,13 @@
 #include <doctest/doctest.h>
 
 #include "fast_float/fast_float.h"
+#include <cmath>
+#include <cstdio>
 #include <iomanip>
+#include <ios>
+#include <limits>
 #include <string>
+#include <system_error>
 
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
