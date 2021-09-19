@@ -136,9 +136,13 @@ static_assert(tryParse("1.0") == 1.0);
 static_assert(tryParse("2.0") == 2.0);
 static_assert(tryParse("3.14156") == 3.14156);
 static_assert(tryParse("3.14156") != 3.1415600000001);
-#if !defined(_MSVC_LANG)
-static_assert(std::isnan(tryParse("hellothere")));    // technically isnan is not constexpr but GCC and clang allow it
-#endif
+
+
+TEST_CASE("parse_nan_constexpr") {
+  // technically isnan is not constexpr, even though some versions of GCC
+  // and clang allow it
+  CHECK(std::isnan(tryParse("hellothere")));
+}
 
 #endif  //#if HAS_CXX20_CONSTEXPR
 
