@@ -121,8 +121,8 @@ template <typename T>
 struct span {
   const T* ptr;
   size_t length;
-  span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
-  span() : ptr(nullptr), length(0) {}
+  CXX20_CONSTEXPR span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
+  CXX20_CONSTEXPR span() : ptr(nullptr), length(0) {}
 
   constexpr size_t len() const noexcept {
     return length;
@@ -146,12 +146,18 @@ CXX20_CONSTEXPR fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
   assert(input_num > 0);
 #ifdef FASTFLOAT_VISUAL_STUDIO
   #if defined(_M_X64) || defined(_M_ARM64)
-  unsigned long leading_zero = 0;
-  // Search the mask data from most significant bit (MSB)
-  // to least significant bit (LSB) for a set bit (1).
-  _BitScanReverse64(&leading_zero, input_num);
-  return (int)(63 - leading_zero);
-  #else
+    #if defined(HAS_CXX20_CONSTEXPR)
+  if(!std::is_constant_evaluated())
+    #endif
+  {
+    unsigned long leading_zero = 0;
+    // Search the mask data from most significant bit (MSB)
+    // to least significant bit (LSB) for a set bit (1).
+    _BitScanReverse64( &leading_zero, input_num );
+    return (int)(63 - leading_zero);
+  }
+  #endif
+  #if defined(HAS_CXX20_CONSTEXPR) || !(defined(_M_X64) || defined(_M_ARM64))
   int last_bit = 0;
   if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, last_bit |= 32;
   if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, last_bit |= 16;
