@@ -1,6 +1,7 @@
 #ifndef FASTFLOAT_ASCII_NUMBER_H
 #define FASTFLOAT_ASCII_NUMBER_H
 
+#include <array>
 #include <cctype>
 #include <cstdint>
 #include <cstring>
@@ -37,28 +38,66 @@ CXX20_CONSTEXPR fastfloat_really_inline uint64_t byteswap(uint64_t val) {
 CXX20_CONSTEXPR fastfloat_really_inline uint64_t read_u64(const char *chars) {
   uint64_t val;
 #if defined(__cpp_lib_bit_cast)
-  val = std::bit_cast<uint64_t>(reinterpret_cast<const char (&)[8]>(chars));
+  std::array<char, 8> data;
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+  // Need to read as-if the number was in little-endian order.
+  data[0] = chars[7];
+  data[1] = chars[6];
+  data[2] = chars[5];
+  data[3] = chars[4];
+  data[4] = chars[3];
+  data[5] = chars[2];
+  data[6] = chars[1];
+  data[7] = chars[0];
+#else
+  data[0] = chars[0];
+  data[1] = chars[1];
+  data[2] = chars[2];
+  data[3] = chars[3];
+  data[4] = chars[4];
+  data[5] = chars[5];
+  data[6] = chars[6];
+  data[7] = chars[7];
+#endif
+  val = std::bit_cast<uint64_t>(data);
 #else
   ::memcpy(&val, chars, sizeof(uint64_t));
-#endif
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
   val = byteswap(val);
+#endif
 #endif
   return val;
 }
 
 CXX20_CONSTEXPR fastfloat_really_inline void write_u64(uint8_t *chars, uint64_t val) {
-#if FASTFLOAT_IS_BIG_ENDIAN == 1
-  // Need to read as-if the number was in little-endian order.
-  val = byteswap(val);
-#endif
 #if defined(__cpp_lib_bit_cast)
   if (std::is_constant_evaluated()) {
-    char (&dst)[8] = reinterpret_cast<char (&)[8]>(chars);
-    const char (&src)[8] = reinterpret_cast<const char (&)[8]>(val);
-    std::copy(std::begin(src), std::end(src), std::begin(dst));
+    const auto data = std::bit_cast<std::array<char, 8>>(val);
+#if FASTFLOAT_IS_BIG_ENDIAN
+    chars[0] = data[7];
+    chars[1] = data[6];
+    chars[2] = data[5];
+    chars[3] = data[4];
+    chars[4] = data[3];
+    chars[5] = data[2];
+    chars[6] = data[1];
+    chars[7] = data[0];
+#else
+    chars[0] = data[0];
+    chars[1] = data[1];
+    chars[2] = data[2];
+    chars[3] = data[3];
+    chars[4] = data[4];
+    chars[5] = data[5];
+    chars[6] = data[6];
+    chars[7] = data[7];
+#endif
   } else {
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+    // Need to read as-if the number was in little-endian order.
+    val = byteswap(val);
+#endif
     ::memcpy(chars, &val, sizeof(uint64_t));
   }
 #else
