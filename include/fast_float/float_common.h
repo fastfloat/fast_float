@@ -121,8 +121,9 @@ template <typename T>
 struct span {
   const T* ptr;
   size_t length;
-  span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
-  span() : ptr(nullptr), length(0) {}
+  CXX20_CONSTEXPR span(const T* _ptr, size_t _length)
+      : ptr(_ptr), length(_length) {}
+  CXX20_CONSTEXPR span() : ptr(nullptr), length(0) {}
 
   constexpr size_t len() const noexcept {
     return length;
@@ -137,8 +138,9 @@ struct span {
 struct value128 {
   uint64_t low;
   uint64_t high;
-  value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
-  value128() : low(0), high(0) {}
+  CXX20_CONSTEXPR value128(uint64_t _low, uint64_t _high)
+      : low(_low), high(_high) {}
+  CXX20_CONSTEXPR value128() : low(0), high(0) {}
 };
 
 /* result might be undefined when input_num is zero */
