@@ -22,7 +22,7 @@ namespace fast_float {
 namespace detail {
 
 // remove all final zeroes
-CXX20_CONSTEXPR inline void trim(decimal &h) {
+inline void trim(decimal &h) {
   while ((h.num_digits > 0) && (h.digits[h.num_digits - 1] == 0)) {
     h.num_digits--;
   }
@@ -30,7 +30,7 @@ CXX20_CONSTEXPR inline void trim(decimal &h) {
 
 
 
-CXX20_CONSTEXPR inline uint32_t number_of_digits_decimal_left_shift(const decimal &h, uint32_t shift) {
+inline uint32_t number_of_digits_decimal_left_shift(const decimal &h, uint32_t shift) {
   shift &= 63;
   constexpr uint16_t number_of_digits_decimal_left_shift_table[65] = {
     0x0000, 0x0800, 0x0801, 0x0803, 0x1006, 0x1009, 0x100D, 0x1812, 0x1817,
@@ -123,7 +123,7 @@ CXX20_CONSTEXPR inline uint32_t number_of_digits_decimal_left_shift(const decima
   return num_new_digits;
 }
 
-CXX20_CONSTEXPR inline uint64_t round(decimal &h) {
+inline uint64_t round(decimal &h) {
   if ((h.num_digits == 0) || (h.decimal_point < 0)) {
     return 0;
   } else if (h.decimal_point > 18) {
@@ -150,7 +150,7 @@ CXX20_CONSTEXPR inline uint64_t round(decimal &h) {
 }
 
 // computes h * 2^-shift
-CXX20_CONSTEXPR inline void decimal_left_shift(decimal &h, uint32_t shift) {
+inline void decimal_left_shift(decimal &h, uint32_t shift) {
   if (h.num_digits == 0) {
     return;
   }
@@ -192,7 +192,7 @@ CXX20_CONSTEXPR inline void decimal_left_shift(decimal &h, uint32_t shift) {
 }
 
 // computes h * 2^shift
-CXX20_CONSTEXPR inline void decimal_right_shift(decimal &h, uint32_t shift) {
+inline void decimal_right_shift(decimal &h, uint32_t shift) {
   uint32_t read_index = 0;
   uint32_t write_index = 0;
 
@@ -241,7 +241,7 @@ CXX20_CONSTEXPR inline void decimal_right_shift(decimal &h, uint32_t shift) {
 } // namespace detail
 
 template <typename binary>
-CXX20_CONSTEXPR adjusted_mantissa compute_float(decimal &d) {
+adjusted_mantissa compute_float(decimal &d) {
   adjusted_mantissa answer;
   if (d.num_digits == 0) {
     // should be zero
@@ -351,7 +351,7 @@ CXX20_CONSTEXPR adjusted_mantissa compute_float(decimal &d) {
 }
 
 template <typename binary>
-CXX20_CONSTEXPR adjusted_mantissa parse_long_mantissa(const char *first, const char* last, parse_options options) {
+adjusted_mantissa parse_long_mantissa(const char *first, const char* last, parse_options options) {
     decimal d = parse_decimal(first, last, options);
     return compute_float<binary>(d);
 }

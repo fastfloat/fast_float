@@ -74,20 +74,6 @@
 #define fastfloat_really_inline inline __attribute__((always_inline))
 #endif
 
-#if !defined(CXX20_CONSTEXPR)
-  #define CXX20_CONSTEXPR
-  #if defined __has_include
-    #if __has_include(<version>)
-      #include <version>
-      #if defined(__cpp_lib_bit_cast)
-        #undef CXX20_CONSTEXPR
-        #define CXX20_CONSTEXPR constexpr
-        #define HAS_CXX20_CONSTEXPR 1
-      #endif
-    #endif
-  #endif
-#endif
-
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)  { if (!(x)) abort(); }
 #endif
@@ -103,7 +89,7 @@
 namespace fast_float {
 
 // Compares two ASCII strings in a case insensitive manner.
-CXX20_CONSTEXPR inline bool fastfloat_strncasecmp(const char *input1, const char *input2,
+inline bool fastfloat_strncasecmp(const char *input1, const char *input2,
                                   size_t length) {
   char running_diff{0};
   for (size_t i = 0; i < length; i++) {
@@ -142,7 +128,7 @@ struct value128 {
 };
 
 /* result might be undefined when input_num is zero */
-CXX20_CONSTEXPR fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
+fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
   assert(input_num > 0);
 #ifdef FASTFLOAT_VISUAL_STUDIO
   #if defined(_M_X64) || defined(_M_ARM64)
@@ -169,13 +155,13 @@ CXX20_CONSTEXPR fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 #ifdef FASTFLOAT_32BIT
 
 // slow emulation routine for 32-bit
-CXX20_CONSTEXPR fastfloat_really_inline uint64_t emulu(uint32_t x, uint32_t y) {
+fastfloat_really_inline uint64_t emulu(uint32_t x, uint32_t y) {
     return x * (uint64_t)y;
 }
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
-CXX20_CONSTEXPR fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
+fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
                                           uint64_t *hi) {
   uint64_t ad = emulu((uint32_t)(ab >> 32), (uint32_t)cd);
   uint64_t bd = emulu((uint32_t)ab, (uint32_t)cd);
@@ -354,7 +340,6 @@ template <> inline constexpr size_t binary_format<float>::max_digits() {
 }
 
 template<typename T>
-CXX20_CONSTEXPR
 fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
   uint64_t word = am.mantissa;
   word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();

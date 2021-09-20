@@ -42,11 +42,6 @@
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
-#if HAS_CXX20_CONSTEXPR
-#include <bit>
-#include <string_view>
-#endif
-
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
 // We also only run these tests on little endian systems.
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
@@ -119,28 +114,6 @@ TEST_CASE("supplemental") {
     }
 }
 #endif
-
-#if HAS_CXX20_CONSTEXPR
-
-constexpr double tryParse(std::string_view input)
-{
-    double result{};
-    fast_float::from_chars_result parseResult = fast_float::from_chars(input.data(), input.data() + input.size(), result);
-    if (parseResult.ec != std::errc()) {
-        return std::numeric_limits<double>::quiet_NaN();
-    }
-    return result;
-}
-
-static_assert(tryParse("1.0") == 1.0);
-static_assert(tryParse("2.0") == 2.0);
-static_assert(tryParse("3.14156") == 3.14156);
-static_assert(tryParse("3.14156") != 3.1415600000001);
-#if !defined(_MSVC_LANG)
-static_assert(std::isnan(tryParse("hellothere")));    // technically isnan is not constexpr but GCC and clang allow it
-#endif
-
-#endif  //#if HAS_CXX20_CONSTEXPR
 
 TEST_CASE("leading_zeroes") {
   constexpr const uint64_t bit = 1;
