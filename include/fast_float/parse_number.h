@@ -20,7 +20,7 @@ namespace detail {
  * strings a null-free and fixed.
  **/
 template <typename T>
-CXX20_CONSTEXPR from_chars_result parse_infnan(const char *first, const char *last, T &value)  noexcept  {
+from_chars_result parse_infnan(const char *first, const char *last, T &value)  noexcept  {
   from_chars_result answer;
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
@@ -63,13 +63,13 @@ CXX20_CONSTEXPR from_chars_result parse_infnan(const char *first, const char *la
 } // namespace detail
 
 template<typename T>
-CXX20_CONSTEXPR from_chars_result from_chars(const char *first, const char *last,
+from_chars_result from_chars(const char *first, const char *last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
   return from_chars_advanced(first, last, value, parse_options{fmt});
 }
 
 template<typename T>
-CXX20_CONSTEXPR from_chars_result from_chars_advanced(const char *first, const char *last,
+from_chars_result from_chars_advanced(const char *first, const char *last,
                                       T &value, parse_options options)  noexcept  {
 
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
