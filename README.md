@@ -28,10 +28,11 @@ struct from_chars_result {
 ```
 
 It parses the character sequence [first,last) for a number. It parses floating-point numbers expecting
-a locale-independent format equivalent to what is used by `std::strtod` in the default ("C") locale. 
+a locale-independent format equivalent to the C++17 from_chars function. 
 The resulting floating-point value is the closest floating-point values (using either float or double), 
 using the "round to even" convention for values that would otherwise fall right in-between two values.
 That is, we provide exact parsing according to the IEEE standard.
+
 
 Given a successful parse, the pointer (`ptr`) in the returned value is set to point right after the
 parsed number, and the `value` referenced is set to the parsed value. In case of error, the returned
@@ -64,9 +65,19 @@ the type `fast_float::chars_format`. It is a bitset value: we check whether
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
-The library seeks to follow the C++17 (see 20.19.3.(7.1))  specification. In particular, it forbids leading spaces and the leading '+' sign.
+The library seeks to follow the C++17 (see [20.19.3](http://eel.is/c++draft/charconv.from.chars).(7.1))  specification. 
+* The `from_chars` function does not skip leading white-space characters.
+* [A leading `+` sign](https://en.cppreference.com/w/cpp/utility/from_chars) is forbidden.
+* It is generally impossible to represent a decimal value exactly as binary floating-point number (`float` and `double` types). We seek the nearest value. We round to an even mantissa when we are in-between two binary floating-point numbers. 
+
+Furthermore, we have the following restrictions:
+* We only support `float` and `double` types at this time.
+* We only support the decimal format: we do not support hexadecimal strings.
+* For values that are either very large or very small (e.g., `1e9999`), we represent it using the infinity or negative infinity value.
 
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
+
+
 
 ## Using commas as decimal separator
 
