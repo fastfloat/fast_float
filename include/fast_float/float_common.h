@@ -152,6 +152,31 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 #endif
 }
 
+/* result might be undefined when input_num is zero */
+fastfloat_really_inline int trailing_zeroes(uint64_t input_num) {
+  assert(input_num > 0);
+#ifdef FASTFLOAT_VISUAL_STUDIO
+  #if defined(_M_X64) || defined(_M_ARM64)
+  unsigned long ret;
+  // Search the mask data from least significant bit (LSB)
+  // to the most significant bit (MSB) for a set bit (1).
+  _BitScanForward64(&ret, input_num);
+  return int(ret);
+  #else
+  int first_bit = 1;
+  if ((input_num & 0xFFFFFFFF) == 0) { input_num >>= 32; first_bit += 32; }
+  if ((input_num & 0x0000FFFF) == 0) { input_num >>= 16; first_bit += 16; }
+  if ((input_num & 0x000000FF) == 0) { input_num >>= 8; first_bit += 8; }
+  if ((input_num & 0x0000000F) == 0) { input_num >>= 4; first_bit += 4; }
+  if ((input_num & 0x00000003) == 0) { input_num >>= 2; first_bit += 2; }
+  first_bit -= (input_num & 1);
+  return first_bit;
+  #endif
+#else
+  return __builtin_ctzll(input_num);
+#endif
+}
+
 #ifdef FASTFLOAT_32BIT
 
 // slow emulation routine for 32-bit

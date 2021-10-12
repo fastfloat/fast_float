@@ -2,6 +2,7 @@
 #define DRAGONBOX_H
 
 #include <cstdint>
+#include "float_common.h"
 
 /**
  * Our objective is to integrate a fast binary to decimal converter which relies
@@ -13,6 +14,144 @@ namespace fast_float {
 // credit: https://github.com/fmtlib/fmt/blob/012cc709d0abb0a963591413a746b988168e5e3a/include/fmt/format-inl.h
 namespace dragonbox {
 
+namespace detail {
+constexpr fastfloat_really_inline int floor_log10_pow2_minus_log10_4_over_3(int e) {
+  const uint64_t log10_4_over_3_fractional_digits = 0x1ffbfc2bbc780375;
+  // log10(2) = 0x0.4d104d427de7fbcc...
+  constexpr uint64_t log10_2_significand = 0x4d104d427de7fbcc;
+  const int shift_amount = 22;
+  const int shifted1 = int(log10_2_significand >> (64 - shift_amount));
+  const int shifted2 = int(log10_4_over_3_fractional_digits >> (64 - shift_amount));
+  return (e * shifted1 - shifted2 ) >> shift_amount;
+}
+
+constexpr fastfloat_really_inline int floor_log2_pow10(int e) {
+  const uint64_t log2_10_integer_part = 3;
+  const uint64_t log2_10_fractional_digits = 0x5269e12f346e2bf9;
+  const int shift_amount = 19;
+  const int shifted1 = int(log2_10_integer_part << shift_amount);
+  const int shifted2 = int(log2_10_fractional_digits >> (64 - shift_amount));
+  const int multiplier = int(shifted1 | shifted2 )
+  return (e * multiplier) >> shift_amount;
+}
+
+
+
+// Remove trailing zeros from n and return the number of zeros removed (float)
+constexpr fastfloat_really_inline remove_trailing_zeros(uint32_t& n) {
+#ifdef FMT_BUILTIN_CTZ
+  int t = FMT_BUILTIN_CTZ(n);
+#else
+  int t = ctz(n);
+#endif
+  if (t > float_info<float>::max_trailing_zeros)
+    t = float_info<float>::max_trailing_zeros;
+
+  const uint32_t mod_inv1 = 0xcccccccd;
+  const uint32_t max_quotient1 = 0x33333333;
+  const uint32_t mod_inv2 = 0xc28f5c29;
+  const uint32_t max_quotient2 = 0x0a3d70a3;
+
+  int s = 0;
+  for (; s < t - 1; s += 2) {
+    if (n * mod_inv2 > max_quotient2) break;
+    n *= mod_inv2;
+  }
+  if (s < t && n * mod_inv1 <= max_quotient1) {
+    n *= mod_inv1;
+    ++s;
+  }
+  n >>= s;
+  return s;
+}
+
+// Removes trailing zeros and returns the number of zeros removed (double)
+constexpr fastfloat_really_inline int remove_trailing_zeros(uint64_t& n) {
+#ifdef FMT_BUILTIN_CTZLL
+  int t = FMT_BUILTIN_CTZLL(n);
+#else
+  int t = ctzll(n);
+#endif
+  if (t > float_info<double>::max_trailing_zeros)
+    t = float_info<double>::max_trailing_zeros;
+  // Divide by 10^8 and reduce to 32-bits
+  // Since ret_value.significand <= (2^64 - 1) / 1000 < 10^17,
+  // both of the quotient and the r should fit in 32-bits
+
+  const uint32_t mod_inv1 = 0xcccccccd;
+  const uint32_t max_quotient1 = 0x33333333;
+  const uint64_t mod_inv8 = 0xc767074b22e90e21;
+  const uint64_t max_quotient8 = 0x00002af31dc46118;
+
+  // If the number is divisible by 1'0000'0000, work with the quotient
+  if (t >= 8) {
+    auto quotient_candidate = n * mod_inv8;
+
+    if (quotient_candidate <= max_quotient8) {
+      auto quotient = static_cast<uint32_t>(quotient_candidate >> 8);
+
+      int s = 8;
+      for (; s < t; ++s) {
+        if (quotient * mod_inv1 > max_quotient1) break;
+        quotient *= mod_inv1;
+      }
+      quotient >>= (s - 8);
+      n = quotient;
+      return s;
+    }
+  }
+
+  // Otherwise, work with the remainder
+  auto quotient = static_cast<uint32_t>(n / 100000000);
+  auto remainder = static_cast<uint32_t>(n - 100000000 * quotient);
+
+  if (t == 0 || remainder * mod_inv1 > max_quotient1) {
+    return 0;
+  }
+  remainder *= mod_inv1;
+
+  if (t == 1 || remainder * mod_inv1 > max_quotient1) {
+    n = (remainder >> 1) + quotient * 10000000ull;
+    return 1;
+  }
+  remainder *= mod_inv1;
+
+  if (t == 2 || remainder * mod_inv1 > max_quotient1) {
+    n = (remainder >> 2) + quotient * 1000000ull;
+    return 2;
+  }
+  remainder *= mod_inv1;
+
+  if (t == 3 || remainder * mod_inv1 > max_quotient1) {
+    n = (remainder >> 3) + quotient * 100000ull;
+    return 3;
+  }
+  remainder *= mod_inv1;
+
+  if (t == 4 || remainder * mod_inv1 > max_quotient1) {
+    n = (remainder >> 4) + quotient * 10000ull;
+    return 4;
+  }
+  remainder *= mod_inv1;
+
+  if (t == 5 || remainder * mod_inv1 > max_quotient1) {
+    n = (remainder >> 5) + quotient * 1000ull;
+    return 5;
+  }
+  remainder *= mod_inv1;
+
+  if (t == 6 || remainder * mod_inv1 > max_quotient1) {
+    n = (remainder >> 6) + quotient * 100ull;
+    return 6;
+  }
+  remainder *= mod_inv1;
+
+  n = (remainder >> 7) + quotient * 10ull;
+  return 7;
+}
+
+} // detail
+
 
 
 // The main algorithm for shorter interval case
@@ -20,8 +159,8 @@ template <class T>
 FMT_INLINE decimal_fp<T> shorter_interval_case(int exponent) FMT_NOEXCEPT {
   decimal_fp<T> ret_value;
   // Compute k and beta
-  const int minus_k = floor_log10_pow2_minus_log10_4_over_3(exponent);
-  const int beta_minus_1 = exponent + floor_log2_pow10(-minus_k);
+  const int minus_k = detail::floor_log10_pow2_minus_log10_4_over_3(exponent);
+  const int beta_minus_1 = exponent + detail::floor_log2_pow10(-minus_k);
 
   // Compute xi and zi
   using cache_entry_type = typename cache_accessor<T>::cache_entry_type;
