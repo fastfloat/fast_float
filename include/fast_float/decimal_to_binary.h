@@ -26,7 +26,7 @@ value128 compute_product_approximation(int64_t q, uint64_t w) {
   value128 firstproduct = full_multiplication(w, powers::power_of_five_128[index]);
   static_assert((bit_precision >= 0) && (bit_precision <= 64), " precision should  be in (0,64]");
   constexpr uint64_t precision_mask = (bit_precision < 64) ?
-               (uint64_t(0xFFFFFFFFFFFFFFFF) >> bit_precision)
+               (uint64_t(0xFFFFFFFFFFFFFFFF) >> (bit_precision%64))
                : uint64_t(0xFFFFFFFFFFFFFFFF);
   if((firstproduct.high & precision_mask) == precision_mask) { // could further guard with  (lower + w < lower)
     // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.

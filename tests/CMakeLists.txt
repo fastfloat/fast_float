@@ -52,7 +52,7 @@ function(fast_float_add_cpp_test TEST_NAME)
     endif()
 endfunction(fast_float_add_cpp_test)
 
-
+fast_float_add_cpp_test(serialization_test)
 fast_float_add_cpp_test(example_test)
 fast_float_add_cpp_test(example_comma_test)
 fast_float_add_cpp_test(basictest)
