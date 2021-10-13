@@ -156,7 +156,7 @@ constexpr fastfloat_really_inline int remove_trailing_zeros(uint64_t& n) {
 
 // The main algorithm for shorter interval case
 template <class T>
-FMT_INLINE decimal_fp<T> shorter_interval_case(int exponent) FMT_NOEXCEPT {
+FMT_INLINE decimal_fp<T> shorter_interval_case(int exponent) {
   decimal_fp<T> ret_value;
   // Compute k and beta
   const int minus_k = detail::floor_log10_pow2_minus_log10_4_over_3(exponent);
