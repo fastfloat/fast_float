@@ -22,7 +22,7 @@ for filename in ['LICENSE-MIT', 'LICENSE-APACHE']:
   if filename == 'LICENSE-APACHE':
     lines = [
       '   Copyright 2021 The fast_float authors\n',
-      *lines[189:-1]
+      *lines[179:-1]
     ]
 
   text = ''
