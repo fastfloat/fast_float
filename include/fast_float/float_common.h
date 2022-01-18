@@ -41,7 +41,9 @@
 #define FASTFLOAT_VISUAL_STUDIO 1
 #endif
 
-#ifdef _WIN32
+#if defined __BYTE_ORDER__ && defined __ORDER_BIG_ENDIAN__
+#define FASTFLOAT_IS_BIG_ENDIAN (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#elif defined _WIN32
 #define FASTFLOAT_IS_BIG_ENDIAN 0
 #else
 #if defined(__APPLE__) || defined(__FreeBSD__)
