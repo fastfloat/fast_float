@@ -189,6 +189,108 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   return answer;
 }
 
+// w * 2 ** q
+template <typename binary>
+fastfloat_really_inline
+adjusted_mantissa compute_hex_float(int64_t q, uint64_t w)  noexcept {
+  adjusted_mantissa answer;
+  if (w == 0) {
+    answer.power2 = 0;
+    answer.mantissa = 0;
+    // result should be zero
+    return answer;
+  }
+  if (q >= binary::infinite_power()) {
+    // we want to get infinity:
+    answer.power2 = binary::infinite_power();
+    answer.mantissa = 0;
+    return answer;
+  }
+
+  int lz = leading_zeroes(w);
+  w <<= lz;
+
+  // The required precision is binary::mantissa_explicit_bits() + 3 because
+  // 1. We need the implicit bit
+  // 2. We need an extra bit for rounding purposes
+  // 3. We might lose a bit due to the "upperbit" routine (result too small, requiring a shift)
+
+  value128 product = { 0x00, w };
+  /*
+  if (product.low == 0xFFFFFFFFFFFFFFFF) { //  could guard it further
+    // In some very rare cases, this could happen, in which case we might need a more accurate
+    // computation that what we can provide cheaply. This is very, very unlikely.
+    //
+      const bool inside_safe_exponent = (q >= -27) && (q <= 55); // always good because 5**q <2**128 when q>=0, 
+      // and otherwise, for q<0, we have 5**-q<2**64 and the 128-bit reciprocal allows for exact computation.
+      if (!inside_safe_exponent) {
+          return compute_error_scaled<binary>(q, product.high, lz);
+      }
+  }
+  */
+  // The "compute_product_approximation" function can be slightly slower than a branchless approach:
+  // value128 product = compute_product(q, w);
+  // but in practice, we can win big with the compute_product_approximation if its additional branch
+  // is easily predicted. Which is best is data specific.
+  int upperbit = int(product.high >> 63);
+
+  answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
+
+  answer.power2 = int32_t(q + upperbit - lz - binary::minimum_exponent() + 62);
+  if (answer.power2 <= 0) { // we have a subnormal?
+    // Here have that answer.power2 <= 0 so -answer.power2 >= 0
+    if (-answer.power2 + 1 >= 64) { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
+      answer.power2 = 0;
+      answer.mantissa = 0;
+        // result should be zero
+      return answer;
+    }
+    // next line is safe because -answer.power2 + 1 < 64
+    answer.mantissa >>= -answer.power2 + 1;
+    // Thankfully, we can't have both "round-to-even" and subnormals because
+    // "round-to-even" only occurs for powers close to 0.
+    answer.mantissa += (answer.mantissa & 1); // round up
+    answer.mantissa >>= 1;
+    // There is a weird scenario where we don't have a subnormal but just.
+    // Suppose we start with 2.2250738585072013e-308, we end up
+    // with 0x3fffffffffffff x 2^-1023-53 which is technically subnormal
+    // whereas 0x40000000000000 x 2^-1023-53  is normal. Now, we need to round
+    // up 0x3fffffffffffff x 2^-1023-53  and once we do, we are no longer
+    // subnormal, but we can only know this after rounding.
+    // So we only declare a subnormal if we are smaller than the threshold.
+    answer.power2 = (answer.mantissa < (uint64_t(1) <<
+      binary::mantissa_explicit_bits())) ? 0 : 1;
+    return answer;
+  }
+
+  // usually, we round *up*, but if we fall right in between and and we have an
+  // even basis, we need to round down
+  // We are only concerned with the cases where 5**q fits in single 64-bit word.
+  if ((product.low <= 1) && (q >= binary::min_exponent_round_to_even()) && (q <= binary::max_exponent_round_to_even()) &&
+      ((answer.mantissa & 3) == 1)) { // we may fall between two floats!
+    // To be in-between two floats we need that in doing
+    //   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
+    // ... we dropped out only zeroes. But if this happened, then we can go back!!!
+    if ((answer.mantissa << (upperbit + 64 - binary::mantissa_explicit_bits() - 3)) == product.high) {
+      answer.mantissa &= ~uint64_t(1);          // flip it so that we do not round up
+    }
+  }
+
+  answer.mantissa += (answer.mantissa & 1); // round up
+  answer.mantissa >>= 1;
+  if (answer.mantissa >= (uint64_t(2) << binary::mantissa_explicit_bits())) {
+    answer.mantissa = (uint64_t(1) << binary::mantissa_explicit_bits());
+    answer.power2++; // undo previous addition
+  }
+
+  answer.mantissa &= ~(uint64_t(1) << binary::mantissa_explicit_bits());
+  if (answer.power2 >= binary::infinite_power()) { // infinity
+    answer.power2 = binary::infinite_power();
+    answer.mantissa = 0;
+  }
+  return answer;
+}
+
 } // namespace fast_float
 
 #endif

@@ -11,6 +11,11 @@ enum chars_format {
     general = fixed | scientific
 };
 
+enum adv_format {
+    none,
+    prefixed = 1 << 0,
+    allow_signed = 1 << 1
+};
 
 struct from_chars_result {
   const char *ptr;
@@ -19,13 +24,15 @@ struct from_chars_result {
 
 struct parse_options {
   constexpr explicit parse_options(chars_format fmt = chars_format::general,
-                         char dot = '.')
-    : format(fmt), decimal_point(dot) {}
+      char dot = '.', adv_format adv_fmt = adv_format::none)
+      : format(fmt), decimal_point(dot), format_advanced(adv_fmt) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
   char decimal_point;
+  /** Additional flags */
+  adv_format format_advanced;
 };
 
 /**
