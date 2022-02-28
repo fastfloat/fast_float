@@ -3,7 +3,7 @@ processed_files = { }
 
 # authors
 for filename in ['AUTHORS', 'CONTRIBUTORS']:
-  with open(filename) as f:
+  with open(filename, encoding='utf8') as f:
     text = ''
     for line in f:
       if filename == 'AUTHORS':
@@ -15,7 +15,7 @@ for filename in ['AUTHORS', 'CONTRIBUTORS']:
 # licenses
 for filename in ['LICENSE-MIT', 'LICENSE-APACHE']:
   lines = []
-  with open(filename) as f:
+  with open(filename, encoding='utf8') as f:
     lines = f.readlines()
 
   # Retrieve subset required for inclusion in source
@@ -34,7 +34,7 @@ for filename in ['LICENSE-MIT', 'LICENSE-APACHE']:
 for filename in [ 'fast_float.h', 'float_common.h', 'ascii_number.h', 
                   'fast_table.h', 'decimal_to_binary.h', 'bigint.h',
                   'ascii_number.h', 'digit_comparison.h', 'parse_number.h']:
-  with open('include/fast_float/' + filename) as f:
+  with open('include/fast_float/' + filename, encoding='utf8') as f:
     text = ''
     for line in f:
       if line.startswith('#include "'): continue
@@ -82,7 +82,7 @@ text = ''.join([
   processed_files['parse_number.h']])
 
 if args.output:
-  with open(args.output, 'wt') as f:
+  with open(args.output, 'wt', encoding='utf8') as f:
     f.write(text)
 else:
   print(text)
