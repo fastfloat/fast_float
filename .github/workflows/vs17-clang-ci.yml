@@ -1,17 +1,17 @@
-name: VS16-CLANG-CI
+name: VS17-CLANG-CI
 
 on: [push, pull_request]
 
 jobs:
   ci:
-    name: windows-vs16
+    name: windows-vs17
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {gen: Visual Studio 16 2019, arch: Win32}
-          - {gen: Visual Studio 16 2019, arch: x64}
+          - {gen: Visual Studio 17 2022, arch: Win32}
+          - {gen: Visual Studio 17 2022, arch: x64}
     steps:
       - name: checkout
         uses: actions/checkout@v2
