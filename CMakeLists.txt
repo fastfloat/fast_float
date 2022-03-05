@@ -49,7 +49,11 @@ set(FASTFLOAT_VERSION_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfig
 set(FASTFLOAT_PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfig.cmake")
 set(FASTFLOAT_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/cmake/FastFloat")
 
-write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+if(${CMAKE_VERSION} VERSION_LESS "3.14")
+  write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+else()
+  write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion ARCH_INDEPENDENT)
+endif()
 configure_package_config_file("cmake/config.cmake.in"
                               "${FASTFLOAT_PROJECT_CONFIG}"
                               INSTALL_DESTINATION "${FASTFLOAT_CONFIG_INSTALL_DIR}")
