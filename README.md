@@ -21,8 +21,8 @@ struct from_chars_result {
 ```
 
 It parses the character sequence [first,last) for a number. It parses floating-point numbers expecting
-a locale-independent format equivalent to the C++17 from_chars function. 
-The resulting floating-point value is the closest floating-point values (using either float or double), 
+a locale-independent format equivalent to the C++17 from_chars function.
+The resulting floating-point value is the closest floating-point values (using either float or double),
 using the "round to even" convention for values that would otherwise fall right in-between two values.
 That is, we provide exact parsing according to the IEEE standard.
 
@@ -40,7 +40,7 @@ Example:
 ``` C++
 #include "fast_float/fast_float.h"
 #include <iostream>
- 
+
 int main() {
     const std::string input =  "3.1416 xyz ";
     double result;
@@ -53,15 +53,15 @@ int main() {
 
 
 Like the C++17 standard, the `fast_float::from_chars` functions take an optional last argument of
-the type `fast_float::chars_format`. It is a bitset value: we check whether 
+the type `fast_float::chars_format`. It is a bitset value: we check whether
 `fmt & fast_float::chars_format::fixed` and `fmt & fast_float::chars_format::scientific` are set
 to determine whether we allow the fixed point and scientific notation respectively.
 The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
 
-The library seeks to follow the C++17 (see [20.19.3](http://eel.is/c++draft/charconv.from.chars).(7.1))  specification. 
+The library seeks to follow the C++17 (see [20.19.3](http://eel.is/c++draft/charconv.from.chars).(7.1))  specification.
 * The `from_chars` function does not skip leading white-space characters.
 * [A leading `+` sign](https://en.cppreference.com/w/cpp/utility/from_chars) is forbidden.
-* It is generally impossible to represent a decimal value exactly as binary floating-point number (`float` and `double` types). We seek the nearest value. We round to an even mantissa when we are in-between two binary floating-point numbers. 
+* It is generally impossible to represent a decimal value exactly as binary floating-point number (`float` and `double` types). We seek the nearest value. We round to an even mantissa when we are in-between two binary floating-point numbers.
 
 Furthermore, we have the following restrictions:
 * We only support `float` and `double` types at this time.
@@ -76,16 +76,16 @@ We support Visual Studio, macOS, Linux, freeBSD. We support big and little endia
 
 
 The C++ standard stipulate that `from_chars` has to be locale-independent. In
-particular, the decimal separator has to be the period (`.`). However, 
-some users still want to use the `fast_float` library with in a locale-dependent 
+particular, the decimal separator has to be the period (`.`). However,
+some users still want to use the `fast_float` library with in a locale-dependent
 manner. Using a separate function called `from_chars_advanced`, we allow the users
-to pass a `parse_options` instance which contains a custom decimal separator (e.g., 
+to pass a `parse_options` instance which contains a custom decimal separator (e.g.,
 the comma). You may use it as follows.
 
 ```C++
 #include "fast_float/fast_float.h"
 #include <iostream>
- 
+
 int main() {
     const std::string input =  "3,1416 xyz ";
     double result;
@@ -97,6 +97,32 @@ int main() {
 }
 ```
 
+You can parse delimited numbers:
+```C++
+  const std::string input =   "234532.3426362,7869234.9823,324562.645";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
+  if(answer.ec != std::errc()) {
+    // check error
+  }
+  // we have result == 234532.3426362.
+  if(answer.ptr[0] != ',') {
+    // unexpected delimiter
+  }
+  answer = fast_float::from_chars(answer.ptr + 1, input.data()+input.size(), result);
+  if(answer.ec != std::errc()) {
+    // check error
+  }
+  // we have result == 7869234.9823.
+  if(answer.ptr[0] != ',') {
+    // unexpected delimiter
+  }
+  answer = fast_float::from_chars(answer.ptr + 1, input.data()+input.size(), result);
+  if(answer.ec != std::errc()) {
+    // check error
+  }
+  // we have result == 324562.645.
+```
 
 ## Reference
 
@@ -114,7 +140,7 @@ int main() {
 
 The fast_float library is part of GCC (as of version 12): the `from_chars` function in GCC relies on fast_float.
 
-The fastfloat algorithm is part of the [LLVM standard libraries](https://github.com/llvm/llvm-project/commit/87c016078ad72c46505461e4ff8bfa04819fe7ba). 
+The fastfloat algorithm is part of the [LLVM standard libraries](https://github.com/llvm/llvm-project/commit/87c016078ad72c46505461e4ff8bfa04819fe7ba).
 
 The fast_float library provides a performance similar to that of the [fast_double_parser](https://github.com/lemire/fast_double_parser) library but using an updated algorithm reworked from the ground up, and while offering an API more in line with the expectations of C++ programmers. The fast_double_parser library is part of the [Microsoft LightGBM machine-learning framework](https://github.com/microsoft/LightGBM).
 
@@ -132,14 +158,14 @@ It can parse random floating-point numbers at a speed of 1 GB/s on some systems.
 <img src="http://lemire.me/blog/wp-content/uploads/2020/11/fastfloat_speed.png" width="400">
 
 ```
-$ ./build/benchmarks/benchmark 
+$ ./build/benchmarks/benchmark
 # parsing random integers in the range [0,1)
-volume = 2.09808 MB 
-netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s  
-doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s  
-strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s  
-abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s  
-fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s  
+volume = 2.09808 MB
+netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s 
+doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s 
+strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s 
+abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s 
+fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s 
 ```
 
 See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.
@@ -180,9 +206,9 @@ You should change the `GIT_TAG` line so that you recover the version you wish to
 
 ## Using as single header
 
-The script `script/amalgamate.py` may be used to generate a single header 
+The script `script/amalgamate.py` may be used to generate a single header
 version of the library if so desired.
-Just run the script from the root directory of this repository. 
+Just run the script from the root directory of this repository.
 You can customize the license type and output file if desired as described in
 the command line help.
 
@@ -192,11 +218,11 @@ https://github.com/fastfloat/fast_float/releases/download/v3.4.0/fast_float.h
 
 ## Credit
 
-Though this work is inspired by many different people, this work benefited especially from exchanges with 
-Michael Eisel, who motivated the original research with his key insights, and with Nigel Tao who provided 
+Though this work is inspired by many different people, this work benefited especially from exchanges with
+Michael Eisel, who motivated the original research with his key insights, and with Nigel Tao who provided
 invaluable feedback. Rémy Oudompheng first implemented a fast path we use in the case of long digits.
 
-The library includes code adapted from Google Wuffs (written by Nigel Tao) which was originally published 
+The library includes code adapted from Google Wuffs (written by Nigel Tao) which was originally published
 under the Apache 2.0 license.
 
 ## License

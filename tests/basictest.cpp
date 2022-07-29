@@ -225,6 +225,33 @@ TEST_CASE("decimal_point_parsing") {
 }
 
 TEST_CASE("issue19") {
+  const std::string input =   "234532.3426362,7869234.9823,324562.645";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
+  CHECK_MESSAGE(answer.ec == std::errc(), "We want to parse up to 234532.3426362\n");
+  CHECK_MESSAGE(answer.ptr == input.data() + 14,
+                "Parsed the number " << result
+                << " and stopped at the wrong character: after " << (answer.ptr - input.data()) << " characters");
+  CHECK_MESSAGE(result == 234532.3426362, "We want to parse234532.3426362\n");
+  CHECK_MESSAGE(answer.ptr[0] == ',', "We want to parse up to the comma\n");
+
+  answer = fast_float::from_chars(answer.ptr + 1, input.data()+input.size(), result);
+  CHECK_MESSAGE(answer.ec == std::errc(), "We want to parse 7869234.9823\n");
+  CHECK_MESSAGE(answer.ptr == input.data() + 27,
+                "Parsed the number " << result
+                << " and stopped at the wrong character " << (answer.ptr - input.data()));
+  CHECK_MESSAGE(answer.ptr[0] == ',', "We want to parse up to the comma\n");
+  CHECK_MESSAGE(result == 7869234.9823, "We want to parse up 7869234.9823\n");
+
+  answer = fast_float::from_chars(answer.ptr + 1, input.data()+input.size(), result);
+  CHECK_MESSAGE(answer.ec == std::errc(), "We want to parse 324562.645\n");
+  CHECK_MESSAGE(answer.ptr == input.data() + 38,
+                "Parsed the number " << result
+                << " and stopped at the wrong character " << (answer.ptr - input.data()));
+  CHECK_MESSAGE(result == 324562.645, "We want to parse up 7869234.9823\n");
+}
+
+TEST_CASE("issue19") {
   const std::string input =  "3.14e";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
