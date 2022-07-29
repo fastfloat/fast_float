@@ -22,6 +22,27 @@ bool many() {
   return true;
 }
 
+
+void many_loop() {
+  const std::string input =   "234532.3426362,7869234.9823,324562.645";
+  double result;
+  const char* pointer = input.data();
+  const char* end_pointer = input.data() + input.size();
+
+  while(pointer < end_pointer) {
+    auto answer = fast_float::from_chars(pointer, end_pointer, result);
+    if(answer.ec != std::errc()) {
+        std::cerr << "error while parsing" << std::endl;
+        break;
+    }
+    std::cout << "parsed: " << result << std::endl;
+    pointer = answer.ptr;
+    if ((answer.ptr < end_pointer) && (*pointer == ',')) {
+      pointer++;
+    }
+  }
+}
+
 int main() {
     const std::string input =  "3.1416 xyz ";
     double result;
@@ -33,5 +54,6 @@ int main() {
         printf("Bug\n");
         return EXIT_FAILURE;
     }
+    many_loop();
     return EXIT_SUCCESS;
 }
