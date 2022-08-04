@@ -16,7 +16,7 @@
 #define FASTFLOAT_64BIT
 #elif (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
      || defined(__arm__) || defined(_M_ARM)                   \
-     || defined(__MINGW32__))
+     || defined(__MINGW32__) || defined(__EMSCRIPTEN__))
 #define FASTFLOAT_32BIT
 #else
   // Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
