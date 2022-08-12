@@ -132,7 +132,7 @@ You can parse delimited numbers:
 
 - [There is an R binding](https://github.com/eddelbuettel/rcppfastfloat) called `rcppfastfloat`.
 - [There is a Rust port of the fast_float library](https://github.com/aldanor/fast-float-rust/) called `fast-float-rust`.
-- [There is a Java port of the fast_float library](https://github.com/wrandelshofer/FastDoubleParser) called `FastDoubleParser`.
+- [There is a Java port of the fast_float library](https://github.com/wrandelshofer/FastDoubleParser) called `FastDoubleParser`. It used for important systems such as [Jackson](https://github.com/FasterXML/jackson-core).
 - [There is a C# port of the fast_float library](https://github.com/CarlVerret/csFastFloat) called `csFastFloat`.
 
 
