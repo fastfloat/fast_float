@@ -15,7 +15,7 @@ jobs:
           - {cxx:                           , arch:                         } # default=gcc7
           #- {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc7
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.4
         with:
