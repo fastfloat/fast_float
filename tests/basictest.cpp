@@ -50,7 +50,7 @@
 #include <filesystem>
 #include <charconv>
 
-// return true on succcess
+// return true on success
 bool check_file(std::string file_name) {
   std::cout << "Checking " << file_name << std::endl;
   size_t number{0};
