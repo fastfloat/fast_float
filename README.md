@@ -184,8 +184,9 @@ If you drop the `fast_float` repository in your CMake project, you should be abl
 it in this manner:
 
 ```cmake
+set(FASTFLOAT_ENABLE_INSTALLATION OFF) # Opt out of installation in case of private linkage.
 add_subdirectory(fast_float)
-target_link_libraries(myprogram PUBLIC fast_float)
+target_link_libraries(myprogram PRIVATE fast_float)
 ```
 
 Or you may want to retrieve the dependency automatically if you have a sufficiently recent version of CMake (3.11 or better at least):
