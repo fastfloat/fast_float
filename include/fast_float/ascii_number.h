@@ -68,6 +68,21 @@ fastfloat_really_inline bool is_made_of_eight_digits_fast(const char *chars)  no
   return is_made_of_eight_digits_fast(read_u64(chars));
 }
 
+// returns a value with the high 16 bits set if not valid
+// otherwise returns the conversion of the 4 hex digits at src into the bottom
+// 16 bits of the 32-bit return register
+//
+// see
+// https://lemire.me/blog/2019/04/17/parsing-short-hexadecimal-strings-efficiently/
+fastfloat_really_inline uint32_t hex_to_u32_nocheck(
+    const uint8_t* src) noexcept { // strictly speaking, static inline is a C-ism
+    uint32_t v1 = digit_to_val32[630 + src[0]];
+    uint32_t v2 = digit_to_val32[420 + src[1]];
+    uint32_t v3 = digit_to_val32[210 + src[2]];
+    uint32_t v4 = digit_to_val32[0 + src[3]];
+    return v1 | v2 | v3 | v4;
+}
+
 typedef span<const char> byte_span;
 
 struct parsed_number_string {
@@ -88,12 +103,13 @@ fastfloat_really_inline
 parsed_number_string parse_number_string(const char *p, const char *pend, parse_options options) noexcept {
   const chars_format fmt = options.format;
   const char decimal_point = options.decimal_point;
+  const adv_format fmt_adv = options.format_advanced;
 
   parsed_number_string answer;
   answer.valid = false;
   answer.too_many_digits = false;
   answer.negative = (*p == '-');
-  if (*p == '-') { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if (*p == '-' || (*p == '+' && (fmt_adv & adv_format::allow_signed))) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
     ++p;
     if (p == pend) {
       return answer;
@@ -102,128 +118,290 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
       return answer;
     }
   }
+
+  if (fmt_adv & adv_format::prefixed) {
+    if (p + 2 < pend && p[0] == '0') {
+      // format should be hex
+      if (p[1] == 'x' || p[1] == 'X') {
+        p += 2;
+      }
+      // octal / binary floats?
+      else if (p[1] == 'b' || p[1] == 'B') {
+        p += 2;
+      }
+      else if (p[1] >= '0' && p[1] <= '7') {
+        p += 2;
+      }
+    }
+  }
   const char *const start_digits = p;
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
 
-  while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
-    i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
-    p += 8;
-  }
-  while ((p != pend) && is_integer(*p)) {
-    // a multiplication by 10 is cheaper than an arbitrary integer
-    // multiplication
-    i = 10 * i +
-        uint64_t(*p - '0'); // might overflow, we will handle the overflow later
-    ++p;
-  }
-  const char *const end_of_integer_part = p;
-  int64_t digit_count = int64_t(end_of_integer_part - start_digits);
-  answer.integer = byte_span(start_digits, size_t(digit_count));
-  int64_t exponent = 0;
-  if ((p != pend) && (*p == decimal_point)) {
-    ++p;
-    const char* before = p;
-    // can occur at most twice without overflowing, but let it occur more, since
-    // for integers with many digits, digit parsing is the primary bottleneck.
+  if (!(fmt & chars_format::hex)) {
     while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
-      i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
-      p += 8;
+        i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
+        p += 8;
     }
     while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - '0');
-      ++p;
-      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+        // a multiplication by 10 is cheaper than an arbitrary integer
+        // multiplication
+        i = 10 * i +
+            uint64_t(*p - '0'); // might overflow, we will handle the overflow later
+        ++p;
     }
-    exponent = before - p;
-    answer.fraction = byte_span(before, size_t(p - before));
-    digit_count -= exponent;
-  }
-  // we must have encountered at least one integer!
-  if (digit_count == 0) {
-    return answer;
-  }
-  int64_t exp_number = 0;            // explicit exponential part
-  if ((fmt & chars_format::scientific) && (p != pend) && (('e' == *p) || ('E' == *p))) {
-    const char * location_of_e = p;
-    ++p;
-    bool neg_exp = false;
-    if ((p != pend) && ('-' == *p)) {
-      neg_exp = true;
+
+    const char *const end_of_integer_part = p;
+    int64_t digit_count = int64_t(end_of_integer_part - start_digits);
+    answer.integer = byte_span(start_digits, size_t(digit_count));
+    int64_t exponent = 0;
+    if ((p != pend) && (*p == decimal_point)) {
       ++p;
-    } else if ((p != pend) && ('+' == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
-      ++p;
-    }
-    if ((p == pend) || !is_integer(*p)) {
-      if(!(fmt & chars_format::fixed)) {
-        // We are in error.
-        return answer;
+      const char* before = p;
+      // can occur at most twice without overflowing, but let it occur more, since
+      // for integers with many digits, digit parsing is the primary bottleneck.
+      while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
+        i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
+        p += 8;
       }
-      // Otherwise, we will be ignoring the 'e'.
-      p = location_of_e;
-    } else {
       while ((p != pend) && is_integer(*p)) {
         uint8_t digit = uint8_t(*p - '0');
-        if (exp_number < 0x10000000) {
-          exp_number = 10 * exp_number + digit;
+        ++p;
+        i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+      }
+      exponent = before - p;
+      answer.fraction = byte_span(before, size_t(p - before));
+      digit_count -= exponent;
+    }
+    // we must have encountered at least one integer!
+    if (digit_count == 0) {
+      return answer;
+    }
+    int64_t exp_number = 0;            // explicit exponential part
+    if ((fmt & chars_format::scientific) && (p != pend) && (('e' == *p) || ('E' == *p))) {
+      const char * location_of_e = p;
+      ++p;
+      bool neg_exp = false;
+      if ((p != pend) && ('-' == *p)) {
+        neg_exp = true;
+        ++p;
+      } else if ((p != pend) && ('+' == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+        ++p;
+      }
+      if ((p == pend) || !is_integer(*p)) {
+        if(!(fmt & chars_format::fixed)) {
+          // We are in error.
+          return answer;
         }
-        ++p;
+        // Otherwise, we will be ignoring the 'e'.
+        p = location_of_e;
+      } else {
+        while ((p != pend) && is_integer(*p)) {
+          uint8_t digit = uint8_t(*p - '0');
+          if (exp_number < 0x10000000) {
+            exp_number = 10 * exp_number + digit;
+          }
+          ++p;
+        }
+        if(neg_exp) { exp_number = - exp_number; }
+        exponent += exp_number;
       }
-      if(neg_exp) { exp_number = - exp_number; }
-      exponent += exp_number;
+    } else {
+      // If it scientific and not fixed, we have to bail out.
+      if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; }
     }
+    answer.lastmatch = p;
+    answer.valid = true;
+  
+    // If we frequently had to deal with long strings of digits,
+    // we could extend our code by using a 128-bit integer instead
+    // of a 64-bit integer. However, this is uncommon.
+    //
+    // We can deal with up to 19 digits.
+    if (digit_count > 19) { // this is uncommon
+      // It is possible that the integer had an overflow.
+      // We have to handle the case where we have 0.0000somenumber.
+      // We need to be mindful of the case where we only have zeroes...
+      // E.g., 0.000000000...000.
+      const char *start = start_digits;
+      while ((start != pend) && (*start == '0' || *start == decimal_point)) {
+        if(*start == '0') { digit_count --; }
+        start++;
+      }
+      if (digit_count > 19) {
+        answer.too_many_digits = true;
+        // Let us start again, this time, avoiding overflows.
+        // We don't need to check if is_integer, since we use the
+        // pre-tokenized spans from above.
+        i = 0;
+        p = answer.integer.ptr;
+        const char* int_end = p + answer.integer.len();
+        const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
+        while((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+          i = i * 10 + uint64_t(*p - '0');
+          ++p;
+        }
+        if (i >= minimal_nineteen_digit_integer) { // We have a big integers
+          exponent = end_of_integer_part - p + exp_number;
+        } else { // We have a value with a fractional component.
+            p = answer.fraction.ptr;
+            const char* frac_end = p + answer.fraction.len();
+            while((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
+              i = i * 10 + uint64_t(*p - '0');
+              ++p;
+            }
+            exponent = answer.fraction.ptr - p + exp_number;
+        }
+        // We have now corrected both exponent and i, to a truncated value
+      }
+    }
+    answer.exponent = exponent;
+    answer.mantissa = i;
+    return answer;
   } else {
-    // If it scientific and not fixed, we have to bail out.
-    if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; }
-  }
-  answer.lastmatch = p;
-  answer.valid = true;
-
-  // If we frequently had to deal with long strings of digits,
-  // we could extend our code by using a 128-bit integer instead
-  // of a 64-bit integer. However, this is uncommon.
-  //
-  // We can deal with up to 19 digits.
-  if (digit_count > 19) { // this is uncommon
-    // It is possible that the integer had an overflow.
-    // We have to handle the case where we have 0.0000somenumber.
-    // We need to be mindful of the case where we only have zeroes...
-    // E.g., 0.000000000...000.
-    const char *start = start_digits;
-    while ((start != pend) && (*start == '0' || *start == decimal_point)) {
-      if(*start == '0') { digit_count --; }
-      start++;
+    while ((std::distance(p, pend) >= 4)) {
+      uint32_t d = hex_to_u32_nocheck((const uint8_t*)p);
+      if ((d & 0xffff0000) != 0) {
+          break;
+      }
+      i = (i << 16) + d; // in rare cases, this will overflow, but that's ok
+      p += 4;
     }
-    if (digit_count > 19) {
-      answer.too_many_digits = true;
-      // Let us start again, this time, avoiding overflows.
-      // We don't need to check if is_integer, since we use the
-      // pre-tokenized spans from above.
-      i = 0;
-      p = answer.integer.ptr;
-      const char* int_end = p + answer.integer.len();
-      const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
-      while((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-        i = i * 10 + uint64_t(*p - '0');
+
+    while ((p != pend)) {
+      uint8_t c = (uint8_t)*p;
+      uint8_t digit = chars_to_digits[c];
+      if (digit >= 16)
+        break;
+      i = 16 * i + digit;
+      ++p;
+    }
+
+    const char* const end_of_integer_part = p;
+    int64_t digit_count = int64_t(end_of_integer_part - start_digits);
+    answer.integer = byte_span(start_digits, size_t(digit_count));
+    int64_t exponent = 0;
+
+    if ((p != pend) && (*p == decimal_point)) {
+      ++p;
+      const char* before = p;
+      while ((std::distance(p, pend) >= 4)) {
+        uint32_t d = hex_to_u32_nocheck((const uint8_t*)p);
+        if ((d & 0xffff0000) != 0) {
+            break;
+        }
+        i = (i << 16) + d; // in rare cases, this   will overflow, but that's ok
+        p += 4;
+      }
+      // can occur at most twice without overflowing, but let it occur more, since
+      // for integers with many digits, digit parsing is the primary bottleneck.
+      while ((p != pend)) {
+        uint8_t c = (uint8_t)*p;
+        uint8_t digit = chars_to_digits[c];
+        if (digit >= 16)
+          break;
+        i = 16 * i + digit;
         ++p;
       }
-      if (i >= minimal_nineteen_digit_integer) { // We have a big integers
-        exponent = end_of_integer_part - p + exp_number;
-      } else { // We have a value with a fractional component.
+      int64_t exponent_shift = (int64_t)(before - p);
+      exponent = exponent_shift * 4;
+      answer.fraction = byte_span(before, size_t(p - before));
+      digit_count -= exponent_shift;
+    }
+
+    // we must have encountered at least one integer!
+    if (digit_count == 0) {
+      return answer;
+    }
+
+    int64_t exp_number = 0;            // explicit exponential part
+    if ((fmt & chars_format::scientific) && (p != pend) && (('p' == *p) || ('P' == *p))) {
+      const char * location_of_e = p;
+      ++p;
+      bool neg_exp = false;
+      if ((p != pend) && ('-' == *p)) {
+        neg_exp = true;
+        ++p;
+      } else if ((p != pend) && ('+' == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+        ++p;
+      }
+      if ((p == pend) || !is_integer(*p)) {
+        if(!(fmt & chars_format::fixed)) {
+          // We are in error.
+          return answer;
+        }
+        // Otherwise, we will be ignoring the 'e'.
+        p = location_of_e;
+      } else {
+        while ((p != pend) && is_integer(*p)) {
+          uint8_t digit = uint8_t(*p - '0');
+          if (exp_number < 0x10000000) {
+            exp_number = 10 * exp_number + digit;
+          }
+          ++p;
+        }
+        if(neg_exp) { exp_number = - exp_number; }
+        exponent += exp_number;
+      }
+    } else {
+      // If it scientific and not fixed, we have to bail out.
+      if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; }
+    }
+
+    answer.lastmatch = p;
+    answer.valid = true;
+    //52 bits / (4 bits/digit) = 13
+    if (digit_count > 13) { // this is uncommon
+      // It is possible that the integer had an overflow.
+      // We have to handle the case where we have 0.0000somenumber.
+      // We need to be mindful of the case where we only have zeroes...
+      // E.g., 0.000000000...000.
+      const char *start = start_digits;
+      while ((start != pend) && (*start == '0' || *start == decimal_point)) {
+        if(*start == '0') { digit_count --; }
+        start++;
+      }
+      if (digit_count > 13) {
+        answer.too_many_digits = true;
+        // Let us start again, this time, avoiding overflows.
+        // We don't need to check if is_integer, since we use the
+        // pre-tokenized spans from above.
+        i = 0;
+        p = answer.integer.ptr;
+        const char* int_end = p + answer.integer.len();
+        const uint64_t minimal_thirteen_digit_integer{0x1000000000000};
+        while((i < minimal_thirteen_digit_integer) && (p != int_end)) {
+          uint8_t c = (uint8_t)*p;
+          uint8_t digit = chars_to_digits[c];
+          if (digit >= 16)
+            break;
+          i = i * 16 + digit;
+          ++p;
+        }
+        if (i >= minimal_thirteen_digit_integer) { // We have a big integers
+          exponent = end_of_integer_part - p + exp_number;
+        } else { // We have a value with a fractional component.
           p = answer.fraction.ptr;
           const char* frac_end = p + answer.fraction.len();
-          while((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-            i = i * 10 + uint64_t(*p - '0');
+          while((i < minimal_thirteen_digit_integer) && (p != frac_end)) {
+            uint8_t c = (uint8_t)*p;
+            uint8_t digit = chars_to_digits[c];
+            if (digit >= 16)
+              break;
+            i = i * 16 + digit;
             ++p;
           }
           exponent = answer.fraction.ptr - p + exp_number;
+        }
+        // We have now corrected both exponent and i, to a truncated value
       }
-      // We have now corrected both exponent and i, to a truncated value
     }
+
+    answer.exponent = exponent;
+    answer.mantissa = i;
+    return answer;
   }
-  answer.exponent = exponent;
-  answer.mantissa = i;
-  return answer;
+
 }
 
 } // namespace fast_float
