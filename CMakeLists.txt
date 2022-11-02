@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.9)
 
 project(fast_float VERSION 3.4.0 LANGUAGES CXX)
 option(FASTFLOAT_TEST "Enable tests" OFF)
-set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ standard to be used")
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(FASTFLOAT_TEST)
   enable_testing()
   add_subdirectory(tests)
@@ -31,6 +29,7 @@ target_include_directories(
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+target_compile_features(fast_float INTERFACE cxx_std_11)
 if(FASTFLOAT_SANITIZE)
   target_compile_options(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
   target_link_libraries(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
