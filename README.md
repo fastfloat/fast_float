@@ -70,7 +70,7 @@ Furthermore, we have the following restrictions:
 
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
 
-
+We assume that the rounding mode is set to nearest (`std::fegetround() == FE_TONEAREST`).
 
 ## Using commas as decimal separator
 
