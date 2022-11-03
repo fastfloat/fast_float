@@ -239,16 +239,16 @@ constexpr static uint64_t max_mantissa_double[] = {
       0x10000000000000 / (constant_55555 * constant_55555 * 5),
       0x10000000000000 / (constant_55555 * constant_55555 * 5 * 5),
       0x10000000000000 / (constant_55555 * constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * 5 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * 5 * 5 * 5 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * constant_55555),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * constant_55555 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * constant_55555 * 5 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_5555constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5)};
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
+      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5)};
   // Largest integer value v so that (5**index * v) <= 1<<24.
   // 0x1000000 == 1<<24
   constexpr static uint64_t max_mantissa_float[] = {
