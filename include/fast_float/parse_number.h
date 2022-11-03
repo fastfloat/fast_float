@@ -87,11 +87,10 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
   }
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
-  // Next is Clinger's fast path.
-  if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path() && !pns.too_many_digits) {
+  // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
+  if (pns.exponent >= 0 && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent) && !pns.too_many_digits) {
     value = T(pns.mantissa);
-    if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); }
-    else { value = value * binary_format<T>::exact_power_of_ten(pns.exponent); }
+    value = value * binary_format<T>::exact_power_of_ten(pns.exponent);
     if (pns.negative) { value = -value; }
     return answer;
   }

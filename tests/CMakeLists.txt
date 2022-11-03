@@ -56,6 +56,8 @@ endfunction(fast_float_add_cpp_test)
 fast_float_add_cpp_test(example_test)
 fast_float_add_cpp_test(example_comma_test)
 fast_float_add_cpp_test(basictest)
+target_compile_features(basictest PRIVATE cxx_std_17)
+
 fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)
