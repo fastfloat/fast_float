@@ -98,6 +98,36 @@ const char * round_name(int d) {
 
 }
 
+
+TEST_CASE("parse_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  const char * zero = "0";
+  double f = 0;
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+}
+
+
 // return true on success
 bool check_file(std::string file_name) {
   std::cout << "Checking " << file_name << std::endl;
