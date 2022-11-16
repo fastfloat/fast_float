@@ -60,6 +60,15 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
   return answer;
 }
 
+fastfloat_really_inline bool rounds_nearest() {
+  // This function is meant to be equivalent to :
+  // prior: #include <cfenv>
+  //  return fegetround() == FE_TONEAREST;
+  // volatile prevents the compiler from computing the function at compile-time
+  static volatile float fmin = std::numeric_limits<float>::min();
+  return (fmin + 1.0f == 1.0f - fmin);
+}
+
 } // namespace detail
 
 template<typename T>
@@ -87,12 +96,25 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
   }
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
-  // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
-  if (pns.exponent >= 0 && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent) && !pns.too_many_digits) {
-    value = T(pns.mantissa);
-    value = value * binary_format<T>::exact_power_of_ten(pns.exponent);
-    if (pns.negative) { value = -value; }
-    return answer;
+  if(detail::rounds_nearest()) {
+    // We have that fegetround() == FE_TONEAREST.
+    // Next is Clinger's fast path.
+    if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path() && !pns.too_many_digits) {
+      value = T(pns.mantissa);
+      if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); }
+      else { value = value * binary_format<T>::exact_power_of_ten(pns.exponent); }
+      if (pns.negative) { value = -value; }
+      return answer;
+    }
+  } else {
+    // We do not have that fegetround() == FE_TONEAREST.
+    // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
+    if (pns.exponent >= 0 && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent) && !pns.too_many_digits) {
+      value = T(pns.mantissa);
+      value = value * binary_format<T>::exact_power_of_ten(pns.exponent);
+      if (pns.negative) { value = -value; }
+      return answer;
+    }
   }
   adjusted_mantissa am = compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
   if(pns.too_many_digits && am.power2 >= 0) {
