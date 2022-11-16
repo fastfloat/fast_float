@@ -104,27 +104,46 @@ TEST_CASE("parse_zero") {
   // If this function fails, we may be left in a non-standard rounding state.
   //
   const char * zero = "0";
+  uint64_t float64_parsed;
   double f = 0;
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  CHECK(float64_parsed == 0);
+
   fesetround(FE_UPWARD);
   auto r1 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r1.ec == std::errc());
   std::cout << "FE_UPWARD parsed zero as " << iHexAndDec(f) << std::endl;
   CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+
   fesetround(FE_TOWARDZERO);
   auto r2 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r2.ec == std::errc());
   std::cout << "FE_TOWARDZERO parsed zero as " << iHexAndDec(f) << std::endl;
   CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+
   fesetround(FE_DOWNWARD);
   auto r3 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r3.ec == std::errc());
   std::cout << "FE_DOWNWARD parsed zero as " << iHexAndDec(f) << std::endl;
   CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+
   fesetround(FE_TONEAREST);
   auto r4 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r4.ec == std::errc());
   std::cout << "FE_TONEAREST parsed zero as " << iHexAndDec(f) << std::endl;
   CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
 }
 
 
@@ -171,14 +190,16 @@ bool check_file(std::string file_name) {
           // Compare with expected results
           if (float32_parsed != float32) {
             std::cout << "bad 32 " << str << std::endl;
-            std::cout << "parsed = " << iHexAndDec(float32_parsed) << ", expectd = " << iHexAndDec(float32) << std::endl;
+            std::cout << "parsed as " << iHexAndDec(parsed_32) << std::endl;
+            std::cout << "as  raw uint32_t, parsed = " << float32_parsed << ", expected = " << float32 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
             return false;
           }
           if (float64_parsed != float64) {
             std::cout << "bad 64 " << str << std::endl;
-            std::cout << "parsed = " << iHexAndDec(float64_parsed) << ", expectd = " << iHexAndDec(float64) << std::endl;
+            std::cout << "parsed as " << iHexAndDec(parsed_64) << std::endl;
+            std::cout << "as raw uint64_t, parsed = " << float64_parsed << ", expected = " << float64 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
             return false;
