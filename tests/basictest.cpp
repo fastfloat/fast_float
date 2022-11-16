@@ -48,13 +48,66 @@
 #define fHexAndDec(v) std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
 
 
-// C++ 17 because it is otherwise annoying to browse all files in a directory.
-// We also only run these tests on little endian systems.
-#if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
+const char * round_name(int d) {
+  switch(d) {
+    case FE_UPWARD:
+      return "FE_UPWARD";
+    case FE_DOWNWARD:
+      return "FE_DOWNWARD";
+    case FE_TOWARDZERO:
+      return "FE_TOWARDZERO";
+    case FE_TONEAREST:
+      return "FE_TONEAREST";
+    default:
+      return "UNKNOWN";
+  }
+}
 
-#include <iostream>
-#include <filesystem>
-#include <charconv>
+
+#define FASTFLOAT_STR(x)   #x
+#define SHOW_DEFINE(x) printf("%s='%s'\n", #x, FASTFLOAT_STR(x))
+
+TEST_CASE("system_info") {
+    std::cout << "system info:" << std::endl;
+#ifdef _MSC_VER
+    SHOW_DEFINE(_MSC_VER);
+#endif
+#ifdef FASTFLOAT_64BIT_LIMB
+    SHOW_DEFINE(FASTFLOAT_64BIT_LIMB);
+#endif
+#ifdef __clang__
+    SHOW_DEFINE(__clang__);
+#endif
+#ifdef FASTFLOAT_VISUAL_STUDIO
+    SHOW_DEFINE(FASTFLOAT_VISUAL_STUDIO);
+#endif
+#ifdef FASTFLOAT_IS_BIG_ENDIAN
+    #if FASTFLOAT_IS_BIG_ENDIAN
+      printf("big endian\n");
+    #else
+      printf("little endian\n");
+    #endif
+#endif
+#ifdef FASTFLOAT_32BIT
+    SHOW_DEFINE(FASTFLOAT_32BIT);
+#endif
+#ifdef FASTFLOAT_64BIT
+    SHOW_DEFINE(FASTFLOAT_64BIT);
+#endif
+#ifdef FLT_EVAL_METHOD
+    SHOW_DEFINE(FLT_EVAL_METHOD);
+#endif
+#ifdef _WIN32
+    SHOW_DEFINE(_WIN32);
+#endif
+#ifdef _WIN64
+    SHOW_DEFINE(_WIN64);
+#endif
+    std::cout << "fegetround() = " << round_name(fegetround()) << std::endl;
+    std::cout << std::endl;
+
+}
+
 
 TEST_CASE("rounds_to_nearest") {
   //
@@ -81,23 +134,6 @@ TEST_CASE("rounds_to_nearest") {
   CHECK(fegetround() == FE_TONEAREST);
   CHECK(fast_float::detail::rounds_to_nearest() == true);
 }
-
-const char * round_name(int d) {
-  switch(d) {
-    case FE_UPWARD:
-      return "FE_UPWARD";
-    case FE_DOWNWARD:
-      return "FE_DOWNWARD";
-    case FE_TOWARDZERO:
-      return "FE_TOWARDZERO";
-    case FE_TONEAREST:
-      return "FE_TONEAREST";
-    default:
-      return "UNKNOWN";
-  }
-
-}
-
 
 TEST_CASE("parse_zero") {
   //
@@ -145,6 +181,15 @@ TEST_CASE("parse_zero") {
   std::cout << "double as uint64_t is " << float64_parsed << std::endl;
   CHECK(float64_parsed == 0);
 }
+
+// C++ 17 because it is otherwise annoying to browse all files in a directory.
+// We also only run these tests on little endian systems.
+#if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
+
+#include <iostream>
+#include <filesystem>
+#include <charconv>
+
 
 
 // return true on success
