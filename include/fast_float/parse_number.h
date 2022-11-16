@@ -60,7 +60,16 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
   return answer;
 }
 
+/**
+ * Returns true if the floating-pointing rounding mode is to 'nearest'.
+ * It is the default on most system. This function is meant to be inexpensive.
+ * Credit : @mwalcott3
+ */
 fastfloat_really_inline bool rounds_to_nearest() noexcept {
+  // See
+  // A fast function to check your floating-point rounding mode
+  // https://lemire.me/blog/2022/11/16/a-fast-function-to-check-your-floating-point-rounding-mode/
+  //
   // This function is meant to be equivalent to :
   // prior: #include <cfenv>
   //  return fegetround() == FE_TONEAREST;
@@ -68,6 +77,8 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // function call.
   //
   // volatile prevents the compiler from computing the function at compile-time
+  // It does not need to be std::numeric_limits<float>::min(), any small
+  // value so that 1 + x should round to 1 would do.
   static volatile float fmin = std::numeric_limits<float>::min();
   //
   // Explanation:
@@ -135,7 +146,7 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
     // We do not have that fegetround() == FE_TONEAREST.
     // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
     if (pns.exponent >= 0 && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent) && !pns.too_many_digits) {
-#if (defined(_MSC_VER) && defined(__clang__))
+#if (defined(_WIN32) && defined(__clang__))
       // ClangCL may map 0 to -0.0 when fegetround() == FE_DOWNWARD
       if(pns.mantissa == 0) {
         value = 0;
