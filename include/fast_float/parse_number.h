@@ -60,12 +60,35 @@ from_chars_result parse_infnan(const char *first, const char *last, T &value)  n
   return answer;
 }
 
-fastfloat_really_inline bool rounds_nearest() {
+fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // This function is meant to be equivalent to :
   // prior: #include <cfenv>
   //  return fegetround() == FE_TONEAREST;
+  // However, it is expected to be much faster than the fegetround()
+  // function call.
+  //
   // volatile prevents the compiler from computing the function at compile-time
   static volatile float fmin = std::numeric_limits<float>::min();
+  //
+  // Explanation:
+  // Only when fegetround() == FE_TONEAREST do we have that
+  // fmin + 1.0f == 1.0f - fmin.
+  //
+  // FE_UPWARD:
+  //  fmin + 1.0f = 0x1.00001 (1.00001)
+  //  1.0f - fmin = 0x1 (1)
+  //
+  // FE_DOWNWARD or  FE_TOWARDZERO:
+  //  fmin + 1.0f = 0x1 (1)
+  //  1.0f - fmin = 0x0.999999 (0.999999)
+  //
+  //  fmin + 1.0f = 0x1 (1)
+  //  1.0f - fmin = 0x0.999999 (0.999999)
+  //
+  // FE_TONEAREST:
+  //  fmin + 1.0f = 0x1 (1)
+  //  1.0f - fmin = 0x1 (1)
+  //
   return (fmin + 1.0f == 1.0f - fmin);
 }
 
@@ -96,7 +119,9 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
   }
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
-  if(detail::rounds_nearest()) {
+  // Unfortunately, the conventional Clinger's fast path is only possible
+  // when the system rounds to the nearest float.
+  if(detail::rounds_to_nearest()) {
     // We have that fegetround() == FE_TONEAREST.
     // Next is Clinger's fast path.
     if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path() && !pns.too_many_digits) {
