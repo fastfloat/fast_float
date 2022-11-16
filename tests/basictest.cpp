@@ -141,11 +141,15 @@ bool check_file(std::string file_name) {
           // Compare with expected results
           if (float32_parsed != float32) {
             std::cout << "bad 32 " << str << std::endl;
+            std::cout << "parsed = " << iHexAndDec(float32_parsed) << ", expectd = " << iHexAndDec(float32) << std::endl;
+            std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
             return false;
           }
           if (float64_parsed != float64) {
             std::cout << "bad 64 " << str << std::endl;
+            std::cout << "parsed = " << iHexAndDec(float64_parsed) << ", expectd = " << iHexAndDec(float64) << std::endl;
+            std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
             return false;
           }
