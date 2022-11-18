@@ -83,6 +83,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // value so that 1 + x should round to 1 would do (after accounting for excess
   // precision, as in 387).
   static volatile float fmin = std::numeric_limits<float>::min();
+  float fmini = fmin; // we copy it so that it gets loaded at most once.
   //
   // Explanation:
   // Only when fegetround() == FE_TONEAREST do we have that
@@ -105,7 +106,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   //
   // Note: This may fail to be accurate if fast-math has been
   // enabled, as rounding conventions may not apply.
-  return (fmin + 1.0f == 1.0f - fmin);
+  return (fmini + 1.0f == 1.0f - fmini);
 }
 
 } // namespace detail
