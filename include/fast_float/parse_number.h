@@ -76,8 +76,10 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // However, it is expected to be much faster than the fegetround()
   // function call.
   //
-  // volatile prevents the compiler from computing the function at compile-time
-  // It does not need to be std::numeric_limits<float>::min(), any small
+  // The volatile keywoard prevents the compiler from computing the function
+  // at compile-time.
+  // There might be other ways to prevent compile-time optimizations (e.g., asm).
+  // The value does not need to be std::numeric_limits<float>::min(), any small
   // value so that 1 + x should round to 1 would do.
   static volatile float fmin = std::numeric_limits<float>::min();
   //
@@ -100,6 +102,8 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   //  fmin + 1.0f = 0x1 (1)
   //  1.0f - fmin = 0x1 (1)
   //
+  // Note: This may fail to be accurate if fast-math has been
+  // enabled, as rounding conventions may not apply.
   return (fmin + 1.0f == 1.0f - fmin);
 }
 
@@ -130,32 +134,44 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
   }
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
-  // Unfortunately, the conventional Clinger's fast path is only possible
-  // when the system rounds to the nearest float.
-  if(detail::rounds_to_nearest()) {
-    // We have that fegetround() == FE_TONEAREST.
-    // Next is Clinger's fast path.
-    if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path() && !pns.too_many_digits) {
-      value = T(pns.mantissa);
-      if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); }
-      else { value = value * binary_format<T>::exact_power_of_ten(pns.exponent); }
-      if (pns.negative) { value = -value; }
-      return answer;
-    }
-  } else {
-    // We do not have that fegetround() == FE_TONEAREST.
-    // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
-    if (pns.exponent >= 0 && pns.exponent <= binary_format<T>::max_exponent_fast_path() && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent) && !pns.too_many_digits) {
-#if (defined(_WIN32) && defined(__clang__))
-      // ClangCL may map 0 to -0.0 when fegetround() == FE_DOWNWARD
-      if(pns.mantissa == 0) {
-        value = 0;
+  // The implementation of the Clinger's fast path is convoluted because
+  // we want round-to-nearest in all cases, irrespective of the rounding mode
+  // selected on the thread.
+  // We proceed optimistically, assuming that detail::rounds_to_nearest() returns
+  // true.
+  if (binary_format<T>::min_exponent_fast_path() <= pns.exponent && pns.exponent <= binary_format<T>::max_exponent_fast_path() && !pns.too_many_digits) {
+    // Unfortunately, the conventional Clinger's fast path is only possible
+    // when the system rounds to the nearest float.
+    //
+    // We expect the next branch to almost always be selected.
+    // We could check it first (before the previous branch), but
+    // there might be performance advantages at having the check
+    // be last.
+    if(detail::rounds_to_nearest())  {
+      // We have that fegetround() == FE_TONEAREST.
+      // Next is Clinger's fast path.
+      if (pns.mantissa <=binary_format<T>::max_mantissa_fast_path()) {
+        value = T(pns.mantissa);
+        if (pns.exponent < 0) { value = value / binary_format<T>::exact_power_of_ten(-pns.exponent); }
+        else { value = value * binary_format<T>::exact_power_of_ten(pns.exponent); }
+        if (pns.negative) { value = -value; }
         return answer;
       }
+    } else {
+      // We do not have that fegetround() == FE_TONEAREST.
+      // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
+      if (pns.exponent >= 0 && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent)) {
+#if (defined(_WIN32) && defined(__clang__))
+        // ClangCL may map 0 to -0.0 when fegetround() == FE_DOWNWARD
+        if(pns.mantissa == 0) {
+          value = 0;
+          return answer;
+        }
 #endif
-      value = T(pns.mantissa) * binary_format<T>::exact_power_of_ten(pns.exponent);
-      if (pns.negative) { value = -value; }
-      return answer;
+        value = T(pns.mantissa) * binary_format<T>::exact_power_of_ten(pns.exponent);
+        if (pns.negative) { value = -value; }
+        return answer;
+      }
     }
   }
   adjusted_mantissa am = compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
