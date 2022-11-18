@@ -81,7 +81,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // There might be other ways to prevent compile-time optimizations (e.g., asm).
   // The value does not need to be std::numeric_limits<float>::min(), any small
   // value so that 1 + x should round to 1 would do (after accounting for excess
-  // precision, as in 387).
+  // precision, as in 387 instructions).
   static volatile float fmin = std::numeric_limits<float>::min();
   float fmini = fmin; // we copy it so that it gets loaded at most once.
   //
@@ -90,19 +90,12 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // fmin + 1.0f == 1.0f - fmin.
   //
   // FE_UPWARD:
-  //  fmin + 1.0f = 0x1.00001 (1.00001)
-  //  1.0f - fmin = 0x1 (1)
+  //  fmin + 1.0f > 1
+  //  1.0f - fmin == 1
   //
   // FE_DOWNWARD or  FE_TOWARDZERO:
-  //  fmin + 1.0f = 0x1 (1)
-  //  1.0f - fmin = 0x0.999999 (0.999999)
-  //
-  //  fmin + 1.0f = 0x1 (1)
-  //  1.0f - fmin = 0x0.999999 (0.999999)
-  //
-  // FE_TONEAREST:
-  //  fmin + 1.0f = 0x1 (1)
-  //  1.0f - fmin = 0x1 (1)
+  //  fmin + 1.0f == 1
+  //  1.0f - fmin < 1
   //
   // Note: This may fail to be accurate if fast-math has been
   // enabled, as rounding conventions may not apply.
