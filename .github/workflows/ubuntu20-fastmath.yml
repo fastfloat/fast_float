@@ -1,0 +1,18 @@
+name: Ubuntu 20.04 CI (GCC 9)
+
+on: [push, pull_request]
+
+jobs:
+  ubuntu-build:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use cmake
+        run: |
+          mkdir build &&
+          cd build &&
+          cmake -DCMAKE_CXX_FLAGS="-ffast-math" -DFASTFLOAT_TEST=ON ..  &&
+          cmake --build .   &&
+          ctest --output-on-failure
