@@ -1,4 +1,4 @@
-name: Ubuntu 20.04 CI (GCC 9)
+name: Ubuntu 20.04 CI (GCC 9, fast-math)
 
 on: [push, pull_request]
 
