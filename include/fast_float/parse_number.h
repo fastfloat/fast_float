@@ -156,8 +156,8 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
       // We do not have that fegetround() == FE_TONEAREST.
       // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
       if (pns.exponent >= 0 && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent)) {
-#if (defined(_WIN32) && defined(__clang__))
-        // ClangCL may map 0 to -0.0 when fegetround() == FE_DOWNWARD
+#if defined(__clang__)
+        // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
         if(pns.mantissa == 0) {
           value = 0;
           return answer;
