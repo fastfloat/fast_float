@@ -4,15 +4,7 @@ on: [push, pull_request]
 
 jobs:
   ubuntu-build:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Legacy/x86 compilers cause CI failures.
-          #- {cxx: -DCMAKE_CXX_COMPILER=g++-8, arch:                         }
-          - {cxx:                           , arch:                         } # default=gcc9
-          #- {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9
+    runs-on: ubuntu-20.04                      , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9
     steps:
       - uses: actions/checkout@v3
       - name: Use cmake
