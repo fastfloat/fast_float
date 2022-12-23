@@ -1,4 +1,4 @@
-name: Ubuntu 22.04 CI (GCC 11)
+name: Ubuntu 22.04 CI (GCC 12)
 
 on: [push, pull_request]
 
@@ -11,6 +11,6 @@ jobs:
         run: |
           mkdir build &&
           cd build &&
-          cmake -DFASTFLOAT_TEST=ON  ..  &&
+          CXX=g++-12 CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure 
