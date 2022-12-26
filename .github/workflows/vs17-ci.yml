@@ -4,26 +4,40 @@ on: [push, pull_request]
 
 jobs:
   ci:
-    name: windows-vs17
+    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {gen: Visual Studio 17 2022, arch: Win32}
-          - {gen: Visual Studio 17 2022, arch: x64}
+          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Debug}
+          - {gen: Visual Studio 17 2022, arch: x64, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: x64, cfg: Debug}
     steps:
       - name: checkout
         uses: actions/checkout@v3
-      - name: Use cmake
+      - name: configure
         run: |
-          mkdir build &&
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination
+      - name: build
+        run: |
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
+      - name: test
+        run: |
           cd build &&
-          cmake  ${{matrix.cxx}} ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination ..  &&
-          cmake --build .  --verbose &&
-          ctest --output-on-failure  &&
-          cmake --install . &&
-          cd ../tests/installation_tests/find  &&
-          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .   --verbose
-          cd ../../issue72_installation  &&
-          mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination .. &&  cmake --build .    --verbose
+          ctest --output-on-failure -C ${{matrix.cfg}}
+      - name: install
+        run: |
+          cd build &&
+          cmake --install .
+      - name: test install (find)
+        run: |
+          cd tests/installation_tests/find  &&
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination &&
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
+      - name: test install (issue 72)
+        run: |
+          cd tests/installation_tests/issue72_installation  &&
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination &&
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
