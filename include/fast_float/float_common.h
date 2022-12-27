@@ -218,8 +218,8 @@ constexpr static int32_t invalid_am_bias = -0x8000;
 constexpr static double powers_of_ten_double[] = {
     1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,  1e10, 1e11,
     1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
-constexpr static float powers_of_ten_float[] = {1e0, 1e1, 1e2, 1e3, 1e4, 1e5,
-                                                1e6, 1e7, 1e8, 1e9, 1e10};
+constexpr static float powers_of_ten_float[] = {1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f,
+                                                1e6f, 1e7f, 1e8f, 1e9f, 1e10f};
 // used for max_mantissa_double and max_mantissa_float
 constexpr uint64_t constant_55555 = 5 * 5 * 5 * 5 * 5;
 // Largest integer value v so that (5**index * v) <= 1<<53.

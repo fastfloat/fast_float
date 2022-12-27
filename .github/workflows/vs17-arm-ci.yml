@@ -4,18 +4,27 @@ on: [push, pull_request]
 
 jobs:
   ci:
-    name: windows-vs17
+    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {arch: ARM}
-          - {arch: ARM64}
+          - {gen: Visual Studio 17 2022, arch: ARM, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: ARM, cfg: Debug}
+          - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Debug}
     steps:
       - name: checkout
         uses: actions/checkout@v3
-      - name: Use cmake
+      - name: configure
         run: |
-          cmake -A ${{ matrix.arch }} -DCMAKE_CROSSCOMPILING=1 -DFASTFLOAT_TEST=ON -B build  &&
-          cmake --build build --verbose
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_CROSSCOMPILING=1 -DFASTFLOAT_TEST=ON
+      - name: build
+        run: |
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
+      # disabled because it requires a toolchain
+      #- name: test
+      #  run: |
+      #    cd build &&
+      #    ctest --output-on-failure -C ${{matrix.cfg}}
