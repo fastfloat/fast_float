@@ -50,7 +50,11 @@
 #elif defined(sun) || defined(__sun)
 #include <sys/byteorder.h>
 #else
+#ifdef __has_include
+#if __has_include(<endian.h>)
 #include <endian.h>
+#endif //__has_include(<endian.h>)
+#endif //__has_include
 #endif
 #
 #ifndef __BYTE_ORDER__
