@@ -636,6 +636,8 @@ TEST_CASE("64bit.inf") {
 }
 
 TEST_CASE("64bit.general") {
+  verify("22250738585072012e-324",0x1p-1022); /* limit between normal and subnormal*/
+  verify("-22250738585072012e-324",-0x1p-1022); /* limit between normal and subnormal*/
   verify("-1e-999",-0.0);
   verify("-2.2222222222223e-322",-0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
