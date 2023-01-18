@@ -14,7 +14,7 @@
        || (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)) )
 #define FASTFLOAT_64BIT 1
 #elif (defined(__i386) || defined(__i386__) || defined(_M_IX86)   \
-     || defined(__arm__) || defined(_M_ARM)                   \
+     || defined(__arm__) || defined(_M_ARM) || defined(__ppc__)   \
      || defined(__MINGW32__) || defined(__EMSCRIPTEN__))
 #define FASTFLOAT_32BIT 1
 #else
