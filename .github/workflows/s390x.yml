@@ -18,6 +18,7 @@ jobs:
         id: runcmd
         with:
           arch: s390x
+          githubToken: ${{ github.token }}
           distro: ubuntu_latest
           install: |
             apt-get update -q -y
