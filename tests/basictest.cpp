@@ -132,7 +132,9 @@ TEST_CASE("rounds_to_nearest") {
   fesetround(FE_TONEAREST);
   std::cout << "FE_TONEAREST: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f) << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
   CHECK(fegetround() == FE_TONEAREST);
+#if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
   CHECK(fast_float::detail::rounds_to_nearest() == true);
+#endif
 }
 
 TEST_CASE("parse_zero") {

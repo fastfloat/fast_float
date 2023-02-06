@@ -1,27 +1,47 @@
 name: Alpine Linux
-'on':
+on:
   - push
   - pull_request
+
 jobs:
-  ubuntu-build:
+  build:
+    name: Build on Alpine ${{ matrix.arch }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - x86_64
+          - x86
+          - aarch64
+          - armv7
+          - ppc64le
+          - riscv64
     steps:
-      - uses: actions/checkout@v3
-      - name: start docker
+      - name: Checkout repository
+        uses: actions/checkout@v1
+
+      - name: Install latest Alpine Linux for ${{ matrix.arch }}
+        uses: jirutka/setup-alpine@v1
+        with:
+          arch: ${{ matrix.arch }}
+          branch: ${{ matrix.arch == 'riscv64' && 'edge' || 'latest-stable' }}
+          packages: >
+            build-base
+            cmake
+            g++
+            linux-headers
+            git
+            bash
+            build-base
+      - name: Prepare
         run: |
-          docker run -w /src -dit --name alpine -v $PWD:/src alpine:latest
-          echo 'docker exec alpine "$@";' > ./alpine.sh
-          chmod +x ./alpine.sh
-      - name: install packages
+          cmake -DFASTFLOAT_TEST=ON -B build
+        shell: alpine.sh {0}
+      - name: Build
         run: |
-          ./alpine.sh apk update
-          ./alpine.sh apk add build-base cmake g++ linux-headers git bash
-      - name: cmake
+          cmake --build build
+        shell: alpine.sh {0}
+      - name: Test
         run: |
-          ./alpine.sh cmake -DFASTFLOAT_TEST=ON  -B build_for_alpine
-      - name: build
-        run: |
-          ./alpine.sh cmake --build build_for_alpine
-      - name: test
-        run: |
-          ./alpine.sh bash -c "cd build_for_alpine && ctest  -R basictest"
+          ctest --test-dir build -R basictest
+        shell: alpine.sh {0}
