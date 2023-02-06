@@ -30,7 +30,8 @@ jobs:
             g++
             linux-headers
             git
-            bashbuild-base
+            bash
+            build-base
       - name: Prepare
         run: |
           cmake -DFASTFLOAT_TEST=ON -B build
