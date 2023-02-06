@@ -11,6 +11,7 @@ jobs:
       matrix:
         arch:
           - x86_64
+          - x86
           - aarch64
           - armv7
           - ppc64le
