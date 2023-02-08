@@ -29,18 +29,141 @@ namespace fast_float {
  * infinite in binary64 so we never need to worry about powers
  * of 5 greater than 308.
  */
-template <class unused = void>
+ 
+template<typename T>
+struct powers_of_five_count {
+constexpr static int smallest_power_of_five = binary_format<T>::smallest_power_of_ten();
+constexpr static int largest_power_of_five = binary_format<T>::largest_power_of_ten();
+constexpr static size_t number_of_entries = 2 * (largest_power_of_five - smallest_power_of_five + 1);
+};
+ 
+template <class unused, typename T>
 struct powers_template {
-
-constexpr static int smallest_power_of_five = binary_format<double>::smallest_power_of_ten();
-constexpr static int largest_power_of_five = binary_format<double>::largest_power_of_ten();
-constexpr static int number_of_entries = 2 * (largest_power_of_five - smallest_power_of_five + 1);
-// Powers of five from 5^-342 all the way to 5^308 rounded toward one.
-static const uint64_t power_of_five_128[number_of_entries];
+static const uint64_t power_of_five_128[powers_of_five_count<T>::number_of_entries];
 };
 
 template <class unused>
-const uint64_t powers_template<unused>::power_of_five_128[number_of_entries] = {
+struct powers_template<unused, double> {
+// Powers of five from 5^-342 all the way to 5^308 rounded toward one.
+static const uint64_t power_of_five_128[powers_of_five_count<double>::number_of_entries];
+};
+
+template <class unused>
+struct powers_template<unused, float> {
+// Powers of five from 5^-65 all the way to 5^38 rounded toward one.
+static const uint64_t power_of_five_128[powers_of_five_count<float>::number_of_entries];
+};
+
+template <class unused>
+const uint64_t powers_template<unused, float>::power_of_five_128[] = {
+        0x86ccbb52ea94baeaL,0x98e947129fc2b4e9L,
+        0xa87fea27a539e9a5L,0x3f2398d747b36224L,
+        0xd29fe4b18e88640eL,0x8eec7f0d19a03aadL,
+        0x83a3eeeef9153e89L,0x1953cf68300424acL,
+        0xa48ceaaab75a8e2bL,0x5fa8c3423c052dd7L,
+        0xcdb02555653131b6L,0x3792f412cb06794dL,
+        0x808e17555f3ebf11L,0xe2bbd88bbee40bd0L,
+        0xa0b19d2ab70e6ed6L,0x5b6aceaeae9d0ec4L,
+        0xc8de047564d20a8bL,0xf245825a5a445275L,
+        0xfb158592be068d2eL,0xeed6e2f0f0d56712L,
+        0x9ced737bb6c4183dL,0x55464dd69685606bL,
+        0xc428d05aa4751e4cL,0xaa97e14c3c26b886L,
+        0xf53304714d9265dfL,0xd53dd99f4b3066a8L,
+        0x993fe2c6d07b7fabL,0xe546a8038efe4029L,
+        0xbf8fdb78849a5f96L,0xde98520472bdd033L,
+        0xef73d256a5c0f77cL,0x963e66858f6d4440L,
+        0x95a8637627989aadL,0xdde7001379a44aa8L,
+        0xbb127c53b17ec159L,0x5560c018580d5d52L,
+        0xe9d71b689dde71afL,0xaab8f01e6e10b4a6L,
+        0x9226712162ab070dL,0xcab3961304ca70e8L,
+        0xb6b00d69bb55c8d1L,0x3d607b97c5fd0d22L,
+        0xe45c10c42a2b3b05L,0x8cb89a7db77c506aL,
+        0x8eb98a7a9a5b04e3L,0x77f3608e92adb242L,
+        0xb267ed1940f1c61cL,0x55f038b237591ed3L,
+        0xdf01e85f912e37a3L,0x6b6c46dec52f6688L,
+        0x8b61313bbabce2c6L,0x2323ac4b3b3da015L,
+        0xae397d8aa96c1b77L,0xabec975e0a0d081aL,
+        0xd9c7dced53c72255L,0x96e7bd358c904a21L,
+        0x881cea14545c7575L,0x7e50d64177da2e54L,
+        0xaa242499697392d2L,0xdde50bd1d5d0b9e9L,
+        0xd4ad2dbfc3d07787L,0x955e4ec64b44e864L,
+        0x84ec3c97da624ab4L,0xbd5af13bef0b113eL,
+        0xa6274bbdd0fadd61L,0xecb1ad8aeacdd58eL,
+        0xcfb11ead453994baL,0x67de18eda5814af2L,
+        0x81ceb32c4b43fcf4L,0x80eacf948770ced7L,
+        0xa2425ff75e14fc31L,0xa1258379a94d028dL,
+        0xcad2f7f5359a3b3eL,0x96ee45813a04330L,
+        0xfd87b5f28300ca0dL,0x8bca9d6e188853fcL,
+        0x9e74d1b791e07e48L,0x775ea264cf55347eL,
+        0xc612062576589ddaL,0x95364afe032a819eL,
+        0xf79687aed3eec551L,0x3a83ddbd83f52205L,
+        0x9abe14cd44753b52L,0xc4926a9672793543L,
+        0xc16d9a0095928a27L,0x75b7053c0f178294L,
+        0xf1c90080baf72cb1L,0x5324c68b12dd6339L,
+        0x971da05074da7beeL,0xd3f6fc16ebca5e04L,
+        0xbce5086492111aeaL,0x88f4bb1ca6bcf585L,
+        0xec1e4a7db69561a5L,0x2b31e9e3d06c32e6L,
+        0x9392ee8e921d5d07L,0x3aff322e62439fd0L,
+        0xb877aa3236a4b449L,0x9befeb9fad487c3L,
+        0xe69594bec44de15bL,0x4c2ebe687989a9b4L,
+        0x901d7cf73ab0acd9L,0xf9d37014bf60a11L,
+        0xb424dc35095cd80fL,0x538484c19ef38c95L,
+        0xe12e13424bb40e13L,0x2865a5f206b06fbaL,
+        0x8cbccc096f5088cbL,0xf93f87b7442e45d4L,
+        0xafebff0bcb24aafeL,0xf78f69a51539d749L,
+        0xdbe6fecebdedd5beL,0xb573440e5a884d1cL,
+        0x89705f4136b4a597L,0x31680a88f8953031L,
+        0xabcc77118461cefcL,0xfdc20d2b36ba7c3eL,
+        0xd6bf94d5e57a42bcL,0x3d32907604691b4dL,
+        0x8637bd05af6c69b5L,0xa63f9a49c2c1b110L,
+        0xa7c5ac471b478423L,0xfcf80dc33721d54L,
+        0xd1b71758e219652bL,0xd3c36113404ea4a9L,
+        0x83126e978d4fdf3bL,0x645a1cac083126eaL,
+        0xa3d70a3d70a3d70aL,0x3d70a3d70a3d70a4L,
+        0xccccccccccccccccL,0xcccccccccccccccdL,
+        0x8000000000000000L,0x0L,
+        0xa000000000000000L,0x0L,
+        0xc800000000000000L,0x0L,
+        0xfa00000000000000L,0x0L,
+        0x9c40000000000000L,0x0L,
+        0xc350000000000000L,0x0L,
+        0xf424000000000000L,0x0L,
+        0x9896800000000000L,0x0L,
+        0xbebc200000000000L,0x0L,
+        0xee6b280000000000L,0x0L,
+        0x9502f90000000000L,0x0L,
+        0xba43b74000000000L,0x0L,
+        0xe8d4a51000000000L,0x0L,
+        0x9184e72a00000000L,0x0L,
+        0xb5e620f480000000L,0x0L,
+        0xe35fa931a0000000L,0x0L,
+        0x8e1bc9bf04000000L,0x0L,
+        0xb1a2bc2ec5000000L,0x0L,
+        0xde0b6b3a76400000L,0x0L,
+        0x8ac7230489e80000L,0x0L,
+        0xad78ebc5ac620000L,0x0L,
+        0xd8d726b7177a8000L,0x0L,
+        0x878678326eac9000L,0x0L,
+        0xa968163f0a57b400L,0x0L,
+        0xd3c21bcecceda100L,0x0L,
+        0x84595161401484a0L,0x0L,
+        0xa56fa5b99019a5c8L,0x0L,
+        0xcecb8f27f4200f3aL,0x0L,
+        0x813f3978f8940984L,0x4000000000000000L,
+        0xa18f07d736b90be5L,0x5000000000000000L,
+        0xc9f2c9cd04674edeL,0xa400000000000000L,
+        0xfc6f7c4045812296L,0x4d00000000000000L,
+        0x9dc5ada82b70b59dL,0xf020000000000000L,
+        0xc5371912364ce305L,0x6c28000000000000L,
+        0xf684df56c3e01bc6L,0xc732000000000000L,
+        0x9a130b963a6c115cL,0x3c7f400000000000L,
+        0xc097ce7bc90715b3L,0x4b9f100000000000L,
+        0xf0bdc21abb48db20L,0x1e86d40000000000L,
+        0x96769950b50d88f4L,0x1314448000000000L,
+};
+
+template <class unused>
+const uint64_t powers_template<unused, double>::power_of_five_128[] = {
         0xeef453d6923bd65a,0x113faa2906a13b3f,
         0x9558b4661b6565f8,0x4ac7ca59a424c507,
         0xbaaee17fa23ebf76,0x5d79bcf00d2df649,
@@ -691,8 +814,11 @@ const uint64_t powers_template<unused>::power_of_five_128[number_of_entries] = {
         0x91d28b7416cdd27e,0x4cdc331d57fa5441,
         0xb6472e511c81471d,0xe0133fe4adf8e952,
         0xe3d8f9e563a198e5,0x58180fddd97723a6,
-        0x8e679c2f5e44ff8f,0x570f09eaa7ea7648,};
-using powers = powers_template<>;
+        0x8e679c2f5e44ff8f,0x570f09eaa7ea7648,
+};
+
+template<typename T>
+using powers = powers_template<void, T>;
 
 } // namespace fast_float
 
