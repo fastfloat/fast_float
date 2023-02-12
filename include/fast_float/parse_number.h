@@ -9,6 +9,7 @@
 #include <cstring>
 #include <limits>
 #include <system_error>
+#include <type_traits>
 
 namespace fast_float {
 
@@ -127,14 +128,16 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 } // namespace detail
 
 template<typename T>
-from_chars_result from_chars(const char *first, const char *last,
-                             T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
+constexpr from_chars_result
+from_chars(const char *first, const char *last, T &value,
+           chars_format fmt /*= chars_format::general*/) noexcept {
   return from_chars_advanced(first, last, value, parse_options{fmt});
 }
 
 template<typename T>
-from_chars_result from_chars_advanced(const char *first, const char *last,
-                                      T &value, parse_options options)  noexcept  {
+constexpr from_chars_result
+from_chars_advanced(const char *first, const char *last, T &value,
+                    parse_options options) noexcept {
 
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
@@ -169,7 +172,11 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
-    if(detail::rounds_to_nearest())  {
+    if (
+#if __cpp_lib_is_constant_evaluated
+        std::is_constant_evaluated() ||
+#endif
+        detail::rounds_to_nearest()) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
       if (pns.mantissa <=binary_format<T>::max_mantissa_fast_path()) {

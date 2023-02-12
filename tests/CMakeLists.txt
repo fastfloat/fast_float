@@ -65,6 +65,8 @@ target_compile_features(basictest PRIVATE cxx_std_17)
 fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)
+fast_float_add_cpp_test(constexpr)
+target_compile_features(constexpr PRIVATE cxx_std_20)
 
 
 

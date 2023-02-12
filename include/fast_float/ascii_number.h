@@ -12,9 +12,11 @@ namespace fast_float {
 
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
-fastfloat_really_inline bool is_integer(char c)  noexcept  { return c >= '0' && c <= '9'; }
+fastfloat_really_inline constexpr bool is_integer(char c) noexcept {
+  return c >= '0' && c <= '9';
+}
 
-fastfloat_really_inline uint64_t byteswap(uint64_t val) {
+fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
   return (val & 0xFF00000000000000) >> 56
     | (val & 0x00FF000000000000) >> 40
     | (val & 0x0000FF0000000000) >> 24
@@ -84,8 +86,9 @@ struct parsed_number_string {
 
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
-fastfloat_really_inline
-parsed_number_string parse_number_string(const char *p, const char *pend, parse_options options) noexcept {
+fastfloat_really_inline constexpr parsed_number_string
+parse_number_string(const char *p, const char *pend,
+                    parse_options options) noexcept {
   const chars_format fmt = options.format;
   const char decimal_point = options.decimal_point;
 

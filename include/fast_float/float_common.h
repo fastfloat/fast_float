@@ -6,6 +6,11 @@
 #include <cassert>
 #include <cstring>
 #include <type_traits>
+#include <version>
+
+#ifdef __cpp_lib_bit_cast
+# include <bit>
+#endif
 
 #if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
        || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
@@ -112,14 +117,14 @@ template <typename T>
 struct span {
   const T* ptr;
   size_t length;
-  span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
-  span() : ptr(nullptr), length(0) {}
+  constexpr span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
+  constexpr span() : ptr(nullptr), length(0) {}
 
   constexpr size_t len() const noexcept {
     return length;
   }
 
-  const T& operator[](size_t index) const noexcept {
+  constexpr const T& operator[](size_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -128,12 +133,12 @@ struct span {
 struct value128 {
   uint64_t low;
   uint64_t high;
-  value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
-  value128() : low(0), high(0) {}
+  constexpr value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
+  constexpr value128() : low(0), high(0) {}
 };
 
 /* result might be undefined when input_num is zero */
-fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
+fastfloat_really_inline constexpr int leading_zeroes(uint64_t input_num) {
   assert(input_num > 0);
 #ifdef FASTFLOAT_VISUAL_STUDIO
   #if defined(_M_X64) || defined(_M_ARM64)
@@ -183,8 +188,8 @@ fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
 
 
 // compute 64-bit a*b
-fastfloat_really_inline value128 full_multiplication(uint64_t a,
-                                                     uint64_t b) {
+fastfloat_really_inline constexpr value128 full_multiplication(uint64_t a,
+                                                               uint64_t b) {
   value128 answer;
 #if defined(_M_ARM64) && !defined(__MINGW32__)
   // ARM64 has native support for 64-bit multiplications, no need to emulate
@@ -435,7 +440,8 @@ template <> inline constexpr binary_format<double>::equiv_uint
 }
 
 template<typename T>
-fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
+fastfloat_really_inline constexpr void
+to_float(bool negative, adjusted_mantissa am, T &value) {
   uint64_t word = am.mantissa;
   word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
   word = negative
@@ -448,7 +454,16 @@ fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &va
    }
 #else
    // For little-endian systems:
+#ifdef __cpp_lib_bit_cast
+   if constexpr (std::is_same_v<T, float>) {
+     uint32_t word32 = word;
+     value = std::bit_cast<float>(word32);
+   } else { // double
+     value = std::bit_cast<double>(word);
+   }
+#else
    ::memcpy(&value, &word, sizeof(T));
+#endif
 #endif
 }
 

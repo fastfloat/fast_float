@@ -48,15 +48,17 @@ struct parse_options {
  * The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
  */
 template<typename T>
-from_chars_result from_chars(const char *first, const char *last,
-                             T &value, chars_format fmt = chars_format::general)  noexcept;
+constexpr from_chars_result
+from_chars(const char *first, const char *last, T &value,
+           chars_format fmt = chars_format::general) noexcept;
 
 /**
  * Like from_chars, but accepts an `options` argument to govern number parsing.
  */
 template<typename T>
-from_chars_result from_chars_advanced(const char *first, const char *last,
-                                      T &value, parse_options options)  noexcept;
+constexpr from_chars_result from_chars_advanced(const char *first,
+                                                const char *last, T &value,
+                                                parse_options options) noexcept;
 
 } // namespace fast_float
 #include "parse_number.h"
