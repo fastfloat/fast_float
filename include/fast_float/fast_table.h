@@ -40,7 +40,7 @@ static const uint64_t power_of_five_128[number_of_entries];
 };
 
 template <class unused>
-const uint64_t powers_template<unused>::power_of_five_128[number_of_entries] = {
+constexpr uint64_t powers_template<unused>::power_of_five_128[number_of_entries] = {
         0xeef453d6923bd65a,0x113faa2906a13b3f,
         0x9558b4661b6565f8,0x4ac7ca59a424c507,
         0xbaaee17fa23ebf76,0x5d79bcf00d2df649,

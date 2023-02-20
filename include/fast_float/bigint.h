@@ -54,23 +54,23 @@ struct stackvec {
     FASTFLOAT_ASSERT(try_extend(s));
   }
 
-  limb& operator[](size_t index) noexcept {
+  FASTFLOAT_CONSTEXPR14 limb& operator[](size_t index) noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return data[index];
   }
-  const limb& operator[](size_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const limb& operator[](size_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return data[index];
   }
   // index from the end of the container
-  const limb& rindex(size_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const limb& rindex(size_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     size_t rindex = length - index - 1;
     return data[rindex];
   }
 
   // set the length, without bounds checking.
-  void set_len(size_t len) noexcept {
+  FASTFLOAT_CONSTEXPR14 void set_len(size_t len) noexcept {
     length = uint16_t(len);
   }
   constexpr size_t len() const noexcept {
@@ -83,12 +83,12 @@ struct stackvec {
     return size;
   }
   // append item to vector, without bounds checking
-  void push_unchecked(limb value) noexcept {
+  FASTFLOAT_CONSTEXPR14 void push_unchecked(limb value) noexcept {
     data[length] = value;
     length++;
   }
   // append item to vector, returning if item was added
-  bool try_push(limb value) noexcept {
+  FASTFLOAT_CONSTEXPR14 bool try_push(limb value) noexcept {
     if (len() < capacity()) {
       push_unchecked(value);
       return true;
@@ -137,7 +137,7 @@ struct stackvec {
   // check if any limbs are non-zero after the given index.
   // this needs to be done in reverse order, since the index
   // is relative to the most significant limbs.
-  bool nonzero(size_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 bool nonzero(size_t index) const noexcept {
     while (index < len()) {
       if (rindex(index) != 0) {
         return true;
@@ -147,14 +147,14 @@ struct stackvec {
     return false;
   }
   // normalize the big integer, so most-significant zero limbs are removed.
-  void normalize() noexcept {
+  FASTFLOAT_CONSTEXPR14 void normalize() noexcept {
     while (len() > 0 && rindex(0) == 0) {
       length--;
     }
   }
 };
 
-fastfloat_really_inline
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
 uint64_t empty_hi64(bool& truncated) noexcept {
   truncated = false;
   return 0;
