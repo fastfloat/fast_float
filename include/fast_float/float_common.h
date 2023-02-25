@@ -91,6 +91,7 @@
 // rust style `try!()` macro, or `?` operator
 #define FASTFLOAT_TRY(x) { if (!(x)) return false; }
 
+// Testing for https://wg21.link/N3652, adopted in C++14
 #if __cpp_constexpr >= 201304
 #define FASTFLOAT_CONSTEXPR14 constexpr
 #else
