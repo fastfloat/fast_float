@@ -462,11 +462,7 @@ fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &va
 #if FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
 template <typename = void>
 struct space_lut {
-  static const bool value[];
-};
-
-template <typename T>
-constexpr bool space_lut<T>::value[] = {
+  static constexpr bool value[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -478,6 +474,10 @@ constexpr bool space_lut<T>::value[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+};
+
+template <typename T>
+constexpr bool space_lut<T>::value[];
 
 inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
 #endif
