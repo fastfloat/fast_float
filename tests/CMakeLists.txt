@@ -9,7 +9,7 @@ option(SYSTEM_DOCTEST "Use system copy of doctest" OFF)
 if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/onqtam/doctest.git
-    GIT_TAG 2.4.6)
+    GIT_TAG v2.4.10)
 endif()
 FetchContent_Declare(supplemental_test_files
   GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git
@@ -77,3 +77,4 @@ if (FASTFLOAT_EXHAUSTIVE)
 endif(FASTFLOAT_EXHAUSTIVE)
 
 add_subdirectory(build_tests)
+add_subdirectory(bloat_analysis)
