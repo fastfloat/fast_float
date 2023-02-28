@@ -91,11 +91,18 @@
 // rust style `try!()` macro, or `?` operator
 #define FASTFLOAT_TRY(x) { if (!(x)) return false; }
 
+// Testing for https://wg21.link/N3652, adopted in C++14
+#if __cpp_constexpr >= 201304
+#define FASTFLOAT_CONSTEXPR14 constexpr
+#else
+#define FASTFLOAT_CONSTEXPR14
+#endif
+
 namespace fast_float {
 
 // Compares two ASCII strings in a case insensitive manner.
-inline bool fastfloat_strncasecmp(const char *input1, const char *input2,
-                                  size_t length) {
+inline FASTFLOAT_CONSTEXPR14 bool
+fastfloat_strncasecmp(const char *input1, const char *input2, size_t length) {
   char running_diff{0};
   for (size_t i = 0; i < length; i++) {
     running_diff |= (input1[i] ^ input2[i]);
@@ -112,14 +119,14 @@ template <typename T>
 struct span {
   const T* ptr;
   size_t length;
-  span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
-  span() : ptr(nullptr), length(0) {}
+  constexpr span(const T* _ptr, size_t _length) : ptr(_ptr), length(_length) {}
+  constexpr span() : ptr(nullptr), length(0) {}
 
   constexpr size_t len() const noexcept {
     return length;
   }
 
-  const T& operator[](size_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const T& operator[](size_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -128,8 +135,8 @@ struct span {
 struct value128 {
   uint64_t low;
   uint64_t high;
-  value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
-  value128() : low(0), high(0) {}
+  constexpr value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
+  constexpr value128() : low(0), high(0) {}
 };
 
 /* result might be undefined when input_num is zero */
@@ -160,14 +167,14 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
 #ifdef FASTFLOAT_32BIT
 
 // slow emulation routine for 32-bit
-fastfloat_really_inline uint64_t emulu(uint32_t x, uint32_t y) {
+fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) {
     return x * (uint64_t)y;
 }
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
-fastfloat_really_inline uint64_t _umul128(uint64_t ab, uint64_t cd,
-                                          uint64_t *hi) {
+fastfloat_really_inline constexpr uint64_t _umul128(uint64_t ab, uint64_t cd,
+                                                    uint64_t *hi) {
   uint64_t ad = emulu((uint32_t)(ab >> 32), (uint32_t)cd);
   uint64_t bd = emulu((uint32_t)ab, (uint32_t)cd);
   uint64_t adbc = ad + emulu((uint32_t)ab, (uint32_t)(cd >> 32));
@@ -207,10 +214,10 @@ struct adjusted_mantissa {
   uint64_t mantissa{0};
   int32_t power2{0}; // a negative value indicates an invalid result
   adjusted_mantissa() = default;
-  bool operator==(const adjusted_mantissa &o) const {
+  constexpr bool operator==(const adjusted_mantissa &o) const {
     return mantissa == o.mantissa && power2 == o.power2;
   }
-  bool operator!=(const adjusted_mantissa &o) const {
+  constexpr bool operator!=(const adjusted_mantissa &o) const {
     return mantissa != o.mantissa || power2 != o.power2;
   }
 };
@@ -453,21 +460,26 @@ fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &va
 }
 
 #if FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
-inline bool is_space(uint8_t c) {
-   static const bool table[] = {
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-   return table[c];
- }
+template <typename = void>
+struct space_lut {
+  static constexpr bool value[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+};
+
+template <typename T>
+constexpr bool space_lut<T>::value[];
+
+inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
 #endif
 } // namespace fast_float
 
