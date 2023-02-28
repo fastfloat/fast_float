@@ -132,7 +132,7 @@ bool allvalues() {
 
 inline void Assert(bool Assertion) {
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-  if (!Assertion) { std::cerr << "Omitting hard falure on msys/cygwin/sun systems."; }
+  if (!Assertion) { std::cerr << "Omitting hard failure on msys/cygwin/sun systems."; }
 #else 
   if (!Assertion) { throw std::runtime_error("bug"); }
 #endif

@@ -23,7 +23,8 @@ constexpr static uint64_t powers_of_ten_uint64[] = {
 // this algorithm is not even close to optimized, but it has no practical
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
-fastfloat_really_inline int32_t scientific_exponent(parsed_number_string& num) noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
+int32_t scientific_exponent(parsed_number_string& num) noexcept {
   uint64_t mantissa = num.mantissa;
   int32_t exponent = int32_t(num.exponent);
   while (mantissa >= 10000) {
@@ -44,40 +45,24 @@ fastfloat_really_inline int32_t scientific_exponent(parsed_number_string& num) n
 // this converts a native floating-point number to an extended-precision float.
 template <typename T>
 fastfloat_really_inline adjusted_mantissa to_extended(T value) noexcept {
+  using equiv_uint = typename binary_format<T>::equiv_uint;
+  constexpr equiv_uint exponent_mask = binary_format<T>::exponent_mask();
+  constexpr equiv_uint mantissa_mask = binary_format<T>::mantissa_mask();
+  constexpr equiv_uint hidden_bit_mask = binary_format<T>::hidden_bit_mask();
+
   adjusted_mantissa am;
   int32_t bias = binary_format<T>::mantissa_explicit_bits() - binary_format<T>::minimum_exponent();
-  if (std::is_same<T, float>::value) {
-    constexpr uint32_t exponent_mask = 0x7F800000;
-    constexpr uint32_t mantissa_mask = 0x007FFFFF;
-    constexpr uint64_t hidden_bit_mask = 0x00800000;
-    uint32_t bits;
-    ::memcpy(&bits, &value, sizeof(T));
-    if ((bits & exponent_mask) == 0) {
-      // denormal
-      am.power2 = 1 - bias;
-      am.mantissa = bits & mantissa_mask;
-    } else {
-      // normal
-      am.power2 = int32_t((bits & exponent_mask) >> binary_format<T>::mantissa_explicit_bits());
-      am.power2 -= bias;
-      am.mantissa = (bits & mantissa_mask) | hidden_bit_mask;
-    }
+  equiv_uint bits;
+  ::memcpy(&bits, &value, sizeof(T));
+  if ((bits & exponent_mask) == 0) {
+    // denormal
+    am.power2 = 1 - bias;
+    am.mantissa = bits & mantissa_mask;
   } else {
-    constexpr uint64_t exponent_mask = 0x7FF0000000000000;
-    constexpr uint64_t mantissa_mask = 0x000FFFFFFFFFFFFF;
-    constexpr uint64_t hidden_bit_mask = 0x0010000000000000;
-    uint64_t bits;
-    ::memcpy(&bits, &value, sizeof(T));
-    if ((bits & exponent_mask) == 0) {
-      // denormal
-      am.power2 = 1 - bias;
-      am.mantissa = bits & mantissa_mask;
-    } else {
-      // normal
-      am.power2 = int32_t((bits & exponent_mask) >> binary_format<T>::mantissa_explicit_bits());
-      am.power2 -= bias;
-      am.mantissa = (bits & mantissa_mask) | hidden_bit_mask;
-    }
+    // normal
+    am.power2 = int32_t((bits & exponent_mask) >> binary_format<T>::mantissa_explicit_bits());
+    am.power2 -= bias;
+    am.mantissa = (bits & mantissa_mask) | hidden_bit_mask;
   }
 
   return am;
@@ -97,12 +82,13 @@ fastfloat_really_inline adjusted_mantissa to_extended_halfway(T value) noexcept 
 
 // round an extended-precision float to the nearest machine float.
 template <typename T, typename callback>
-fastfloat_really_inline void round(adjusted_mantissa& am, callback cb) noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
+void round(adjusted_mantissa& am, callback cb) noexcept {
   int32_t mantissa_shift = 64 - binary_format<T>::mantissa_explicit_bits() - 1;
   if (-am.power2 >= mantissa_shift) {
     // have a denormal float
     int32_t shift = -am.power2 + 1;
-    cb(am, std::min(shift, 64));
+    cb(am, std::min<int32_t>(shift, 64));
     // check for round-up: if rounding-nearest carried us to the hidden bit.
     am.power2 = (am.mantissa < (uint64_t(1) << binary_format<T>::mantissa_explicit_bits())) ? 0 : 1;
     return;
@@ -126,23 +112,19 @@ fastfloat_really_inline void round(adjusted_mantissa& am, callback cb) noexcept 
 }
 
 template <typename callback>
-fastfloat_really_inline
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
 void round_nearest_tie_even(adjusted_mantissa& am, int32_t shift, callback cb) noexcept {
-  uint64_t mask;
-  uint64_t halfway;
-  if (shift == 64) {
-    mask = UINT64_MAX;
-  } else {
-    mask = (uint64_t(1) << shift) - 1;
-  }
-  if (shift == 0) {
-    halfway = 0;
-  } else {
-    halfway = uint64_t(1) << (shift - 1);
-  }
+  const uint64_t mask
+  = (shift == 64)
+    ? UINT64_MAX
+    : (uint64_t(1) << shift) - 1;
+  const uint64_t halfway
+  = (shift == 0)
+    ? 0
+    : uint64_t(1) << (shift - 1);
   uint64_t truncated_bits = am.mantissa & mask;
-  uint64_t is_above = truncated_bits > halfway;
-  uint64_t is_halfway = truncated_bits == halfway;
+  bool is_above = truncated_bits > halfway;
+  bool is_halfway = truncated_bits == halfway;
 
   // shift digits into position
   if (shift == 64) {
@@ -156,7 +138,8 @@ void round_nearest_tie_even(adjusted_mantissa& am, int32_t shift, callback cb) n
   am.mantissa += uint64_t(cb(is_odd, is_halfway, is_above));
 }
 
-fastfloat_really_inline void round_down(adjusted_mantissa& am, int32_t shift) noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
+void round_down(adjusted_mantissa& am, int32_t shift) noexcept {
   if (shift == 64) {
     am.mantissa = 0;
   } else {
@@ -215,7 +198,7 @@ void parse_eight_digits(const char*& p, limb& value, size_t& counter, size_t& co
   count += 8;
 }
 
-fastfloat_really_inline
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
 void parse_one_digit(const char*& p, limb& value, size_t& counter, size_t& count) noexcept {
   value = value * 10 + limb(*p - '0');
   p++;

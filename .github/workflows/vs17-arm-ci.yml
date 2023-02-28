@@ -1,0 +1,30 @@
+name: VS17-ARM-CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 17 2022, arch: ARM, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: ARM, cfg: Debug}
+          - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Debug}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: configure
+        run: |
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_CROSSCOMPILING=1 -DFASTFLOAT_TEST=ON
+      - name: build
+        run: |
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
+      # disabled because it requires a toolchain
+      #- name: test
+      #  run: |
+      #    cd build &&
+      #    ctest --output-on-failure -C ${{matrix.cfg}}

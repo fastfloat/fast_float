@@ -10,6 +10,7 @@
 #include <limits>
 #include <string>
 #include <system_error>
+#include <cfenv>
 
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
@@ -42,6 +43,147 @@
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
+
+#define iHexAndDec(v) std::hex << "0x" << (v) << " (" << std::dec << (v) << ")"
+#define fHexAndDec(v) std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
+
+
+const char * round_name(int d) {
+  switch(d) {
+    case FE_UPWARD:
+      return "FE_UPWARD";
+    case FE_DOWNWARD:
+      return "FE_DOWNWARD";
+    case FE_TOWARDZERO:
+      return "FE_TOWARDZERO";
+    case FE_TONEAREST:
+      return "FE_TONEAREST";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+
+#define FASTFLOAT_STR(x)   #x
+#define SHOW_DEFINE(x) printf("%s='%s'\n", #x, FASTFLOAT_STR(x))
+
+TEST_CASE("system_info") {
+    std::cout << "system info:" << std::endl;
+#ifdef _MSC_VER
+    SHOW_DEFINE(_MSC_VER);
+#endif
+#ifdef FASTFLOAT_64BIT_LIMB
+    SHOW_DEFINE(FASTFLOAT_64BIT_LIMB);
+#endif
+#ifdef __clang__
+    SHOW_DEFINE(__clang__);
+#endif
+#ifdef FASTFLOAT_VISUAL_STUDIO
+    SHOW_DEFINE(FASTFLOAT_VISUAL_STUDIO);
+#endif
+#ifdef FASTFLOAT_IS_BIG_ENDIAN
+    #if FASTFLOAT_IS_BIG_ENDIAN
+      printf("big endian\n");
+    #else
+      printf("little endian\n");
+    #endif
+#endif
+#ifdef FASTFLOAT_32BIT
+    SHOW_DEFINE(FASTFLOAT_32BIT);
+#endif
+#ifdef FASTFLOAT_64BIT
+    SHOW_DEFINE(FASTFLOAT_64BIT);
+#endif
+#ifdef FLT_EVAL_METHOD
+    SHOW_DEFINE(FLT_EVAL_METHOD);
+#endif
+#ifdef _WIN32
+    SHOW_DEFINE(_WIN32);
+#endif
+#ifdef _WIN64
+    SHOW_DEFINE(_WIN64);
+#endif
+    std::cout << "fegetround() = " << round_name(fegetround()) << std::endl;
+    std::cout << std::endl;
+
+}
+
+
+TEST_CASE("rounds_to_nearest") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  static volatile float fmin = std::numeric_limits<float>::min();
+  fesetround(FE_UPWARD);
+  std::cout << "FE_UPWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f) << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_UPWARD);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_DOWNWARD);
+  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f) << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_DOWNWARD);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_TOWARDZERO);
+  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f) << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_TOWARDZERO);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_TONEAREST);
+  std::cout << "FE_TONEAREST: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f) << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_TONEAREST);
+#if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
+  CHECK(fast_float::detail::rounds_to_nearest() == true);
+#endif
+}
+
+TEST_CASE("parse_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  const char * zero = "0";
+  uint64_t float64_parsed;
+  double f = 0;
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  CHECK(float64_parsed == 0);
+
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0);
+}
+
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
 // We also only run these tests on little endian systems.
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
@@ -50,59 +192,77 @@
 #include <filesystem>
 #include <charconv>
 
-// return true on succcess
+
+
+// return true on success
 bool check_file(std::string file_name) {
   std::cout << "Checking " << file_name << std::endl;
-  size_t number{0};
-  std::fstream newfile(file_name, std::ios::in);
-  if (newfile.is_open()) {
-    std::string str;
-    while (std::getline(newfile, str)) {
-      if (str.size() > 0) {
-        // Read 32-bit hex
-        uint32_t float32;
-        auto r32 = std::from_chars(str.data() + 5, str.data() + str.size(),
+  // We check all rounding directions, for each file.
+  std::vector<int> directions = {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST};
+  for (int d : directions) {
+    std::cout << "fesetround to " << round_name(d) << std::endl;
+    fesetround(d);
+    size_t number{0};
+    std::fstream newfile(file_name, std::ios::in);
+    if (newfile.is_open()) {
+      std::string str;
+      while (std::getline(newfile, str)) {
+        if (str.size() > 0) {
+          // Read 32-bit hex
+          uint32_t float32;
+          auto r32 = std::from_chars(str.data() + 5, str.data() + str.size(),
                                    float32, 16);
-        if(r32.ec != std::errc()) { std::cerr << "32-bit parsing failure\n"; return false; }
-        // Read 64-bit hex
-        uint64_t float64;
-        auto r64 = std::from_chars(str.data() + 14, str.data() + str.size(),
+          if(r32.ec != std::errc()) { std::cerr << "32-bit parsing failure\n"; return false; }
+          // Read 64-bit hex
+          uint64_t float64;
+          auto r64 = std::from_chars(str.data() + 14, str.data() + str.size(),
                                    float64, 16);
-        if(r64.ec != std::errc()) { std::cerr << "64-bit parsing failure\n"; return false; }
-        // The string to parse:
-        const char *number_string = str.data() + 31;
-        const char *end_of_string = str.data() + str.size();
-        // Parse as 32-bit float
-        float parsed_32;
-        auto fast_float_r32 = fast_float::from_chars(number_string, end_of_string, parsed_32);
-        if(fast_float_r32.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
-        // Parse as 64-bit float
-        double parsed_64;
-        auto fast_float_r64 = fast_float::from_chars(number_string, end_of_string, parsed_64);
-        if(fast_float_r64.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
-        // Convert the floats to unsigned ints.
-        uint32_t float32_parsed;
-        uint64_t float64_parsed;
-        ::memcpy(&float32_parsed, &parsed_32, sizeof(parsed_32));
-        ::memcpy(&float64_parsed, &parsed_64, sizeof(parsed_64));
-        // Compare with expected results
-        if (float32_parsed != float32) {
-          std::cout << "bad 32 " << str << std::endl;
-          return false;
+          if(r64.ec != std::errc()) { std::cerr << "64-bit parsing failure\n"; return false; }
+          // The string to parse:
+          const char *number_string = str.data() + 31;
+          const char *end_of_string = str.data() + str.size();
+          // Parse as 32-bit float
+          float parsed_32;
+          auto fast_float_r32 = fast_float::from_chars(number_string, end_of_string, parsed_32);
+          if(fast_float_r32.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
+          // Parse as 64-bit float
+          double parsed_64;
+          auto fast_float_r64 = fast_float::from_chars(number_string, end_of_string, parsed_64);
+          if(fast_float_r64.ec != std::errc()) { std::cerr << "parsing failure\n"; return false; }
+          // Convert the floats to unsigned ints.
+          uint32_t float32_parsed;
+          uint64_t float64_parsed;
+          ::memcpy(&float32_parsed, &parsed_32, sizeof(parsed_32));
+          ::memcpy(&float64_parsed, &parsed_64, sizeof(parsed_64));
+          // Compare with expected results
+          if (float32_parsed != float32) {
+            std::cout << "bad 32 " << str << std::endl;
+            std::cout << "parsed as " << iHexAndDec(parsed_32) << std::endl;
+            std::cout << "as  raw uint32_t, parsed = " << float32_parsed << ", expected = " << float32 << std::endl;
+            std::cout << "fesetround: " << round_name(d) << std::endl;
+            fesetround(FE_TONEAREST);
+            return false;
+          }
+          if (float64_parsed != float64) {
+            std::cout << "bad 64 " << str << std::endl;
+            std::cout << "parsed as " << iHexAndDec(parsed_64) << std::endl;
+            std::cout << "as raw uint64_t, parsed = " << float64_parsed << ", expected = " << float64 << std::endl;
+            std::cout << "fesetround: " << round_name(d) << std::endl;
+            fesetround(FE_TONEAREST);
+            return false;
+          }
+          number++;
         }
-        if (float64_parsed != float64) {
-          std::cout << "bad 64 " << str << std::endl;
-          return false;
-        }
-        number++;
       }
+      std::cout << "checked " << std::defaultfloat << number << " values" << std::endl;
+      newfile.close(); // close the file object
+    } else {
+      std::cout << "Could not read  " << file_name << std::endl;
+      fesetround(FE_TONEAREST);
+      return false;
     }
-    std::cout << "checked " << std::defaultfloat << number << " values" << std::endl;
-    newfile.close(); // close the file object
-  } else {
-    std::cout << "Could not read  " << file_name << std::endl;
-    return false;
   }
+  fesetround(FE_TONEAREST);
   return true;
 }
 
@@ -124,9 +284,6 @@ TEST_CASE("leading_zeroes") {
   CHECK(fast_float::leading_zeroes(bit << 62) ==  1);
   CHECK(fast_float::leading_zeroes(bit << 63) ==  0);
 }
-
-#define iHexAndDec(v) std::hex << "0x" << (v) << " (" << std::dec << (v) << ")"
-#define fHexAndDec(v) std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
 
 void test_full_multiplication(uint64_t lhs, uint64_t rhs, uint64_t expected_lo, uint64_t expected_hi) {
   fast_float::value128 v;
@@ -222,6 +379,33 @@ TEST_CASE("decimal_point_parsing") {
                   "Parsing should have stopped at end");
     CHECK_EQ(result, 1.25);
   }
+}
+
+TEST_CASE("issue19") {
+  const std::string input =   "234532.3426362,7869234.9823,324562.645";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
+  CHECK_MESSAGE(answer.ec == std::errc(), "We want to parse up to 234532.3426362\n");
+  CHECK_MESSAGE(answer.ptr == input.data() + 14,
+                "Parsed the number " << result
+                << " and stopped at the wrong character: after " << (answer.ptr - input.data()) << " characters");
+  CHECK_MESSAGE(result == 234532.3426362, "We want to parse234532.3426362\n");
+  CHECK_MESSAGE(answer.ptr[0] == ',', "We want to parse up to the comma\n");
+
+  answer = fast_float::from_chars(answer.ptr + 1, input.data()+input.size(), result);
+  CHECK_MESSAGE(answer.ec == std::errc(), "We want to parse 7869234.9823\n");
+  CHECK_MESSAGE(answer.ptr == input.data() + 27,
+                "Parsed the number " << result
+                << " and stopped at the wrong character " << (answer.ptr - input.data()));
+  CHECK_MESSAGE(answer.ptr[0] == ',', "We want to parse up to the comma\n");
+  CHECK_MESSAGE(result == 7869234.9823, "We want to parse up 7869234.9823\n");
+
+  answer = fast_float::from_chars(answer.ptr + 1, input.data()+input.size(), result);
+  CHECK_MESSAGE(answer.ec == std::errc(), "We want to parse 324562.645\n");
+  CHECK_MESSAGE(answer.ptr == input.data() + 38,
+                "Parsed the number " << result
+                << " and stopped at the wrong character " << (answer.ptr - input.data()));
+  CHECK_MESSAGE(result == 324562.645, "We want to parse up 7869234.9823\n");
 }
 
 TEST_CASE("issue19") {
@@ -454,6 +638,9 @@ TEST_CASE("64bit.inf") {
 }
 
 TEST_CASE("64bit.general") {
+  verify("22250738585072012e-324",0x1p-1022); /* limit between normal and subnormal*/
+  verify("-22250738585072012e-324",-0x1p-1022); /* limit between normal and subnormal*/
+  verify("-1e-999",-0.0);
   verify("-2.2222222222223e-322",-0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
   verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
@@ -588,6 +775,7 @@ TEST_CASE("32bit.inf") {
 }
 
 TEST_CASE("32bit.general") {
+  verify("-1e-999",-0.0f);
   verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125", 0x1.2ced3p+0f);
   verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38", 0x1.fffff8p-127f);
   verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
