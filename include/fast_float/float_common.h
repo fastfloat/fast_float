@@ -443,20 +443,11 @@ template <> inline constexpr binary_format<double>::equiv_uint
 
 template<typename T>
 fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
-  uint64_t word = am.mantissa;
-  word |= uint64_t(am.power2) << binary_format<T>::mantissa_explicit_bits();
-  word = negative
-  ? word | (uint64_t(1) << binary_format<T>::sign_index()) : word;
-#if FASTFLOAT_IS_BIG_ENDIAN == 1
-   if (std::is_same<T, float>::value) {
-     ::memcpy(&value, (char *)&word + 4, sizeof(T)); // extract value at offset 4-7 if float on big-endian
-   } else {
-     ::memcpy(&value, &word, sizeof(T));
-   }
-#else
-   // For little-endian systems:
-   ::memcpy(&value, &word, sizeof(T));
-#endif
+  using uint = typename binary_format<T>::equiv_uint;
+  uint word = (uint)am.mantissa;
+  word |= uint(am.power2) << binary_format<T>::mantissa_explicit_bits();
+  word |= uint(negative) << binary_format<T>::sign_index();
+  ::memcpy(&value, &word, sizeof(T));
 }
 
 #if FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
