@@ -122,8 +122,10 @@
     && FASTFLOAT_HAS_BIT_CAST \
     && __cpp_lib_constexpr_algorithms >= 201806L /*For std::copy and std::fill*/
 #define FASTFLOAT_CONSTEXPR20 constexpr
+#define FASTFLOAT_IS_CONSTEXPR 1
 #else
 #define FASTFLOAT_CONSTEXPR20
+#define FASTFLOAT_IS_CONSTEXPR 0
 #endif
 
 namespace fast_float {

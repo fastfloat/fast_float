@@ -10,6 +10,7 @@
 #include <limits>
 #include <string>
 #include <system_error>
+#include <type_traits>
 #include <cfenv>
 
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
@@ -614,7 +615,44 @@ void basic_test(float val) {
   }
 }
 
+namespace {
+template <int>
+struct dummy {};
+
+template <auto val>
+struct verify_error;
+} //anonymous namespace
+
+#if defined(FASTFLOAT_CONSTEXPR_TESTS)
+#if !FASTFLOAT_IS_CONSTEXPR
+#error "from_chars must be constexpr for constexpr tests"
+#endif
+
+// Add constexpr testing to verify when the arguments are constant expressions
+#define verify(lhs, rhs)                                                       \
+  {                                                                            \
+    INFO(lhs);                                                                 \
+    basic_test(lhs, rhs);                                                      \
+    [&]<typename T>() {                                                        \
+      if constexpr (requires {                                                 \
+        typename ::dummy<(T(lhs), 0)>;                                         \
+        typename ::dummy<((void)(rhs), 0)>;                                    \
+      }) {                                                                     \
+        constexpr auto sv = T(lhs);                                            \
+        constexpr auto val = [&] {                                             \
+          ::std::remove_cvref_t<decltype(rhs)> ret;                            \
+          (void)::fast_float::from_chars(sv.data(), sv.data() + sv.size(),     \
+                                         ret);                                 \
+          return ret;                                                          \
+        }();                                                                   \
+        static_assert(val == (rhs));                                           \
+      }                                                                        \
+    }.operator()<::std::string_view>();                                        \
+  }
+#else
 #define verify(lhs, rhs) { INFO(lhs); basic_test(lhs, rhs); }
+#endif
+
 #define verify32(val) { INFO(#val); basic_test(val); }
 
 #define verify_options(lhs, rhs) { INFO(lhs); basic_test(lhs, rhs, options); }
