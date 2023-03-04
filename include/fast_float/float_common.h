@@ -7,6 +7,25 @@
 #include <cstring>
 #include <type_traits>
 
+#ifdef __has_include
+#if __has_include(<version>)
+#include <version>
+#endif
+#endif
+
+#if __cpp_lib_bit_cast >= 201806L
+#include <bit>
+#define FASTFLOAT_HAS_BIT_CAST 1
+#else
+#define FASTFLOAT_HAS_BIT_CAST 0
+#endif
+
+#if __cpp_lib_is_constant_evaluated >= 201811L
+#define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 1
+#else
+#define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 0
+#endif
+
 #if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)   \
        || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) \
        || defined(__MINGW64__)                                          \
@@ -98,7 +117,24 @@
 #define FASTFLOAT_CONSTEXPR14
 #endif
 
+// Testing for relevant C++20 constexpr library features
+#if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED \
+    && FASTFLOAT_HAS_BIT_CAST \
+    && __cpp_lib_constexpr_algorithms >= 201806L /*For std::copy and std::fill*/
+#define FASTFLOAT_CONSTEXPR20 constexpr
+#else
+#define FASTFLOAT_CONSTEXPR20
+#endif
+
 namespace fast_float {
+
+fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
+#if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
+  return std::is_constant_evaluated();
+#else
+  return false;
+#endif
+}
 
 // Compares two ASCII strings in a case insensitive manner.
 inline FASTFLOAT_CONSTEXPR14 bool
@@ -139,9 +175,27 @@ struct value128 {
   constexpr value128() : low(0), high(0) {}
 };
 
+/* Helper C++11 constexpr generic implementation of leading_zeroes */
+fastfloat_really_inline constexpr
+int leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
+  return (
+    ((input_num & uint64_t(0xffffffff00000000)) && (input_num >>= 32, last_bit |= 32)),
+    ((input_num & uint64_t(        0xffff0000)) && (input_num >>= 16, last_bit |= 16)),
+    ((input_num & uint64_t(            0xff00)) && (input_num >>=  8, last_bit |=  8)),
+    ((input_num & uint64_t(              0xf0)) && (input_num >>=  4, last_bit |=  4)),
+    ((input_num & uint64_t(               0xc)) && (input_num >>=  2, last_bit |=  2)),
+    ((input_num & uint64_t(               0x2)) && (input_num >>=  1, last_bit |=  1)),
+    63 - last_bit
+  );
+}
+
 /* result might be undefined when input_num is zero */
-fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+int leading_zeroes(uint64_t input_num) {
   assert(input_num > 0);
+  if (cpp20_and_in_constexpr()) {
+    return leading_zeroes_generic(input_num);
+  }
 #ifdef FASTFLOAT_VISUAL_STUDIO
   #if defined(_M_X64) || defined(_M_ARM64)
   unsigned long leading_zero = 0;
@@ -150,31 +204,20 @@ fastfloat_really_inline int leading_zeroes(uint64_t input_num) {
   _BitScanReverse64(&leading_zero, input_num);
   return (int)(63 - leading_zero);
   #else
-  int last_bit = 0;
-  if(input_num & uint64_t(0xffffffff00000000)) input_num >>= 32, last_bit |= 32;
-  if(input_num & uint64_t(        0xffff0000)) input_num >>= 16, last_bit |= 16;
-  if(input_num & uint64_t(            0xff00)) input_num >>=  8, last_bit |=  8;
-  if(input_num & uint64_t(              0xf0)) input_num >>=  4, last_bit |=  4;
-  if(input_num & uint64_t(               0xc)) input_num >>=  2, last_bit |=  2;
-  if(input_num & uint64_t(               0x2)) input_num >>=  1, last_bit |=  1;
-  return 63 - last_bit;
+  return leading_zeroes_generic(input_num);
   #endif
 #else
   return __builtin_clzll(input_num);
 #endif
 }
 
-#ifdef FASTFLOAT_32BIT
-
 // slow emulation routine for 32-bit
 fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) {
     return x * (uint64_t)y;
 }
 
-// slow emulation routine for 32-bit
-#if !defined(__MINGW64__)
-fastfloat_really_inline constexpr uint64_t _umul128(uint64_t ab, uint64_t cd,
-                                                    uint64_t *hi) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
+uint64_t umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) {
   uint64_t ad = emulu((uint32_t)(ab >> 32), (uint32_t)cd);
   uint64_t bd = emulu((uint32_t)ab, (uint32_t)cd);
   uint64_t adbc = ad + emulu((uint32_t)ab, (uint32_t)(cd >> 32));
@@ -184,14 +227,28 @@ fastfloat_really_inline constexpr uint64_t _umul128(uint64_t ab, uint64_t cd,
         (adbc_carry << 32) + !!(lo < bd);
   return lo;
 }
+
+#ifdef FASTFLOAT_32BIT
+
+// slow emulation routine for 32-bit
+#if !defined(__MINGW64__)
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
+uint64_t _umul128(uint64_t ab, uint64_t cd, uint64_t *hi) {
+  return umul128_generic(ab, cd, hi);
+}
 #endif // !__MINGW64__
 
 #endif // FASTFLOAT_32BIT
 
 
 // compute 64-bit a*b
-fastfloat_really_inline value128 full_multiplication(uint64_t a,
-                                                     uint64_t b) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+value128 full_multiplication(uint64_t a, uint64_t b) {
+  if (cpp20_and_in_constexpr()) {
+    value128 answer;
+    answer.low = umul128_generic(a, b, &answer.high);
+    return answer;
+  }
   value128 answer;
 #if defined(_M_ARM64) && !defined(__MINGW32__)
   // ARM64 has native support for 64-bit multiplications, no need to emulate
@@ -205,7 +262,7 @@ fastfloat_really_inline value128 full_multiplication(uint64_t a,
   answer.low = uint64_t(r);
   answer.high = uint64_t(r >> 64);
 #else
-  #error Not implemented
+  answer.low = umul128_generic(a, b, &answer.high);
 #endif
   return answer;
 }
@@ -442,12 +499,17 @@ template <> inline constexpr binary_format<double>::equiv_uint
 }
 
 template<typename T>
-fastfloat_really_inline void to_float(bool negative, adjusted_mantissa am, T &value) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+void to_float(bool negative, adjusted_mantissa am, T &value) {
   using uint = typename binary_format<T>::equiv_uint;
   uint word = (uint)am.mantissa;
   word |= uint(am.power2) << binary_format<T>::mantissa_explicit_bits();
   word |= uint(negative) << binary_format<T>::sign_index();
+#if FASTFLOAT_HAS_BIT_CAST
+  value = std::bit_cast<T>(word);
+#else
   ::memcpy(&value, &word, sizeof(T));
+#endif
 }
 
 #if FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
