@@ -3,7 +3,7 @@
 
 #include <system_error>
 
-#include "float_common.h"
+#include "constexpr_feature_detect.h"
 
 namespace fast_float {
 enum chars_format {
