@@ -639,7 +639,7 @@ struct verify_error;
         typename ::dummy<((void)(rhs), 0)>;                                    \
       }) {                                                                     \
         constexpr auto sv = T(lhs);                                            \
-        constexpr auto val = [&] {                                             \
+        constexpr auto val = [&sv=sv] {                                        \
           ::std::remove_cvref_t<decltype(rhs)> ret;                            \
           (void)::fast_float::from_chars(sv.data(), sv.data() + sv.size(),     \
                                          ret);                                 \
