@@ -514,7 +514,7 @@ struct bigint : pow5_tables<> {
       // move limbs
       limb* dst = vec.data + n;
       const limb* src = vec.data;
-      ::memmove(dst, src, sizeof(limb) * vec.len());
+      std::copy_backward(src, src + vec.len(), dst + vec.len());
       // fill in empty limbs
       limb* first = vec.data;
       limb* last = first + n;
