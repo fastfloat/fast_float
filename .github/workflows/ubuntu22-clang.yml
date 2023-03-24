@@ -15,4 +15,11 @@ jobs:
           cd build &&
           CXX=clang++-14 cmake -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
+          ctest --output-on-failure
+      - name: Use cmake CXX20
+        run: |
+          mkdir build &&
+          cd build &&
+          CXX=clang++-14 cmake -DCMAKE_CXX_STANDARD=20 -DFASTFLOAT_TEST=ON  ..  &&
+          cmake --build .   &&
           ctest --output-on-failure 
