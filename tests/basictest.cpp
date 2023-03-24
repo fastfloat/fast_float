@@ -628,10 +628,14 @@ constexpr void check_basic_test_result(std::string_view str,
     return std::copysign(x, y);
   };
 
+  auto isnan = [](double x) -> bool {
+    return x != x;
+  };
+
   FASTFLOAT_CHECK_EQ(result.ec, std::errc());
   FASTFLOAT_CHECK_EQ(result.ptr, str.data() + str.size());
   FASTFLOAT_CHECK_EQ(copysign(1, actual), copysign(1, expected));
-  FASTFLOAT_CHECK_EQ(std::isnan(actual), std::isnan(expected));
+  FASTFLOAT_CHECK_EQ(isnan(actual), isnan(expected));
   FASTFLOAT_CHECK_EQ(actual, expected);
 
 #undef FASTFLOAT_CHECK_EQ
