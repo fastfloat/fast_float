@@ -13,6 +13,10 @@
 #include <type_traits>
 #include <cfenv>
 
+#if FASTFLOAT_HAS_BIT_CAST
+#include <bit>
+#endif
+
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
 #endif
@@ -573,55 +577,105 @@ std::string append_zeros(std::string str, size_t number_of_zeros) {
   return answer;
 }
 
-template<class T>
-void check_basic_test_result(const std::string& str, fast_float::from_chars_result result,
-                             T actual, T expected) {
-  INFO("str=" << str << "\n"
-       << "  expected=" << fHexAndDec(expected) << "\n"
-       << "  ..actual=" << fHexAndDec(actual) << "\n"
-       << "  expected mantissa=" << iHexAndDec(get_mantissa(expected)) << "\n"
-       << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual)));
-  CHECK_EQ(result.ec, std::errc());
-  CHECK_EQ(result.ptr, str.data() + str.size());
-  CHECK_EQ(copysign(1, actual), copysign(1, expected));
-  CHECK_EQ(std::isnan(actual), std::isnan(expected));
-  CHECK_EQ(actual, expected);
+namespace {
+
+enum class Diag { runtime, comptime };
+
+} // anonymous namespace
+
+template <Diag diag, class T>
+constexpr void check_basic_test_result(std::string_view str,
+                                       fast_float::from_chars_result result,
+                                       T actual, T expected) {
+  if constexpr (diag == Diag::runtime) {
+      INFO(
+          "str=" << str << "\n"
+                 << "  expected=" << fHexAndDec(expected) << "\n"
+                 << "  ..actual=" << fHexAndDec(actual) << "\n"
+                 << "  expected mantissa=" << iHexAndDec(get_mantissa(expected))
+                 << "\n"
+                 << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual)));
+  }
+
+  struct ComptimeDiag {
+      // Purposely not constexpr
+      static void error_not_equal() {}
+  };
+
+#define FASTFLOAT_CHECK_EQ(...)                                                \
+  if constexpr (diag == Diag::runtime) {                                       \
+    CHECK_EQ(__VA_ARGS__);                                                     \
+  } else {                                                                     \
+    if ([](const auto &lhs, const auto &rhs) {                                 \
+          return lhs != rhs;                                                   \
+        }(__VA_ARGS__)) {                                                      \
+      ComptimeDiag::error_not_equal();                                         \
+    }                                                                          \
+  }
+
+  auto copysign = [](double x, double y) -> double {
+#if FASTFLOAT_HAS_BIT_CAST
+    if (fast_float::cpp20_and_in_constexpr()) {
+      using equiv_int = std::make_signed_t<
+          typename fast_float::binary_format<double>::equiv_uint>;
+      const auto i = std::bit_cast<equiv_int>(y);
+      if (i < 0) {
+        return -x;
+      }
+      return x;
+    }
+#endif
+    return std::copysign(x, y);
+  };
+
+  FASTFLOAT_CHECK_EQ(result.ec, std::errc());
+  FASTFLOAT_CHECK_EQ(result.ptr, str.data() + str.size());
+  FASTFLOAT_CHECK_EQ(copysign(1, actual), copysign(1, expected));
+  FASTFLOAT_CHECK_EQ(std::isnan(actual), std::isnan(expected));
+  FASTFLOAT_CHECK_EQ(actual, expected);
+
+#undef FASTFLOAT_CHECK_EQ
 }
 
-template<class T>
-void basic_test(std::string str, T expected) {
+template<Diag diag, class T>
+constexpr void basic_test(std::string_view str, T expected) {
   T actual;
   auto result = fast_float::from_chars(str.data(), str.data() + str.size(), actual);
-  check_basic_test_result(str, result, actual, expected);
+  check_basic_test_result<diag>(str, result, actual, expected);
 }
 
-template<class T>
-void basic_test(std::string str, T expected, fast_float::parse_options options) {
+template<Diag diag, class T>
+constexpr void basic_test(std::string_view str, T expected, fast_float::parse_options options) {
   T actual;
   auto result = fast_float::from_chars_advanced(str.data(), str.data() + str.size(), actual, options);
-  check_basic_test_result(str, result, actual, expected);
+  check_basic_test_result<diag>(str, result, actual, expected);
 }
 
 void basic_test(float val) {
   {
       std::string long_vals = to_long_string(val);
       INFO("long vals: " << long_vals);
-      basic_test<float>(long_vals, val);
+      basic_test<Diag::runtime, float>(long_vals, val);
   }
   {
       std::string vals = to_string(val);
       INFO("vals: " << vals);
-      basic_test<float>(vals, val);
+      basic_test<Diag::runtime, float>(vals, val);
   }
 }
 
-namespace {
-template <int>
-struct dummy {};
+#define verify_runtime(lhs, rhs)                                               \
+  do {                                                                         \
+    INFO(lhs);                                                                 \
+    basic_test<Diag::runtime>(lhs, rhs);                                       \
+  } while (false)
 
-template <auto val>
-struct verify_error;
-} //anonymous namespace
+#define verify_comptime(lhs, rhs)                                              \
+  do {                                                                         \
+    constexpr int verify_comptime_var =                                        \
+        (basic_test<Diag::comptime>(lhs, rhs), 0);                             \
+    (void)verify_comptime_var;                                                 \
+  } while (false)
 
 #if defined(FASTFLOAT_CONSTEXPR_TESTS)
 #if !FASTFLOAT_IS_CONSTEXPR
@@ -630,32 +684,17 @@ struct verify_error;
 
 // Add constexpr testing to verify when the arguments are constant expressions
 #define verify(lhs, rhs)                                                       \
-  {                                                                            \
-    INFO(lhs);                                                                 \
-    basic_test(lhs, rhs);                                                      \
-    [&]<typename T>() {                                                        \
-      if constexpr (requires {                                                 \
-        typename ::dummy<(T(lhs), 0)>;                                         \
-        typename ::dummy<((void)(rhs), 0)>;                                    \
-      }) {                                                                     \
-        constexpr auto sv = T(lhs);                                            \
-        constexpr auto val = [&sv=sv] {                                        \
-          ::std::remove_cvref_t<decltype(rhs)> ret;                            \
-          (void)::fast_float::from_chars(sv.data(), sv.data() + sv.size(),     \
-                                         ret);                                 \
-          return ret;                                                          \
-        }();                                                                   \
-        static_assert(val == (rhs));                                           \
-      }                                                                        \
-    }.operator()<::std::string_view>();                                        \
-  }
+  do {                                                                         \
+    verify_runtime(lhs, rhs);                                                  \
+    verify_comptime(lhs, rhs);                                                 \
+  } while (false)
 #else
-#define verify(lhs, rhs) { INFO(lhs); basic_test(lhs, rhs); }
+#define verify verify_runtime
 #endif
 
 #define verify32(val) { INFO(#val); basic_test(val); }
 
-#define verify_options(lhs, rhs) { INFO(lhs); basic_test(lhs, rhs, options); }
+#define verify_options(lhs, rhs) { INFO(lhs); basic_test<Diag::runtime>(lhs, rhs, options); }
 
 TEST_CASE("64bit.inf") {
   verify("INF", std::numeric_limits<double>::infinity());
@@ -682,7 +721,7 @@ TEST_CASE("64bit.general") {
   verify("-2.2222222222223e-322",-0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
   verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
-  verify(append_zeros("9007199254740993.0",1000), 0x1p+53);
+  verify_runtime(append_zeros("9007199254740993.0",1000), 0x1p+53);
   verify("10000000000000000000", 0x1.158e460913dp+63);
   verify("10000000000000000000000000000001000000000000", 0x1.cb2d6f618c879p+142);
   verify("10000000000000000000000000000000000000000001", 0x1.cb2d6f618c879p+142);
@@ -816,16 +855,16 @@ TEST_CASE("32bit.general") {
   verify("-1e-999",-0.0f);
   verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125", 0x1.2ced3p+0f);
   verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38", 0x1.fffff8p-127f);
-  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
-  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
-  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
+  verify_runtime(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
+  verify_runtime(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
+  verify_runtime(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
   std::string test_string;
   test_string = append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655) + std::string("e-38");
-  verify(test_string, 0x1.fffff8p-127f);
+  verify_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656) + std::string("e-38");
-  verify(test_string, 0x1.fffff8p-127f);
+  verify_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000) + std::string("e-38");
-  verify(test_string, 0x1.fffff8p-127f);
+  verify_runtime(test_string, 0x1.fffff8p-127f);
   verify32(1.00000006e+09f);
   verify32(1.4012984643e-45f);
   verify32(1.1754942107e-38f);
