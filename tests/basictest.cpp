@@ -184,6 +184,53 @@ TEST_CASE("parse_zero") {
   CHECK(float64_parsed == 0);
 }
 
+TEST_CASE("parse_negative_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  const char * negative_zero = "-0";
+  uint64_t float64_parsed;
+  double f = -0.;
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  CHECK(float64_parsed == 0x8000'0000'0000'0000);
+
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed negative zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0x8000'0000'0000'0000);
+
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed negative zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0x8000'0000'0000'0000);
+
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed negative zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0x8000'0000'0000'0000);
+
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed negative zero as " << iHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float64_parsed, &f, sizeof(f));
+  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  CHECK(float64_parsed == 0x8000'0000'0000'0000);
+}
+
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
 // We also only run these tests on little endian systems.
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)

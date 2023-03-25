@@ -191,7 +191,7 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
 #if defined(__clang__)
         // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
         if(pns.mantissa == 0) {
-          value = 0;
+          value = pns.negative ? -0. : 0.;
           return answer;
         }
 #endif
