@@ -681,24 +681,42 @@ void basic_test(float val) {
     (void)verify_comptime_var;                                                 \
   } while (false)
 
+#define verify_options_runtime(lhs, rhs)                                       \
+  do {                                                                         \
+    INFO(lhs);                                                                 \
+    basic_test<Diag::runtime>(lhs, rhs, options);                              \
+  } while (false)
+
+#define verify_options_comptime(lhs, rhs)                                      \
+  do {                                                                         \
+    constexpr int verify_options_comptime_var =                                \
+        (basic_test<Diag::comptime>(lhs, rhs, options), 0);                    \
+    (void)verify_options_comptime_var;                                         \
+  } while (false)
+
 #if defined(FASTFLOAT_CONSTEXPR_TESTS)
 #if !FASTFLOAT_IS_CONSTEXPR
 #error "from_chars must be constexpr for constexpr tests"
 #endif
 
-// Add constexpr testing to verify when the arguments are constant expressions
 #define verify(lhs, rhs)                                                       \
   do {                                                                         \
     verify_runtime(lhs, rhs);                                                  \
     verify_comptime(lhs, rhs);                                                 \
   } while (false)
+
+#define verify_options(lhs, rhs)                                               \
+  do {                                                                         \
+    verify_options_runtime(lhs, rhs);                                          \
+    verify_options_comptime(lhs, rhs);                                         \
+  } while (false)
+
 #else
 #define verify verify_runtime
+#define verify_options verify_options_runtime
 #endif
 
 #define verify32(val) { INFO(#val); basic_test(val); }
-
-#define verify_options(lhs, rhs) { INFO(lhs); basic_test<Diag::runtime>(lhs, rhs, options); }
 
 TEST_CASE("64bit.inf") {
   verify("INF", std::numeric_limits<double>::infinity());
@@ -782,8 +800,11 @@ TEST_CASE("64bit.general") {
 }
 
 TEST_CASE("64bit.decimal_point") {
-  fast_float::parse_options options{};
-  options.decimal_point = ',';
+  constexpr auto options = []{
+    fast_float::parse_options ret{};
+    ret.decimal_point = ',';
+    return ret;
+  }();
 
   // infinities
   verify_options("1,8e308", std::numeric_limits<double>::infinity());
@@ -796,7 +817,7 @@ TEST_CASE("64bit.decimal_point") {
   verify_options("-2,2222222222223e-322",-0x1.68p-1069);
   verify_options("9007199254740993,0", 0x1p+53);
   verify_options("860228122,6654514319E+90", 0x1.92bb20990715fp+328);
-  verify_options(append_zeros("9007199254740993,0",1000), 0x1p+53);
+  verify_options_runtime(append_zeros("9007199254740993,0",1000), 0x1p+53);
   verify_options("1,1920928955078125e-07", 1.1920928955078125e-07);
   verify_options("9355950000000000000,00000000000000000000000000000000001844674407370955161600000184467440737095516161844674407370955161407370955161618446744073709551616000184467440737095516166000001844674407370955161618446744073709551614073709551616184467440737095516160001844674407370955161601844674407370955674451616184467440737095516140737095516161844674407370955161600018446744073709551616018446744073709551611616000184467440737095001844674407370955161600184467440737095516160018446744073709551168164467440737095516160001844073709551616018446744073709551616184467440737095516160001844674407536910751601611616000184467440737095001844674407370955161600184467440737095516160018446744073709551616184467440737095516160001844955161618446744073709551616000184467440753691075160018446744073709",0x1.03ae05e8fca1cp+63);
   verify_options("2,22507385850720212418870147920222032907240528279439037814303133837435107319244194686754406432563881851382188218502438069999947733013005649884107791928741341929297200970481951993067993290969042784064731682041565926728632933630474670123316852983422152744517260835859654566319282835244787787799894310779783833699159288594555213714181128458251145584319223079897504395086859412457230891738946169368372321191373658977977723286698840356390251044443035457396733706583981055420456693824658413747607155981176573877626747665912387199931904006317334709003012790188175203447190250028061277777916798391090578584006464715943810511489154282775041174682194133952466682503431306181587829379004205392375072083366693241580002758391118854188641513168478436313080237596295773983001708984375e-308", 0x1.0000000000002p-1022);
@@ -933,8 +954,11 @@ TEST_CASE("32bit.general") {
 }
 
 TEST_CASE("32bit.decimal_point") {
-  fast_float::parse_options options{};
-  options.decimal_point = ',';
+  constexpr auto options = [] {
+    fast_float::parse_options ret{};
+    ret.decimal_point = ',';
+    return ret;
+  }();
 
   // infinity
   verify_options("3,5028234666e38", std::numeric_limits<float>::infinity());
@@ -942,16 +966,16 @@ TEST_CASE("32bit.decimal_point") {
   // finites
   verify_options("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125", 0x1.2ced3p+0f);
   verify_options("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38", 0x1.fffff8p-127f);
-  verify_options(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
-  verify_options(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
-  verify_options(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
+  verify_options_runtime(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
+  verify_options_runtime(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
+  verify_options_runtime(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
   std::string test_string;
   test_string = append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655) + std::string("e-38");
-  verify_options(test_string, 0x1.fffff8p-127f);
+  verify_options_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656) + std::string("e-38");
-  verify_options(test_string, 0x1.fffff8p-127f);
+  verify_options_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000) + std::string("e-38");
-  verify_options(test_string, 0x1.fffff8p-127f);
+  verify_options_runtime(test_string, 0x1.fffff8p-127f);
   verify_options("1,1754943508e-38", 1.1754943508e-38f);
   verify_options("30219,0830078125", 30219.0830078125f);
   verify_options("1,1754947011469036e-38", 0x1.000006p-126f);
