@@ -18,8 +18,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
       - name: configure
-        run: |
-          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}}  -DCMAKE_CXX_STANDARD=20 -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination ..
+        run: >-
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}}
+          -DCMAKE_CXX_STANDARD=20
+          -DFASTFLOAT_TEST=ON
+          -DFASTFLOAT_CONSTEXPR_TESTS=ON
+          -DCMAKE_INSTALL_PREFIX:PATH=destination
       - name: build
         run: |
           cmake --build build --verbose --config ${{matrix.cfg}} --parallel
