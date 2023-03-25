@@ -10,7 +10,12 @@
 #include <limits>
 #include <string>
 #include <system_error>
+#include <type_traits>
 #include <cfenv>
+
+#if FASTFLOAT_HAS_BIT_CAST
+#include <bit>
+#endif
 
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
@@ -619,52 +624,146 @@ std::string append_zeros(std::string str, size_t number_of_zeros) {
   return answer;
 }
 
-template<class T>
-void check_basic_test_result(const std::string& str, fast_float::from_chars_result result,
-                             T actual, T expected) {
-  INFO("str=" << str << "\n"
-       << "  expected=" << fHexAndDec(expected) << "\n"
-       << "  ..actual=" << fHexAndDec(actual) << "\n"
-       << "  expected mantissa=" << iHexAndDec(get_mantissa(expected)) << "\n"
-       << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual)));
-  CHECK_EQ(result.ec, std::errc());
-  CHECK_EQ(result.ptr, str.data() + str.size());
-  CHECK_EQ(copysign(1, actual), copysign(1, expected));
-  CHECK_EQ(std::isnan(actual), std::isnan(expected));
-  CHECK_EQ(actual, expected);
+namespace {
+
+enum class Diag { runtime, comptime };
+
+} // anonymous namespace
+
+template <Diag diag, class T>
+constexpr void check_basic_test_result(std::string_view str,
+                                       fast_float::from_chars_result result,
+                                       T actual, T expected) {
+  if constexpr (diag == Diag::runtime) {
+      INFO(
+          "str=" << str << "\n"
+                 << "  expected=" << fHexAndDec(expected) << "\n"
+                 << "  ..actual=" << fHexAndDec(actual) << "\n"
+                 << "  expected mantissa=" << iHexAndDec(get_mantissa(expected))
+                 << "\n"
+                 << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual)));
+  }
+
+  struct ComptimeDiag {
+      // Purposely not constexpr
+      static void error_not_equal() {}
+  };
+
+#define FASTFLOAT_CHECK_EQ(...)                                                \
+  if constexpr (diag == Diag::runtime) {                                       \
+    CHECK_EQ(__VA_ARGS__);                                                     \
+  } else {                                                                     \
+    if ([](const auto &lhs, const auto &rhs) {                                 \
+          return lhs != rhs;                                                   \
+        }(__VA_ARGS__)) {                                                      \
+      ComptimeDiag::error_not_equal();                                         \
+    }                                                                          \
+  }
+
+  auto copysign = [](double x, double y) -> double {
+#if FASTFLOAT_HAS_BIT_CAST
+    if (fast_float::cpp20_and_in_constexpr()) {
+      using equiv_int = std::make_signed_t<
+          typename fast_float::binary_format<double>::equiv_uint>;
+      const auto i = std::bit_cast<equiv_int>(y);
+      if (i < 0) {
+        return -x;
+      }
+      return x;
+    }
+#endif
+    return std::copysign(x, y);
+  };
+
+  auto isnan = [](double x) -> bool {
+    return x != x;
+  };
+
+  FASTFLOAT_CHECK_EQ(result.ec, std::errc());
+  FASTFLOAT_CHECK_EQ(result.ptr, str.data() + str.size());
+  FASTFLOAT_CHECK_EQ(copysign(1, actual), copysign(1, expected));
+  FASTFLOAT_CHECK_EQ(isnan(actual), isnan(expected));
+  FASTFLOAT_CHECK_EQ(actual, expected);
+
+#undef FASTFLOAT_CHECK_EQ
 }
 
-template<class T>
-void basic_test(std::string str, T expected) {
+template<Diag diag, class T>
+constexpr void basic_test(std::string_view str, T expected) {
   T actual;
   auto result = fast_float::from_chars(str.data(), str.data() + str.size(), actual);
-  check_basic_test_result(str, result, actual, expected);
+  check_basic_test_result<diag>(str, result, actual, expected);
 }
 
-template<class T>
-void basic_test(std::string str, T expected, fast_float::parse_options options) {
+template<Diag diag, class T>
+constexpr void basic_test(std::string_view str, T expected, fast_float::parse_options options) {
   T actual;
   auto result = fast_float::from_chars_advanced(str.data(), str.data() + str.size(), actual, options);
-  check_basic_test_result(str, result, actual, expected);
+  check_basic_test_result<diag>(str, result, actual, expected);
 }
 
 void basic_test(float val) {
   {
       std::string long_vals = to_long_string(val);
       INFO("long vals: " << long_vals);
-      basic_test<float>(long_vals, val);
+      basic_test<Diag::runtime, float>(long_vals, val);
   }
   {
       std::string vals = to_string(val);
       INFO("vals: " << vals);
-      basic_test<float>(vals, val);
+      basic_test<Diag::runtime, float>(vals, val);
   }
 }
 
-#define verify(lhs, rhs) { INFO(lhs); basic_test(lhs, rhs); }
-#define verify32(val) { INFO(#val); basic_test(val); }
+#define verify_runtime(lhs, rhs)                                               \
+  do {                                                                         \
+    INFO(lhs);                                                                 \
+    basic_test<Diag::runtime>(lhs, rhs);                                       \
+  } while (false)
 
-#define verify_options(lhs, rhs) { INFO(lhs); basic_test(lhs, rhs, options); }
+#define verify_comptime(lhs, rhs)                                              \
+  do {                                                                         \
+    constexpr int verify_comptime_var =                                        \
+        (basic_test<Diag::comptime>(lhs, rhs), 0);                             \
+    (void)verify_comptime_var;                                                 \
+  } while (false)
+
+#define verify_options_runtime(lhs, rhs)                                       \
+  do {                                                                         \
+    INFO(lhs);                                                                 \
+    basic_test<Diag::runtime>(lhs, rhs, options);                              \
+  } while (false)
+
+#define verify_options_comptime(lhs, rhs)                                      \
+  do {                                                                         \
+    constexpr int verify_options_comptime_var =                                \
+        (basic_test<Diag::comptime>(lhs, rhs, options), 0);                    \
+    (void)verify_options_comptime_var;                                         \
+  } while (false)
+
+#if defined(FASTFLOAT_CONSTEXPR_TESTS)
+#if !FASTFLOAT_IS_CONSTEXPR
+#error "from_chars must be constexpr for constexpr tests"
+#endif
+
+#define verify(lhs, rhs)                                                       \
+  do {                                                                         \
+    verify_runtime(lhs, rhs);                                                  \
+    verify_comptime(lhs, rhs);                                                 \
+  } while (false)
+
+#define verify_options(lhs, rhs)                                               \
+  do {                                                                         \
+    verify_options_runtime(lhs, rhs);                                          \
+    verify_options_comptime(lhs, rhs);                                         \
+  } while (false)
+
+#else
+#define verify verify_runtime
+#define verify_options verify_options_runtime
+#endif
+
+#define verify32(val) { INFO(#val); basic_test(val); }
 
 TEST_CASE("64bit.inf") {
   verify("INF", std::numeric_limits<double>::infinity());
@@ -691,7 +790,7 @@ TEST_CASE("64bit.general") {
   verify("-2.2222222222223e-322",-0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
   verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
-  verify(append_zeros("9007199254740993.0",1000), 0x1p+53);
+  verify_runtime(append_zeros("9007199254740993.0",1000), 0x1p+53);
   verify("10000000000000000000", 0x1.158e460913dp+63);
   verify("10000000000000000000000000000001000000000000", 0x1.cb2d6f618c879p+142);
   verify("10000000000000000000000000000000000000000001", 0x1.cb2d6f618c879p+142);
@@ -748,8 +847,11 @@ TEST_CASE("64bit.general") {
 }
 
 TEST_CASE("64bit.decimal_point") {
-  fast_float::parse_options options{};
-  options.decimal_point = ',';
+  constexpr auto options = []{
+    fast_float::parse_options ret{};
+    ret.decimal_point = ',';
+    return ret;
+  }();
 
   // infinities
   verify_options("1,8e308", std::numeric_limits<double>::infinity());
@@ -762,7 +864,7 @@ TEST_CASE("64bit.decimal_point") {
   verify_options("-2,2222222222223e-322",-0x1.68p-1069);
   verify_options("9007199254740993,0", 0x1p+53);
   verify_options("860228122,6654514319E+90", 0x1.92bb20990715fp+328);
-  verify_options(append_zeros("9007199254740993,0",1000), 0x1p+53);
+  verify_options_runtime(append_zeros("9007199254740993,0",1000), 0x1p+53);
   verify_options("1,1920928955078125e-07", 1.1920928955078125e-07);
   verify_options("9355950000000000000,00000000000000000000000000000000001844674407370955161600000184467440737095516161844674407370955161407370955161618446744073709551616000184467440737095516166000001844674407370955161618446744073709551614073709551616184467440737095516160001844674407370955161601844674407370955674451616184467440737095516140737095516161844674407370955161600018446744073709551616018446744073709551611616000184467440737095001844674407370955161600184467440737095516160018446744073709551168164467440737095516160001844073709551616018446744073709551616184467440737095516160001844674407536910751601611616000184467440737095001844674407370955161600184467440737095516160018446744073709551616184467440737095516160001844955161618446744073709551616000184467440753691075160018446744073709",0x1.03ae05e8fca1cp+63);
   verify_options("2,22507385850720212418870147920222032907240528279439037814303133837435107319244194686754406432563881851382188218502438069999947733013005649884107791928741341929297200970481951993067993290969042784064731682041565926728632933630474670123316852983422152744517260835859654566319282835244787787799894310779783833699159288594555213714181128458251145584319223079897504395086859412457230891738946169368372321191373658977977723286698840356390251044443035457396733706583981055420456693824658413747607155981176573877626747665912387199931904006317334709003012790188175203447190250028061277777916798391090578584006464715943810511489154282775041174682194133952466682503431306181587829379004205392375072083366693241580002758391118854188641513168478436313080237596295773983001708984375e-308", 0x1.0000000000002p-1022);
@@ -825,16 +927,16 @@ TEST_CASE("32bit.general") {
   verify("-1e-999",-0.0f);
   verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125", 0x1.2ced3p+0f);
   verify("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38", 0x1.fffff8p-127f);
-  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
-  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
-  verify(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
+  verify_runtime(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
+  verify_runtime(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
+  verify_runtime(append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
   std::string test_string;
   test_string = append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655) + std::string("e-38");
-  verify(test_string, 0x1.fffff8p-127f);
+  verify_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656) + std::string("e-38");
-  verify(test_string, 0x1.fffff8p-127f);
+  verify_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000) + std::string("e-38");
-  verify(test_string, 0x1.fffff8p-127f);
+  verify_runtime(test_string, 0x1.fffff8p-127f);
   verify32(1.00000006e+09f);
   verify32(1.4012984643e-45f);
   verify32(1.1754942107e-38f);
@@ -899,8 +1001,11 @@ TEST_CASE("32bit.general") {
 }
 
 TEST_CASE("32bit.decimal_point") {
-  fast_float::parse_options options{};
-  options.decimal_point = ',';
+  constexpr auto options = [] {
+    fast_float::parse_options ret{};
+    ret.decimal_point = ',';
+    return ret;
+  }();
 
   // infinity
   verify_options("3,5028234666e38", std::numeric_limits<float>::infinity());
@@ -908,16 +1013,16 @@ TEST_CASE("32bit.decimal_point") {
   // finites
   verify_options("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125", 0x1.2ced3p+0f);
   verify_options("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38", 0x1.fffff8p-127f);
-  verify_options(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
-  verify_options(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
-  verify_options(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
+  verify_options_runtime(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655), 0x1.2ced3p+0f);
+  verify_options_runtime(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656), 0x1.2ced3p+0f);
+  verify_options_runtime(append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000), 0x1.2ced3p+0f);
   std::string test_string;
   test_string = append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",655) + std::string("e-38");
-  verify_options(test_string, 0x1.fffff8p-127f);
+  verify_options_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",656) + std::string("e-38");
-  verify_options(test_string, 0x1.fffff8p-127f);
+  verify_options_runtime(test_string, 0x1.fffff8p-127f);
   test_string = append_zeros("1,1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",1000) + std::string("e-38");
-  verify_options(test_string, 0x1.fffff8p-127f);
+  verify_options_runtime(test_string, 0x1.fffff8p-127f);
   verify_options("1,1754943508e-38", 1.1754943508e-38f);
   verify_options("30219,0830078125", 30219.0830078125f);
   verify_options("1,1754947011469036e-38", 0x1.000006p-126f);

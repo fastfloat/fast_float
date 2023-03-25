@@ -62,6 +62,7 @@ void random_values(size_t N) {
         if (errors > 10) {
           abort();
         }
+        continue;
       }
       if (std::isnan(v)) {
         if (!std::isnan(result_value)) {
