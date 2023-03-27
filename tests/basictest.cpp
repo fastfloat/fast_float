@@ -13,6 +13,12 @@
 #include <type_traits>
 #include <cfenv>
 
+#if FASTFLOAT_IS_CONSTEXPR
+#ifndef FASTFLOAT_CONSTEXPR_TESTS
+#define FASTFLOAT_CONSTEXPR_TESTS 1
+#endif // #ifndef FASTFLOAT_CONSTEXPR_TESTS
+#endif // FASTFLOAT_IS_CONSTEXPR
+
 #if FASTFLOAT_HAS_BIT_CAST
 #include <bit>
 #endif
@@ -74,6 +80,10 @@ const char * round_name(int d) {
 
 TEST_CASE("system_info") {
     std::cout << "system info:" << std::endl;
+#ifdef FASTFLOAT_CONSTEXPR_TESTS
+    SHOW_DEFINE(FASTFLOAT_CONSTEXPR_TESTS);
+
+#endif
 #ifdef _MSC_VER
     SHOW_DEFINE(_MSC_VER);
 #endif
