@@ -54,7 +54,7 @@ consteval double parse(std::string_view input) {
 
 // This function should compile to a function which
 // merely returns 3.1415.
-double constexptest() {
+constexpr double constexptest() {
   return parse("3.1415 input");
 }
 #endif
