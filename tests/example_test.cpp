@@ -43,6 +43,22 @@ void many_loop() {
   }
 }
 
+#if FASTFLOAT_IS_CONSTEXPR
+// consteval forces compile-time evaluation of the function in C++20.
+consteval double parse(std::string_view input) {
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
+  if(answer.ec != std::errc()) { return -1.0; }
+  return result;
+}
+
+// This function should compile to a function which
+// merely returns 3.1415.
+double constexptest() {
+  return parse("3.1415 input");
+}
+#endif
+
 int main() {
     const std::string input =  "3.1416 xyz ";
     double result;
@@ -55,5 +71,10 @@ int main() {
         return EXIT_FAILURE;
     }
     many_loop();
+#if FASTFLOAT_IS_CONSTEXPR
+    if constexpr(constexptest() != 3.1415) {
+      return EXIT_FAILURE;
+    }
+#endif
     return EXIT_SUCCESS;
 }
