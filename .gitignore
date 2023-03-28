@@ -2,3 +2,18 @@ build/*
 Testing/*
 .cache/
 compile_commands.json
+
+# Visual studio
+.vs/
+Debug/
+Release/
+/out/build/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.psess
+*.vspx
+*.vsp
+*.diagsession
+*.hint
