@@ -62,6 +62,16 @@ FASTFLOAT_CONSTEXPR20
 from_chars_result from_chars_advanced(const char *first, const char *last,
                                       T &value, parse_options options)  noexcept;
 
-} // namespace fast_float
+} 
+
+#include "ascii_number.h" // parsed_number_string
+
+namespace fast_float {
+template <typename T>
+FASTFLOAT_CONSTEXPR20
+from_chars_result from_chars_preparsed(parsed_number_string parsed, T& value) noexcept;
+}
+
+// namespace fast_float
 #include "parse_number.h"
 #endif // FASTFLOAT_FAST_FLOAT_H

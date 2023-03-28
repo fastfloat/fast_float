@@ -96,6 +96,7 @@ typedef span<const char> byte_span;
 struct parsed_number_string {
   int64_t exponent{0};
   uint64_t mantissa{0};
+  uint64_t integer_value{-1};
   const char *lastmatch{nullptr};
   bool negative{false};
   bool valid{false};
@@ -143,6 +144,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
   const char *const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = byte_span(start_digits, size_t(digit_count));
+  answer.integer_value = i;
   int64_t exponent = 0;
   if ((p != pend) && (*p == decimal_point)) {
     ++p;

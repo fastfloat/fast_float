@@ -141,24 +141,12 @@ from_chars_result from_chars(const char *first, const char *last,
 
 template<typename T>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_advanced(const char *first, const char *last,
-                                      T &value, parse_options options)  noexcept  {
-
+from_chars_result from_chars_preparsed(parsed_number_string pns, T& value) noexcept
+{
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
-
+  
   from_chars_result answer;
-#if FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
-  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
-    first++;
-  }
-#endif
-  if (first == last) {
-    answer.ec = std::errc::invalid_argument;
-    answer.ptr = first;
-    return answer;
-  }
-  parsed_number_string pns = parse_number_string(first, last, options);
   if (!pns.valid) {
     return detail::parse_infnan(first, last, value);
   }
@@ -214,6 +202,26 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
   // then we need to go the long way around again. This is very uncommon.
   if(am.power2 < 0) { am = digit_comp<T>(pns, am); }
   to_float(pns.negative, am, value);
+  return answer;
+}
+
+template<typename T>
+FASTFLOAT_CONSTEXPR20
+from_chars_result from_chars_advanced(const char *first, const char *last,
+                                      T &value, parse_options options)  noexcept  {
+
+  from_chars_result answer;
+#if FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
+  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
+    first++;
+  }
+#endif
+  if (first == last) {
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = first;
+    return answer;
+  }
+  answer = from_chars_preparsed(parse_number_string(first, last, options), value);
   return answer;
 }
 
