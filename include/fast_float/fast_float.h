@@ -13,6 +13,10 @@ enum chars_format {
     general = fixed | scientific
 };
 
+enum parse_rules {
+    std_rules,
+    json_rules,
+};
 
 struct from_chars_result {
   const char *ptr;
@@ -20,12 +24,18 @@ struct from_chars_result {
 };
 
 struct parse_options {
-  constexpr explicit parse_options(chars_format fmt = chars_format::general,
-                         char dot = '.')
-    : format(fmt), decimal_point(dot) {}
+  constexpr explicit parse_options(
+      chars_format fmt = chars_format::general,
+      parse_rules rules = parse_rules::std_rules,
+      bool parse_ints = false, char dot = '.', )
+    : format(fmt), rules(rules), parse_ints(parse_ints), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
+  /** Which parsing rules to use */
+  parse_rules rules;
+  /* Whether to parse integers too, only applicable with json_rules */
+  bool parse_ints;
   /** The character used as decimal point */
   char decimal_point;
 };
@@ -69,7 +79,8 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
 namespace fast_float {
 template <typename T>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_preparsed(parsed_number_string parsed, T& value) noexcept;
+from_chars_result from_chars_preparsed(parsed_number_string parsed, 
+    const char* first, const char* last, T& value) noexcept;
 }
 
 // namespace fast_float

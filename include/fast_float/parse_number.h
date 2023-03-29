@@ -141,7 +141,7 @@ from_chars_result from_chars(const char *first, const char *last,
 
 template<typename T>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_preparsed(parsed_number_string pns, T& value) noexcept
+from_chars_result from_chars_preparsed(parsed_number_string pns, const char* first, const char* last, T& value) noexcept
 {
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
@@ -221,7 +221,7 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
     answer.ptr = first;
     return answer;
   }
-  answer = from_chars_preparsed(parse_number_string(first, last, options), value);
+  answer = from_chars_preparsed(parse_number_string(first, last, options), first, last, value);
   return answer;
 }
 
