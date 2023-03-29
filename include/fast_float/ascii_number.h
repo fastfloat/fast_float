@@ -99,7 +99,7 @@ struct parsed_number_string {
   const char *lastmatch{nullptr};
   bool negative{false};
   bool valid{false};
-  bool is_64bit_uint{false};
+  bool is_64bit_int{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
   byte_span integer{};  // non-nullable
@@ -210,6 +210,7 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
 
   answer.lastmatch = p;
   answer.valid = true;
+  answer.is_64bit_int = (p == end_of_integer_part);
 
   // If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
@@ -226,16 +227,15 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
       if(*start == '0') { digit_count --; }
       start++;
     }
-    constexpr uint64_t minimal_twenty_digit_integer{10000000000000000000};
+    constexpr uint64_t minimal_twenty_digit_integer{10000000000000000000ULL};
     // maya: A 64-bit number may have up to 20 digits, not 19! 
     // If we're parsing ints, preserve accuracy up to 20 digits instead
     // of converting them to the closest floating point value.
-    answer.too_many_digits = rules == parse_rules::json_rules && parse_ints ?
-        answer.is_integer && (digit_count > 20 || i < minimal_twenty_digit_integer) :
-        digit_count > 19;
+    answer.too_many_digits = rules == parse_rules::json_rules && parse_ints && answer.is_64bit_int ?
+        (digit_count > 20 || i < minimal_twenty_digit_integer) : digit_count > 19;
         
     if (answer.too_many_digits) {
-      answer.is_64bit_uint = false;
+      answer.is_64bit_int = false;
       // Let us start again, this time, avoiding overflows.
       // We don't need to check if is_integer, since we use the
       // pre-tokenized spans from above.
@@ -260,7 +260,6 @@ parsed_number_string parse_number_string(const char *p, const char *pend, parse_
       }
       // We have now corrected both exponent and i, to a truncated value
     }
-    else answer.is_64bit_uint = (p == end_of_integer_part);
   }
   answer.exponent = exponent;
   answer.mantissa = i;
