@@ -23,8 +23,9 @@ constexpr static uint64_t powers_of_ten_uint64[] = {
 // this algorithm is not even close to optimized, but it has no practical
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14
-int32_t scientific_exponent(parsed_number_string& num) noexcept {
+int32_t scientific_exponent(parsed_number_string<CharT>& num) noexcept {
   uint64_t mantissa = num.mantissa;
   int32_t exponent = int32_t(num.exponent);
   while (mantissa >= 10000) {
@@ -154,18 +155,19 @@ void round_down(adjusted_mantissa& am, int32_t shift) noexcept {
   am.power2 += shift;
 }
 
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void skip_zeros(const char*& first, const char* last) noexcept {
+void skip_zeros(const CharT*& first, const CharT* last) noexcept {
   uint64_t val;
   while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
-    ::memcpy(&val, first, sizeof(uint64_t));
+    val = fast_read_u64(first);
     if (val != 0x3030303030303030) {
       break;
     }
     first += 8;
   }
   while (first != last) {
-    if (*first != '0') {
+    if (*first != static_cast<CharT>('0')) {
       break;
     }
     first++;
@@ -174,19 +176,20 @@ void skip_zeros(const char*& first, const char* last) noexcept {
 
 // determine if any non-zero digits were truncated.
 // all characters must be valid digits.
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_truncated(const char* first, const char* last) noexcept {
+bool is_truncated(const CharT* first, const CharT* last) noexcept {
   // do 8-bit optimizations, can just compare to 8 literal 0s.
   uint64_t val;
   while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
-    ::memcpy(&val, first, sizeof(uint64_t));
+    val = fast_read_u64(first);
     if (val != 0x3030303030303030) {
       return true;
     }
     first += 8;
   }
   while (first != last) {
-    if (*first != '0') {
+    if (*first != static_cast<CharT>('0')) {
       return true;
     }
     first++;
@@ -194,22 +197,25 @@ bool is_truncated(const char* first, const char* last) noexcept {
   return false;
 }
 
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_truncated(byte_span s) noexcept {
+bool is_truncated(span<const CharT> s) noexcept {
   return is_truncated(s.ptr, s.ptr + s.len());
 }
 
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void parse_eight_digits(const char*& p, limb& value, size_t& counter, size_t& count) noexcept {
+void parse_eight_digits(const CharT*& p, limb& value, size_t& counter, size_t& count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
   counter += 8;
   count += 8;
 }
 
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14
-void parse_one_digit(const char*& p, limb& value, size_t& counter, size_t& count) noexcept {
-  value = value * 10 + limb(*p - '0');
+void parse_one_digit(const CharT*& p, limb& value, size_t& counter, size_t& count) noexcept {
+  value = value * 10 + limb(*p - static_cast<CharT>('0'));
   p++;
   counter++;
   count++;
@@ -230,8 +236,9 @@ void round_up_bigint(bigint& big, size_t& count) noexcept {
 }
 
 // parse the significant digits into a big integer
+template <typename CharT>
 inline FASTFLOAT_CONSTEXPR20
-void parse_mantissa(bigint& result, parsed_number_string& num, size_t max_digits, size_t& digits) noexcept {
+void parse_mantissa(bigint& result, parsed_number_string<CharT>& num, size_t max_digits, size_t& digits) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
@@ -245,8 +252,8 @@ void parse_mantissa(bigint& result, parsed_number_string& num, size_t max_digits
 #endif
 
   // process all integer digits.
-  const char* p = num.integer.ptr;
-  const char* pend = p + num.integer.len();
+  const CharT* p = num.integer.ptr;
+  const CharT* pend = p + num.integer.len();
   skip_zeros(p, pend);
   // process all digits, in increments of step per loop
   while (p != pend) {
@@ -395,9 +402,9 @@ adjusted_mantissa negative_digit_comp(bigint& bigmant, adjusted_mantissa am, int
 // `b` as a big-integer type, scaled to the same binary exponent as
 // the actual digits. we then compare the big integer representations
 // of both, and use that to direct rounding.
-template <typename T>
+template <typename T, typename CharT>
 inline FASTFLOAT_CONSTEXPR20
-adjusted_mantissa digit_comp(parsed_number_string& num, adjusted_mantissa am) noexcept {
+adjusted_mantissa digit_comp(parsed_number_string<CharT>& num, adjusted_mantissa am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 

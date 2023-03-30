@@ -18,8 +18,9 @@ enum parse_rules {
     json_rules,
 };
 
+template <typename CharT>
 struct from_chars_result {
-  const char *ptr;
+  const CharT *ptr;
   std::errc ec;
 };
 
@@ -59,17 +60,17 @@ struct parse_options {
  * to determine whether we allow the fixed point and scientific notation respectively.
  * The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
  */
-template<typename T>
+template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars(const char *first, const char *last,
+from_chars_result<CharT> from_chars(const CharT *first, const CharT *last,
                              T &value, chars_format fmt = chars_format::general)  noexcept;
 
 /**
  * Like from_chars, but accepts an `options` argument to govern number parsing.
  */
-template<typename T>
+template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_advanced(const char *first, const char *last,
+from_chars_result<CharT> from_chars_advanced(const CharT *first, const CharT *last,
                                       T &value, parse_options options)  noexcept;
 
 } 
@@ -77,10 +78,10 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
 #include "ascii_number.h" // parsed_number_string
 
 namespace fast_float {
-template <typename T>
+template <typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_preparsed(parsed_number_string parsed, 
-    const char* first, const char* last, T& value) noexcept;
+from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> parsed, 
+    const CharT* first, const CharT* last, T& value) noexcept;
 }
 
 // namespace fast_float

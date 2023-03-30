@@ -19,19 +19,19 @@ namespace detail {
  * The case comparisons could be made much faster given that we know that the
  * strings a null-free and fixed.
  **/
-template <typename T>
-from_chars_result FASTFLOAT_CONSTEXPR14
-parse_infnan(const char *first, const char *last, T &value)  noexcept  {
-  from_chars_result answer{};
+template <typename T, typename CharT>
+from_chars_result<CharT> FASTFLOAT_CONSTEXPR14
+parse_infnan(const CharT *first, const CharT *last, T &value)  noexcept  {
+  from_chars_result<CharT> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
   bool minusSign = false;
-  if (*first == '-') { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
+  if (*first == static_cast<CharT>('-')) { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
       minusSign = true;
       ++first;
   }
 #if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if (*first == '+') {
+  if (*first == static_cast<CharT>('+')) {
       ++first;
   }
 #endif
@@ -40,13 +40,15 @@ parse_infnan(const char *first, const char *last, T &value)  noexcept  {
       answer.ptr = (first += 3);
       value = minusSign ? -std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::quiet_NaN();
       // Check for possible nan(n-char-seq-opt), C++17 20.19.3.7, C11 7.20.1.3.3. At least MSVC produces nan(ind) and nan(snan).
-      if(first != last && *first == '(') {
-        for(const char* ptr = first + 1; ptr != last; ++ptr) {
-          if (*ptr == ')') {
+      if(first != last && *first == static_cast<CharT>('(')) {
+        for(const CharT* ptr = first + 1; ptr != last; ++ptr) {
+          if (*ptr == static_cast<CharT>(')')) {
             answer.ptr = ptr + 1; // valid nan(n-char-seq-opt)
             break;
           }
-          else if(!(('a' <= *ptr && *ptr <= 'z') || ('A' <= *ptr && *ptr <= 'Z') || ('0' <= *ptr && *ptr <= '9') || *ptr == '_'))
+          else if(!((static_cast<CharT>('a') <= *ptr && *ptr <= static_cast<CharT>('z')) || 
+              (static_cast<CharT>('A') <= *ptr && *ptr <= static_cast<CharT>('Z')) || 
+              (static_cast<CharT>('0') <= *ptr && *ptr <= static_cast<CharT>('9')) || *ptr == static_cast<CharT>('_')))
             break; // forbidden char, not nan(n-char-seq-opt)
         }
       }
@@ -132,21 +134,21 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 
 } // namespace detail
 
-template<typename T>
+template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars(const char *first, const char *last,
+from_chars_result<CharT> from_chars(const CharT *first, const CharT *last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
   return from_chars_advanced(first, last, value, parse_options{fmt});
 }
 
-template<typename T>
+template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_preparsed(parsed_number_string pns, const char* first, const char* last, T& value) noexcept
+from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, const CharT* first, const CharT* last, T& value) noexcept
 {
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
   
-  from_chars_result answer;
+  from_chars_result<CharT> answer;
   if (!pns.valid) {
     return detail::parse_infnan(first, last, value);
   }
@@ -205,12 +207,12 @@ from_chars_result from_chars_preparsed(parsed_number_string pns, const char* fir
   return answer;
 }
 
-template<typename T>
+template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_advanced(const char *first, const char *last,
+from_chars_result<CharT> from_chars_advanced(const CharT *first, const CharT *last,
                                       T &value, parse_options options)  noexcept  {
 
-  from_chars_result answer;
+  from_chars_result<CharT> answer;
 #if FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
   while ((first != last) && fast_float::is_space(uint8_t(*first))) {
     first++;
