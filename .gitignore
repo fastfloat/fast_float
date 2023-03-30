@@ -17,3 +17,4 @@ Release/
 *.vsp
 *.diagsession
 *.hint
+/CMakeSettings.json
