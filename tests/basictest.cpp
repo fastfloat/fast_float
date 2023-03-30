@@ -509,6 +509,9 @@ TEST_CASE("test_fixed_only") {
 
 
 static const double testing_power_of_ten[] = {
+      1e-323, 1e-322, 1e-321, 1e-320, 1e-319, 1e-318, 1e-317, 1e-316, 1e-315,
+      1e-314, 1e-313, 1e-312, 1e-311, 1e-310, 1e-309, 1e-308,
+
       1e-307, 1e-306, 1e-305, 1e-304, 1e-303, 1e-302, 1e-301, 1e-300, 1e-299,
       1e-298, 1e-297, 1e-296, 1e-295, 1e-294, 1e-293, 1e-292, 1e-291, 1e-290,
       1e-289, 1e-288, 1e-287, 1e-286, 1e-285, 1e-284, 1e-283, 1e-282, 1e-281,
@@ -592,7 +595,7 @@ TEST_CASE("powers_of_ten") {
       REQUIRE(n < sizeof(buf)); // if false, fails the test and exits
       double actual;
       auto result = fast_float::from_chars(buf, buf + 1000, actual);
-      double expected = ((i >= -307) ? testing_power_of_ten[i + 307] : std::pow(10, i));
+      double expected = ((i >= -323) ? testing_power_of_ten[i + 323] : std::pow(10, i));
       auto expected_ec = (expected == 0 || std::isinf(expected)) ? std::errc::result_out_of_range : std::errc();
       CHECK_MESSAGE(result.ec == expected_ec, " I could not parse " << buf);
       CHECK_MESSAGE(actual == expected, "String '" << buf << "'parsed to " << actual);
