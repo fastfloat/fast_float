@@ -36,7 +36,7 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
     | (val & 0x00000000000000FF) << 56;
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+fastfloat_really_inline
 uint64_t fast_read_u64(const char* chars)
 {
   uint64_t val;
@@ -48,7 +48,7 @@ fastfloat_really_inline
 uint64_t fast_read_u64(const char16_t* chars)
 {
 #if FASTFLOAT_SSE2
-  const void* const p = chars;
+  const unsigned char* const p = reinterpret_cast<const unsigned char *>(chars);
 
   static const char16_t masks[] = {0xff, 0xff, 0xff, 0xff};
   const __m128i m_masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks));
@@ -61,7 +61,7 @@ uint64_t fast_read_u64(const char16_t* chars)
 
   // extract
   uint64_t val;
-  _mm_storeu_epi64(&val, _mm_shuffle_epi32(packed, 0x8));
+  _mm_storeu_si64(&val, _mm_shuffle_epi32(packed, 0x8));
   return val;
 #else
   alignas(8) unsigned char bytes[8];
