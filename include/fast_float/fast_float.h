@@ -27,16 +27,13 @@ struct from_chars_result {
 struct parse_options {
   constexpr explicit parse_options(
       chars_format fmt = chars_format::general,
-      parse_rules rules = parse_rules::std_rules,
-      bool parse_ints = false, char dot = '.')
-    : format(fmt), rules(rules), parse_ints(parse_ints), decimal_point(dot) {}
+      parse_rules rules = parse_rules::std_rules, char dot = '.')
+    : format(fmt), rules(rules), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** Which parsing rules to use */
   parse_rules rules;
-  /* Whether to parse integers too, only applicable with json_rules */
-  bool parse_ints;
   /** The character used as decimal point */
   char decimal_point;
 };

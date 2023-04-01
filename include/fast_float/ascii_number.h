@@ -9,8 +9,6 @@
 
 #include "float_common.h"
 
-#define FASTFLOAT_SSE2 1
-
 #if FASTFLOAT_SSE2
 #include <emmintrin.h>
 #endif
@@ -44,25 +42,26 @@ uint64_t fast_read_u64(const char* chars)
   return val;
 }
 
+// https://quick-bench.com/q/fk6Y07KDGu8XZ9iUtQD8QJTc3Hg
 fastfloat_really_inline
 uint64_t fast_read_u64(const char16_t* chars)
 {
 #if FASTFLOAT_SSE2
-  const unsigned char* const p = reinterpret_cast<const unsigned char *>(chars);
-
+FASTFLOAT_SIMD_DISABLE_WARNINGS
   static const char16_t masks[] = {0xff, 0xff, 0xff, 0xff};
   const __m128i m_masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks));
-  // mask hi bytes
+
+  // mask hi bytes and pack
+  const char* const p = reinterpret_cast<const char*>(chars);
   __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), m_masks);
   __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), m_masks);
-
-  // pack into chars
   __m128i packed = _mm_packus_epi16(i1, i2);
 
   // extract
   uint64_t val;
   _mm_storeu_si64(&val, _mm_shuffle_epi32(packed, 0x8));
   return val;
+FASTFLOAT_SIMD_RESTORE_WARNINGS
 #else
   alignas(8) unsigned char bytes[8];
   for (int i = 0; i < 8; ++i)
@@ -143,7 +142,7 @@ bool is_made_of_eight_digits_fast(const CharT *chars)  noexcept  {
 
 typedef span<const char> byte_span;
 
-template <typename CharT = char>
+template <typename CharT>
 struct parsed_number_string {
   int64_t exponent{0};
   uint64_t mantissa{0};
@@ -161,10 +160,9 @@ struct parsed_number_string {
 // parse an ASCII string.
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options) noexcept {
+parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options, const bool parse_ints = false) noexcept {
   const chars_format fmt = options.format;
   const parse_rules rules = options.rules;
-  const bool parse_ints = options.parse_ints;
   const CharT decimal_point = static_cast<CharT>(options.decimal_point);
 
   parsed_number_string<CharT> answer;
@@ -279,9 +277,9 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
       start++;
     }
     constexpr uint64_t minimal_twenty_digit_integer{10000000000000000000ULL};
-    // maya: A 64-bit number may have up to 20 digits, not 19! 
-    // If we're parsing ints, preserve accuracy up to 20 digits instead
-    // of converting them to the closest floating point value.
+    // maya: A 64-bit number may have up to 20 digits!
+    // If we're parsing ints, preserve accuracy up to 20 digits 
+    // instead of rounding them to a floating point value.
     answer.too_many_digits = rules == parse_rules::json_rules && parse_ints && answer.is_64bit_int ?
         (digit_count > 20 || i < minimal_twenty_digit_integer) : digit_count > 19;
         
