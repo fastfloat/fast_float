@@ -120,27 +120,56 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
   return uint32_t(val);
 }
 
+// http://0x80.pl/articles/simd-parsing-int-sequences.html
+#if FASTFLOAT_SSE2
+fastfloat_really_inline
+uint32_t parse_eight_digits_unrolled_c16(const __m128i val) {
+  // x - '0'
+  const __m128i s1digits16 = _mm_sub_epi16(val, _mm_set1_epi16('0'));
+  // 10 * x(b) + x(b-1) -> 2 digit numbers
+  const __m128i s2digits32 = _mm_madd_epi16(s1digits16, _mm_setr_epi16(10, 1, 10, 1, 10, 1, 10, 1));
+  const __m128i s2digits16 = _mm_packus_epi16(s2digits32, s2digits32);
+  // 100 * x(b) + x(b-1) -> 4 digit numbers
+  const __m128i s4digits32 = _mm_madd_epi16(s2digits16, _mm_setr_epi16(100, 1, 100, 1, 100, 1, 100, 1));
+  const __m128i s4digits16 = _mm_packus_epi16(s4digits32, s4digits32);
+  // 10000 * x(b) + x(b-1) -> 8 digit number
+  const __m128i s8digits32 = _mm_madd_epi16(s4digits16, _mm_setr_epi16(10000, 1, 10000, 1, 10000, 1, 10000, 1));
+
+  uint32_t value;
+  _mm_storeu_si32(&value, s8digits32);
+  return value;
+}
+#endif
+
 // credit @aqrit
 fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
      0x8080808080808080));
 }
 
-template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(const CharT* chars)  noexcept {
+uint32_t parse_eight_digits_unrolled(const char* chars)  noexcept {
     return parse_eight_digits_unrolled(read_u64(chars));
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
-  return is_made_of_eight_digits_fast(read_u64(chars));
+uint32_t parse_eight_digits_unrolled(const char16_t* chars)  noexcept {
+  if (cpp20_and_in_constexpr() || !has_simd()) {
+    return parse_eight_digits_unrolled(read_u64(chars));
+  }
+#if !FASTFLOAT_SSE2
+  return 0; // never reaches here, satisfy compiler
+#else
+FASTFLOAT_SIMD_DISABLE_WARNINGS
+  return parse_eight_digits_unrolled_c16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(chars)));
+FASTFLOAT_SIMD_RESTORE_WARNINGS
+#endif
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool parse_if_eight_digits_unrolled(const char* chars, std::uint64_t& i) noexcept {
-    const bool all = is_made_of_eight_digits_fast(chars);
-    if (all) i = i * 100000000 + parse_eight_digits_unrolled(chars);
+    const bool all = is_made_of_eight_digits_fast(read_u64(chars));
+    if (all) i = i * 100000000 + parse_eight_digits_unrolled(read_u64(chars));
     return all;
 }
 
@@ -160,35 +189,19 @@ bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noe
 #else
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(chars));
-
   // (x - '0') <= 9
   const __m128i t0 = _mm_sub_epi16(data, _mm_set1_epi16(80));
   const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-119));
   const bool is_digits = _mm_movemask_epi8(t1) == 0;
 
   if (is_digits) {
-    // x - '0'
-    const __m128i s1digits16 = _mm_sub_epi16(data, _mm_set1_epi16('0'));
-    // 10 * x(b) + x(b-1) -> 2 digit numbers
-    const __m128i s2digits32 = _mm_madd_epi16(s1digits16, _mm_setr_epi16(10, 1, 10, 1, 10, 1, 10, 1));
-    const __m128i s2digits16 = _mm_packus_epi16(s2digits32, s2digits32);
-    // 100 * x(b) + x(b-1) -> 4 digit numbers
-    const __m128i s4digits32 = _mm_madd_epi16(s2digits16, _mm_setr_epi16(100, 1, 100, 1, 100, 1, 100, 1));
-    const __m128i s4digits16 = _mm_packus_epi16(s4digits32, s4digits32);
-    // 10000 * x(b) + x(b-1) -> 8 digit number
-    const __m128i s8digits32 = _mm_madd_epi16(s4digits16, _mm_setr_epi16(10000, 1, 10000, 1, 10000, 1, 10000, 1));
-
-    uint32_t value;
-    _mm_storeu_si32(&value, s8digits32);
-
-    i = i * 100000000 + value;
+    i = i * 100000000 + parse_eight_digits_unrolled_c16(data);
     return true;
   }
   else return false;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 #endif
 }
-
 
 
 typedef span<const char> byte_span;
