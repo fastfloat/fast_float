@@ -13,4 +13,4 @@ jobs:
           cd build &&
           cmake -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
-          ctest --output-on-failure 
+          ctest --output-on-failure

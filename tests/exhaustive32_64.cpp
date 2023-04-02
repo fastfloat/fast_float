@@ -21,7 +21,7 @@ bool basic_test_64bit(std::string vals, double val) {
   double result_value;
   auto result = fast_float::from_chars(vals.data(), vals.data() + vals.size(),
                                       result_value);
-  if (result.ec != std::errc()) {
+  if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
     std::cerr << " I could not parse " << vals << std::endl;
     return false;
   }
@@ -30,11 +30,11 @@ bool basic_test_64bit(std::string vals, double val) {
       std::cerr << vals << std::endl;
       std::cerr << "not nan" << result_value << std::endl;
       return false;
-    } 
+    }
   } else if(copysign(1,result_value) != copysign(1,val)) {
     std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
               << std::endl;
-    return false; 
+    return false;
   } else if (result_value != val) {
     std::cerr << vals << std::endl;
     std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
