@@ -23,8 +23,9 @@ constexpr static uint64_t powers_of_ten_uint64[] = {
 // this algorithm is not even close to optimized, but it has no practical
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
+template <typename TCH>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14
-int32_t scientific_exponent(parsed_number_string& num) noexcept {
+int32_t scientific_exponent(parsed_number_string_t<TCH> & num) noexcept {
   uint64_t mantissa = num.mantissa;
   int32_t exponent = int32_t(num.exponent);
   while (mantissa >= 10000) {
@@ -153,19 +154,19 @@ void round_down(adjusted_mantissa& am, int32_t shift) noexcept {
   }
   am.power2 += shift;
 }
-
+template <typename TCH>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void skip_zeros(const char*& first, const char* last) noexcept {
+void skip_zeros(TCH const * & first, TCH const * last) noexcept {
   uint64_t val;
-  while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
+  while (!cpp20_and_in_constexpr() && std::distance(first, last) >= int_cmp_len<TCH>()) {
     ::memcpy(&val, first, sizeof(uint64_t));
-    if (val != 0x3030303030303030) {
+    if (val != int_cmp_zeros<TCH>()) {
       break;
     }
-    first += 8;
+    first += int_cmp_len<TCH>();
   }
   while (first != last) {
-    if (*first != '0') {
+    if (*first != TCH('0')) {
       break;
     }
     first++;
@@ -174,42 +175,45 @@ void skip_zeros(const char*& first, const char* last) noexcept {
 
 // determine if any non-zero digits were truncated.
 // all characters must be valid digits.
+template <typename TCH>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_truncated(const char* first, const char* last) noexcept {
+bool is_truncated(TCH const * first, TCH const * last) noexcept {
   // do 8-bit optimizations, can just compare to 8 literal 0s.
   uint64_t val;
-  while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
+  while (!cpp20_and_in_constexpr() && std::distance(first, last) >= int_cmp_len<TCH>()) {
     ::memcpy(&val, first, sizeof(uint64_t));
-    if (val != 0x3030303030303030) {
+    if (val != int_cmp_zeros<TCH>()) {
       return true;
     }
-    first += 8;
+    first += int_cmp_len<TCH>();
   }
   while (first != last) {
-    if (*first != '0') {
+    if (*first != TCH('0')) {
       return true;
     }
-    first++;
+    ++first;
   }
   return false;
 }
-
+template <typename TCH>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_truncated(byte_span s) noexcept {
+bool is_truncated(span<TCH> s) noexcept {
   return is_truncated(s.ptr, s.ptr + s.len());
 }
 
+template <typename TCH>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void parse_eight_digits(const char*& p, limb& value, size_t& counter, size_t& count) noexcept {
+void parse_eight_digits(TCH const *& p, limb& value, size_t& counter, size_t& count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
   counter += 8;
   count += 8;
 }
 
+template <typename TCH>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14
-void parse_one_digit(const char*& p, limb& value, size_t& counter, size_t& count) noexcept {
-  value = value * 10 + limb(*p - '0');
+void parse_one_digit(TCH const *& p, limb& value, size_t& counter, size_t& count) noexcept {
+  value = value * 10 + limb(*p - TCH('0'));
   p++;
   counter++;
   count++;
@@ -230,8 +234,9 @@ void round_up_bigint(bigint& big, size_t& count) noexcept {
 }
 
 // parse the significant digits into a big integer
+template <typename TCH>
 inline FASTFLOAT_CONSTEXPR20
-void parse_mantissa(bigint& result, parsed_number_string& num, size_t max_digits, size_t& digits) noexcept {
+void parse_mantissa(bigint& result, parsed_number_string_t<TCH>& num, size_t max_digits, size_t& digits) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
@@ -245,8 +250,8 @@ void parse_mantissa(bigint& result, parsed_number_string& num, size_t max_digits
 #endif
 
   // process all integer digits.
-  const char* p = num.integer.ptr;
-  const char* pend = p + num.integer.len();
+  TCH const * p = num.integer.ptr;
+  TCH const * pend = p + num.integer.len();
   skip_zeros(p, pend);
   // process all digits, in increments of step per loop
   while (p != pend) {
@@ -395,9 +400,9 @@ adjusted_mantissa negative_digit_comp(bigint& bigmant, adjusted_mantissa am, int
 // `b` as a big-integer type, scaled to the same binary exponent as
 // the actual digits. we then compare the big integer representations
 // of both, and use that to direct rounding.
-template <typename T>
+template <typename T, typename TCH>
 inline FASTFLOAT_CONSTEXPR20
-adjusted_mantissa digit_comp(parsed_number_string& num, adjusted_mantissa am) noexcept {
+adjusted_mantissa digit_comp(parsed_number_string_t<TCH>& num, adjusted_mantissa am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 

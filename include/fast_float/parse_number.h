@@ -19,41 +19,41 @@ namespace detail {
  * The case comparisons could be made much faster given that we know that the
  * strings a null-free and fixed.
  **/
-template <typename T>
-from_chars_result FASTFLOAT_CONSTEXPR14
-parse_infnan(const char *first, const char *last, T &value)  noexcept  {
-  from_chars_result answer{};
+template <typename T, typename TCH>
+from_chars_result_t<TCH> FASTFLOAT_CONSTEXPR14
+parse_infnan(TCH const * first, TCH const * last, T &value)  noexcept  {
+  from_chars_result_t<TCH> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
   bool minusSign = false;
-  if (*first == '-') { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
+  if (*first == TCH('-')) { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
       minusSign = true;
       ++first;
   }
 #if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if (*first == '+') {
+  if (*first == TCH('+')) {
       ++first;
   }
 #endif
   if (last - first >= 3) {
-    if (fastfloat_strncasecmp(first, "nan", 3)) {
+    if (fastfloat_strncasecmp(first, str_const_nan<TCH>(), 3)) {
       answer.ptr = (first += 3);
       value = minusSign ? -std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::quiet_NaN();
       // Check for possible nan(n-char-seq-opt), C++17 20.19.3.7, C11 7.20.1.3.3. At least MSVC produces nan(ind) and nan(snan).
-      if(first != last && *first == '(') {
-        for(const char* ptr = first + 1; ptr != last; ++ptr) {
-          if (*ptr == ')') {
+      if(first != last && *first == TCH('(')) {
+        for(TCH const * ptr = first + 1; ptr != last; ++ptr) {
+          if (*ptr == TCH(')')) {
             answer.ptr = ptr + 1; // valid nan(n-char-seq-opt)
             break;
           }
-          else if(!(('a' <= *ptr && *ptr <= 'z') || ('A' <= *ptr && *ptr <= 'Z') || ('0' <= *ptr && *ptr <= '9') || *ptr == '_'))
+          else if(!((TCH('a') <= *ptr && *ptr <= TCH('z')) || (TCH('A') <= *ptr && *ptr <= TCH('Z')) || (TCH('0') <= *ptr && *ptr <= TCH('9')) || *ptr == TCH('_')))
             break; // forbidden char, not nan(n-char-seq-opt)
         }
       }
       return answer;
     }
-    if (fastfloat_strncasecmp(first, "inf", 3)) {
-      if ((last - first >= 8) && fastfloat_strncasecmp(first + 3, "inity", 5)) {
+    if (fastfloat_strncasecmp(first, str_const_inf<TCH>(), 3)) {
+      if ((last - first >= 8) && fastfloat_strncasecmp(first + 3, str_const_inf<TCH>() + 3, 5)) {
         answer.ptr = first + 8;
       } else {
         answer.ptr = first + 3;
@@ -132,22 +132,25 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 
 } // namespace detail
 
-template<typename T>
+template<typename T, typename TCH>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars(const char *first, const char *last,
+from_chars_result_t<TCH> from_chars(TCH const * first, TCH const * last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
-  return from_chars_advanced(first, last, value, parse_options{fmt});
+  return from_chars_advanced(first, last, value, parse_options_t<TCH>{fmt});
 }
 
-template<typename T>
+template<typename T, typename TCH>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_advanced(const char *first, const char *last,
-                                      T &value, parse_options options)  noexcept  {
+from_chars_result_t<TCH> from_chars_advanced(TCH const * first, TCH const * last,
+                                      T &value, parse_options_t<TCH> options)  noexcept  {
 
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
+  static_assert (std::is_same<TCH, char>::value ||
+                 std::is_same<TCH, wchar_t>::value ||
+                 std::is_same<TCH, char16_t>::value ||
+                 std::is_same<TCH, char32_t>::value , "only char, wchar_t, char16_t and char32_t are supported");
 
-
-  from_chars_result answer;
+  from_chars_result_t<TCH> answer;
 #if FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
   while ((first != last) && fast_float::is_space(uint8_t(*first))) {
     first++;
@@ -158,7 +161,7 @@ from_chars_result from_chars_advanced(const char *first, const char *last,
     answer.ptr = first;
     return answer;
   }
-  parsed_number_string pns = parse_number_string(first, last, options);
+  parsed_number_string_t<TCH> pns = parse_number_string<TCH>(first, last, options);
   if (!pns.valid) {
     return detail::parse_infnan(first, last, value);
   }

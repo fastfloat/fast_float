@@ -13,22 +13,25 @@ enum chars_format {
     general = fixed | scientific
 };
 
-
-struct from_chars_result {
-  const char *ptr;
+template <typename TCH>
+struct from_chars_result_t {
+  TCH const * ptr;
   std::errc ec;
 };
+using from_chars_result = from_chars_result_t<char>;
 
-struct parse_options {
-  constexpr explicit parse_options(chars_format fmt = chars_format::general,
-                         char dot = '.')
+template <typename TCH>
+struct parse_options_t {
+  constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
+                         TCH dot = TCH('.'))
     : format(fmt), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
-  char decimal_point;
+  TCH decimal_point;
 };
+using parse_options = parse_options_t<char>;
 
 /**
  * This function parses the character sequence [first,last) for a number. It parses floating-point numbers expecting
@@ -49,18 +52,18 @@ struct parse_options {
  * to determine whether we allow the fixed point and scientific notation respectively.
  * The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
  */
-template<typename T>
+template<typename T, typename TCH = char>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars(const char *first, const char *last,
+from_chars_result_t<TCH> from_chars(TCH const * first, TCH const * last,
                              T &value, chars_format fmt = chars_format::general)  noexcept;
 
 /**
  * Like from_chars, but accepts an `options` argument to govern number parsing.
  */
-template<typename T>
+template<typename T, typename TCH = char>
 FASTFLOAT_CONSTEXPR20
-from_chars_result from_chars_advanced(const char *first, const char *last,
-                                      T &value, parse_options options)  noexcept;
+from_chars_result_t<TCH> from_chars_advanced(TCH const * first, TCH const * last,
+                                      T &value, parse_options_t<TCH> options)  noexcept;
 
 } // namespace fast_float
 #include "parse_number.h"
