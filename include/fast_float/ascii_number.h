@@ -126,8 +126,9 @@ fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val
      0x8080808080808080));
 }
 
+template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(const char* chars)  noexcept {
+uint32_t parse_eight_digits_unrolled(const CharT* chars)  noexcept {
     return parse_eight_digits_unrolled(read_u64(chars));
 }
 
@@ -139,14 +140,14 @@ bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool parse_if_eight_digits_unrolled(const char* chars, std::uint64_t& i) noexcept {
     const bool all = is_made_of_eight_digits_fast(chars);
-    if (all) i = i * 100000000 * parse_eight_digits_unrolled(chars);
+    if (all) i = i * 100000000 + parse_eight_digits_unrolled(chars);
     return all;
 }
 
 // http://0x80.pl/articles/simd-parsing-int-sequences.html
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noexcept {
-  if (cpp20_and_in_constexpr() || !FASTFLOAT_SSE2) {
+  if (cpp20_and_in_constexpr() || !has_simd()) {
     for (int i = 0; i < 8; ++i) {
       if (chars[i] < u'0' || chars[i] > u'9')
         return false;
@@ -154,9 +155,11 @@ bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noe
     i = i * 100000000 + parse_eight_digits_unrolled(read_u64(chars));
     return true;
   }
-#if FASTFLOAT_SSE2
+#if !FASTFLOAT_SSE2
+  return false; // never reaches here, satisfy compiler
+#else
 FASTFLOAT_SIMD_DISABLE_WARNINGS
-  const __m128i data = _mm_loadu_si128(reinterpret_cast<const char*>(chars));
+  const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(chars));
 
   // (x - '0') <= 9
   const __m128i t0 = _mm_sub_epi16(data, _mm_set1_epi16(80));
@@ -167,7 +170,7 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
     // x - '0'
     const __m128i s1digits16 = _mm_sub_epi16(data, _mm_set1_epi16('0'));
     // 10 * x(b) + x(b-1) -> 2 digit numbers
-    const __m128i s2digits32 = _mm_madd_epi16(s1digits16, _mm_setr_epi16(10, 1, 10, 1, 10, 1, 10, 1);
+    const __m128i s2digits32 = _mm_madd_epi16(s1digits16, _mm_setr_epi16(10, 1, 10, 1, 10, 1, 10, 1));
     const __m128i s2digits16 = _mm_packus_epi16(s2digits32, s2digits32);
     // 100 * x(b) + x(b-1) -> 4 digit numbers
     const __m128i s4digits32 = _mm_madd_epi16(s2digits16, _mm_setr_epi16(100, 1, 100, 1, 100, 1, 100, 1));
@@ -251,7 +254,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     const CharT* before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    while ((std::distance(p, pend) >= 8) && parse_if_eight_digits_unrolled(p)) {  // in rare cases, this will overflow, but that's ok
+    while ((std::distance(p, pend) >= 8) && parse_if_eight_digits_unrolled(p, i)) {  // in rare cases, this will overflow, but that's ok
       p += 8;
     }
     while ((p != pend) && is_integer(*p)) {

@@ -82,7 +82,7 @@
 #if defined(__GNUC__)
 #define FASTFLOAT_SIMD_DISABLE_WARNINGS \
   _Pragma("GCC diagnostic push") \
-  _Pragma("GCC diagnostic ignored \"-Wcast-align=strict\"")
+  _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
 #else
 #define FASTFLOAT_SIMD_DISABLE_WARNINGS
 #endif
@@ -118,6 +118,14 @@ namespace fast_float {
 fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
   return std::is_constant_evaluated();
+#else
+  return false;
+#endif
+}
+
+fastfloat_really_inline constexpr bool has_simd() {
+#if FASTFLOAT_SSE2
+  return true;
 #else
   return false;
 #endif
