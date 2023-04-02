@@ -97,7 +97,12 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
     if (i == size_t(location_of_decimal_separator)) {
       buffer[pos++] = '.';
     }
-    buffer[pos++] = char(rand.next_digit() + '0');
+    buffer[pos] = char(rand.next_digit() + '0');
+    // We can have a leading zero only if location_of_decimal_separator = 1.
+    while(i == 0 && 1 != size_t(location_of_decimal_separator) && buffer[pos] == '0') {
+      buffer[pos] = char(rand.next_digit() + '0');
+    }
+    pos++;
   }
   if (rand.next_bool()) {
     if (rand.next_bool()) {
@@ -174,7 +179,7 @@ bool tester(uint64_t seed, size_t volume) {
       double result_value;
       auto result =
           fast_float::from_chars(buffer, buffer + length, result_value);
-      if (result.ec != std::errc()) {
+      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
         printf("parsing %.*s\n", int(length), buffer);
         std::cerr << " I could not parse " << std::endl;
         return false;
@@ -197,7 +202,7 @@ bool tester(uint64_t seed, size_t volume) {
       float result_value;
       auto result =
           fast_float::from_chars(buffer, buffer + length, result_value);
-      if (result.ec != std::errc()) {
+      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
         printf("parsing %.*s\n", int(length), buffer);
         std::cerr << " I could not parse " << std::endl;
         return false;

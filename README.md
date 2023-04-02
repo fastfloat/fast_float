@@ -189,11 +189,11 @@ It can parse random floating-point numbers at a speed of 1 GB/s on some systems.
 $ ./build/benchmarks/benchmark
 # parsing random integers in the range [0,1)
 volume = 2.09808 MB
-netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s 
-doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s 
-strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s 
-abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s 
-fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s 
+netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s
+doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s
+strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s
+abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s
+fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s
 ```
 
 See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.

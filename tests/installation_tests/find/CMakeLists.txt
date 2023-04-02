@@ -14,7 +14,7 @@ find_package(FastFloat REQUIRED)
 file(WRITE main.cpp "
 #include \"fast_float/fast_float.h\"
 #include <iostream>
- 
+
 int main() {
     const std::string input =  \"3.1416 xyz \";
     double result;
