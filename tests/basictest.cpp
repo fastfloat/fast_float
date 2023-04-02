@@ -596,7 +596,7 @@ TEST_CASE("powers_of_ten") {
       double actual;
       auto result = fast_float::from_chars(buf, buf + 1000, actual);
       double expected = ((i >= -323) ? testing_power_of_ten[i + 323] : std::pow(10, i));
-      auto expected_ec = (expected == 0 || std::isinf(expected)) ? std::errc::result_out_of_range : std::errc();
+      auto expected_ec = (i < -323 || i > 308) ? std::errc::result_out_of_range : std::errc();
       CHECK_MESSAGE(result.ec == expected_ec, " I could not parse " << buf);
       CHECK_MESSAGE(actual == expected, "String '" << buf << "'parsed to " << actual);
     }
