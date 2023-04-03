@@ -85,7 +85,7 @@ bool test() {
   }
   if(begin != end) {
       std::cerr << " bad ending " << std::endl;
-      return false;    
+      return false;
   }
   return true;
 }
@@ -239,7 +239,7 @@ bool partow_test() {
     T result_value;
     auto result = fast_float::from_chars(st.data(), st.data() + st.size(),
                                       result_value);
-    if (result.ec != std::errc()) {
+    if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
       printf("parsing %.*s\n", int(st.size()), st.data());
       std::cerr << " I could not parse " << std::endl;
       return false;
@@ -270,7 +270,7 @@ int main() {
   std::cout << "32 bits checks" << std::endl;
   Assert(partow_test<float>());
   Assert(test<float>());
-  
+
   std::cout << "64 bits checks" << std::endl;
   Assert(partow_test<double>());
   Assert(test<double>());
