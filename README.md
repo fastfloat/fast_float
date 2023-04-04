@@ -1,4 +1,8 @@
+
 ## fast_float number parsing library: 4x faster than strtod
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/fast_float.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:fast_float)
+[![VS17-CI](https://github.com/fastfloat/fast_float/actions/workflows/vs17-ci.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/vs17-ci.yml)
+[![Ubuntu 22.04 CI (GCC 11)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml)
 
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
