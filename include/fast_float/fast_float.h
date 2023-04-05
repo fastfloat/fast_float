@@ -13,23 +13,23 @@ enum chars_format {
     general = fixed | scientific
 };
 
-template <typename TCH>
+template <typename UC>
 struct from_chars_result_t {
-  TCH const * ptr;
+  UC const * ptr;
   std::errc ec;
 };
 using from_chars_result = from_chars_result_t<char>;
 
-template <typename TCH>
+template <typename UC>
 struct parse_options_t {
   constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
-                         TCH dot = TCH('.'))
+                         UC dot = UC('.'))
     : format(fmt), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
-  TCH decimal_point;
+  UC decimal_point;
 };
 using parse_options = parse_options_t<char>;
 
@@ -52,18 +52,18 @@ using parse_options = parse_options_t<char>;
  * to determine whether we allow the fixed point and scientific notation respectively.
  * The default is  `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
  */
-template<typename T, typename TCH = char>
+template<typename T, typename UC = char>
 FASTFLOAT_CONSTEXPR20
-from_chars_result_t<TCH> from_chars(TCH const * first, TCH const * last,
+from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
                              T &value, chars_format fmt = chars_format::general)  noexcept;
 
 /**
  * Like from_chars, but accepts an `options` argument to govern number parsing.
  */
-template<typename T, typename TCH = char>
+template<typename T, typename UC = char>
 FASTFLOAT_CONSTEXPR20
-from_chars_result_t<TCH> from_chars_advanced(TCH const * first, TCH const * last,
-                                      T &value, parse_options_t<TCH> options)  noexcept;
+from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
+                                      T &value, parse_options_t<UC> options)  noexcept;
 
 } // namespace fast_float
 #include "parse_number.h"

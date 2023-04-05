@@ -12,9 +12,9 @@ namespace fast_float {
 
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
-template <typename TCH>
-fastfloat_really_inline constexpr bool is_integer(TCH c) noexcept {
-  return !(c > TCH('9') || c < TCH('0'));
+template <typename UC>
+fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
+  return !(c > UC('9') || c < UC('0'));
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
@@ -27,10 +27,10 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
     | (val & 0x000000000000FF00) << 40
     | (val & 0x00000000000000FF) << 56;
 }
-template <typename TCH>
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint64_t read_u64(TCH const * chars) {
-  if (cpp20_and_in_constexpr() || sizeof(TCH) > 1) {
+uint64_t read_u64(UC const * chars) {
+  if (cpp20_and_in_constexpr() || sizeof(UC) > 1) {
     uint64_t val{};
     for(int i = 0; i < 8; ++i) {
       val |= uint64_t(char(*chars)) << (i * 8);
@@ -75,9 +75,9 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
   return uint32_t(val);
 }
-template <typename TCH>
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(TCH const * chars)  noexcept  {
+uint32_t parse_eight_digits_unrolled(UC const * chars)  noexcept  {
   return parse_eight_digits_unrolled(read_u64(chars));
 }
 
@@ -87,42 +87,42 @@ fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val
      0x8080808080808080));
 }
 
-template <typename TCH>
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_made_of_eight_digits_fast(TCH const * chars)  noexcept  {
+bool is_made_of_eight_digits_fast(UC const * chars)  noexcept  {
   return is_made_of_eight_digits_fast(read_u64(chars));
 }
 
-template <typename TCH>
+template <typename UC>
 struct parsed_number_string_t {
   int64_t exponent{0};
   uint64_t mantissa{0};
-  TCH const * lastmatch{nullptr};
+  UC const * lastmatch{nullptr};
   bool negative{false};
   bool valid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
-  span<TCH> integer{};  // non-nullable
-  span<TCH> fraction{}; // nullable
+  span<UC> integer{};  // non-nullable
+  span<UC> fraction{}; // nullable
 };
 using byte_span = span<char>;
-//using parsed_number_string = parsed_number_string_t<char>;
+using parsed_number_string = parsed_number_string_t<char>;
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
-template <typename TCH>
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, parse_options_t<TCH> options) noexcept {
+parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, parse_options_t<UC> options) noexcept {
   chars_format const fmt = options.format;
-  TCH const decimal_point = options.decimal_point;
+  UC const decimal_point = options.decimal_point;
 
-  parsed_number_string_t<TCH> answer;
+  parsed_number_string_t<UC> answer;
   answer.valid = false;
   answer.too_many_digits = false;
-  answer.negative = (*p == TCH('-'));
+  answer.negative = (*p == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == TCH('-')) || (*p == TCH('+'))) {
+  if ((*p == UC('-')) || (*p == UC('+'))) {
 #else
-  if (*p == TCH('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
     ++p;
     if (p == pend) {
@@ -132,7 +132,7 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
       return answer;
     }
   }
-  TCH const * const start_digits = p;
+  UC const * const start_digits = p;
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
 
@@ -140,16 +140,16 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
-        uint64_t(*p - TCH('0')); // might overflow, we will handle the overflow later
+        uint64_t(*p - UC('0')); // might overflow, we will handle the overflow later
     ++p;
   }
-  TCH const * const end_of_integer_part = p;
+  UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
-  answer.integer = span<TCH>(start_digits, size_t(digit_count));
+  answer.integer = span<UC>(start_digits, size_t(digit_count));
   int64_t exponent = 0;
   if ((p != pend) && (*p == decimal_point)) {
     ++p;
-    TCH const * before = p;
+    UC const * before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
@@ -157,12 +157,12 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
       p += 8;
     }
     while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - TCH('0'));
+      uint8_t digit = uint8_t(*p - UC('0'));
       ++p;
       i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
     }
     exponent = before - p;
-    answer.fraction = span<TCH>(before, size_t(p - before));
+    answer.fraction = span<UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
   // we must have encountered at least one integer!
@@ -170,14 +170,14 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
-  if ((fmt & chars_format::scientific) && (p != pend) && ((TCH('e') == *p) || (TCH('E') == *p))) {
-    TCH const * location_of_e = p;
+  if ((fmt & chars_format::scientific) && (p != pend) && ((UC('e') == *p) || (UC('E') == *p))) {
+    UC const * location_of_e = p;
     ++p;
     bool neg_exp = false;
-    if ((p != pend) && (TCH('-') == *p)) {
+    if ((p != pend) && (UC('-') == *p)) {
       neg_exp = true;
       ++p;
-    } else if ((p != pend) && (TCH('+') == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+    } else if ((p != pend) && (UC('+') == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
       ++p;
     }
     if ((p == pend) || !is_integer(*p)) {
@@ -189,7 +189,7 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
       p = location_of_e;
     } else {
       while ((p != pend) && is_integer(*p)) {
-        uint8_t digit = uint8_t(*p - TCH('0'));
+        uint8_t digit = uint8_t(*p - UC('0'));
         if (exp_number < 0x10000000) {
           exp_number = 10 * exp_number + digit;
         }
@@ -215,9 +215,9 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
-    TCH const * start = start_digits;
-    while ((start != pend) && (*start == TCH('0') || *start == decimal_point)) {
-      if(*start == TCH('0')) { digit_count --; }
+    UC const * start = start_digits;
+    while ((start != pend) && (*start == UC('0') || *start == decimal_point)) {
+      if(*start == UC('0')) { digit_count --; }
       start++;
     }
     if (digit_count > 19) {
@@ -227,19 +227,19 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
       // pre-tokenized spans from above.
       i = 0;
       p = answer.integer.ptr;
-      TCH const * int_end = p + answer.integer.len();
+      UC const * int_end = p + answer.integer.len();
       const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
       while((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-        i = i * 10 + uint64_t(*p - TCH('0'));
+        i = i * 10 + uint64_t(*p - UC('0'));
         ++p;
       }
       if (i >= minimal_nineteen_digit_integer) { // We have a big integers
         exponent = end_of_integer_part - p + exp_number;
       } else { // We have a value with a fractional component.
           p = answer.fraction.ptr;
-          TCH const * frac_end = p + answer.fraction.len();
+          UC const * frac_end = p + answer.fraction.len();
           while((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-            i = i * 10 + uint64_t(*p - TCH('0'));
+            i = i * 10 + uint64_t(*p - UC('0'));
             ++p;
           }
           exponent = answer.fraction.ptr - p + exp_number;

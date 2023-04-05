@@ -106,9 +106,9 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 }
 
 // Compares two ASCII strings in a case insensitive manner.
-template <typename TCH>
+template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
-fastfloat_strncasecmp(TCH const * input1, TCH const * input2, size_t length) {
+fastfloat_strncasecmp(UC const * input1, UC const * input2, size_t length) {
   char running_diff{0};
   for (size_t i = 0; i < length; ++i) {
     running_diff |= (char(input1[i]) ^ char(input2[i]));
@@ -505,24 +505,24 @@ constexpr bool space_lut<T>::value[];
 inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
 #endif
 
-template<typename TCH>
+template<typename UC>
 static constexpr uint64_t int_cmp_zeros()
 {
-    switch(sizeof(TCH))
+    switch(sizeof(UC))
     {
         case 1: return 0x3030303030303030;
-        case 2: return (uint64_t(TCH('0')) << 48 | uint64_t(TCH('0')) << 32 | uint64_t(TCH('0')) << 16 | TCH('0'));
-        case 4: return (uint64_t(TCH('0')) << 32 | TCH('0'));
+        case 2: return (uint64_t(UC('0')) << 48 | uint64_t(UC('0')) << 32 | uint64_t(UC('0')) << 16 | UC('0'));
+        case 4: return (uint64_t(UC('0')) << 32 | UC('0'));
     }
     return 0;
 }
-template<typename TCH>
+template<typename UC>
 static constexpr int int_cmp_len()
 {
-    return sizeof(uint64_t) / sizeof(TCH);
+    return sizeof(uint64_t) / sizeof(UC);
 }
-template<typename TCH>
-static constexpr TCH const * str_const_nan()
+template<typename UC>
+static constexpr UC const * str_const_nan()
 {
     return nullptr;
 }
@@ -546,8 +546,8 @@ static constexpr char32_t const * str_const_nan<char32_t>()
 {
     return U"nan";
 }
-template<typename TCH>
-static constexpr TCH const * str_const_inf()
+template<typename UC>
+static constexpr UC const * str_const_inf()
 {
     return nullptr;
 }
