@@ -482,7 +482,7 @@ void to_float(bool negative, adjusted_mantissa am, T &value) {
 #endif
 }
 
-#if FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
+#ifdef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
 template <typename = void>
 struct space_lut {
   static constexpr bool value[] = {

@@ -30,7 +30,7 @@ parse_infnan(TCH const * first, TCH const * last, T &value)  noexcept  {
       minusSign = true;
       ++first;
   }
-#if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
+#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
   if (*first == TCH('+')) {
       ++first;
   }
@@ -109,7 +109,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   //
   // Note: This may fail to be accurate if fast-math has been
   // enabled, as rounding conventions may not apply.
-  #if FASTFLOAT_VISUAL_STUDIO
+  #ifdef FASTFLOAT_VISUAL_STUDIO
   #   pragma warning(push)
   //  todo: is there a VS warning?
   //  see https://stackoverflow.com/questions/46079446/is-there-a-warning-for-floating-point-equality-checking-in-visual-studio-2013
@@ -121,7 +121,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   #   pragma GCC diagnostic ignored "-Wfloat-equal"
   #endif
   return (fmini + 1.0f == 1.0f - fmini);
-  #if FASTFLOAT_VISUAL_STUDIO
+  #ifdef FASTFLOAT_VISUAL_STUDIO
   #   pragma warning(pop)
   #elif defined(__clang__)
   #   pragma clang diagnostic pop
@@ -151,7 +151,7 @@ from_chars_result_t<TCH> from_chars_advanced(TCH const * first, TCH const * last
                  std::is_same<TCH, char32_t>::value , "only char, wchar_t, char16_t and char32_t are supported");
 
   from_chars_result_t<TCH> answer;
-#if FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
+#ifdef FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
   while ((first != last) && fast_float::is_space(uint8_t(*first))) {
     first++;
   }

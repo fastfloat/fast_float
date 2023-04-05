@@ -119,7 +119,7 @@ parsed_number_string_t<TCH> parse_number_string(TCH const *p, TCH const * pend, 
   answer.valid = false;
   answer.too_many_digits = false;
   answer.negative = (*p == TCH('-'));
-#if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
+#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
   if ((*p == TCH('-')) || (*p == TCH('+'))) {
 #else
   if (*p == TCH('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
