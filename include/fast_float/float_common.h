@@ -527,22 +527,22 @@ static constexpr UC const * str_const_nan()
     return nullptr;
 }
 template<>
-static constexpr char const * str_const_nan<char>()
+constexpr char const * str_const_nan<char>()
 {
     return "nan";
 }
 template<>
-static constexpr wchar_t const * str_const_nan<wchar_t>()
+constexpr wchar_t const * str_const_nan<wchar_t>()
 {
     return L"nan";
 }
 template<>
-static constexpr char16_t const * str_const_nan<char16_t>()
+constexpr char16_t const * str_const_nan<char16_t>()
 {
     return u"nan";
 }
 template<>
-static constexpr char32_t const * str_const_nan<char32_t>()
+constexpr char32_t const * str_const_nan<char32_t>()
 {
     return U"nan";
 }
@@ -552,22 +552,22 @@ static constexpr UC const * str_const_inf()
     return nullptr;
 }
 template<>
-static constexpr char const * str_const_inf<char>()
+constexpr char const * str_const_inf<char>()
 {
     return "infinity";
 }
 template<>
-static constexpr wchar_t const * str_const_inf<wchar_t>()
+constexpr wchar_t const * str_const_inf<wchar_t>()
 {
     return L"infinity";
 }
 template<>
-static constexpr char16_t const * str_const_inf<char16_t>()
+constexpr char16_t const * str_const_inf<char16_t>()
 {
     return u"infinity";
 }
 template<>
-static constexpr char32_t const * str_const_inf<char32_t>()
+constexpr char32_t const * str_const_inf<char32_t>()
 {
     return U"infinity";
 }
