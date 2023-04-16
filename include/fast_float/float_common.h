@@ -78,6 +78,9 @@
 #endif
 #endif
 
+#if FASTFLOAT_SSE2
+#define FASTFLOAT_HAS_SIMD (1)
+#endif
 
 #if defined(__GNUC__)
 #define FASTFLOAT_SIMD_DISABLE_WARNINGS \
@@ -124,7 +127,7 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 }
 
 fastfloat_really_inline constexpr bool has_simd() {
-#if FASTFLOAT_SSE2
+#if FASTFLOAT_HAS_SIMD
   return true;
 #else
   return false;

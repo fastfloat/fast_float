@@ -26,16 +26,32 @@ struct from_chars_result {
 
 struct parse_options {
   constexpr explicit parse_options(
-      chars_format fmt = chars_format::general,
-      parse_rules rules = parse_rules::std_rules, char dot = '.')
-    : format(fmt), rules(rules), decimal_point(dot) {}
+    chars_format fmt = chars_format::general,
+    parse_rules rules = parse_rules::std_rules, 
+    char dot = '.', bool allow_inf_nan = true)
+    : format(fmt), rules(rules), allow_inf_nan(allow_inf_nan), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** Which parsing rules to use */
   parse_rules rules;
+  /** Whether to allow inf and nan */
+  bool allow_inf_nan;
   /** The character used as decimal point */
   char decimal_point;
+};
+
+struct preparsed_parse_options {
+  constexpr explicit preparsed_parse_options(
+    bool allow_inf_nan = true)
+    : allow_inf_nan(allow_inf_nan) {}
+
+  constexpr preparsed_parse_options(
+    const parse_options& options)
+    : allow_inf_nan(options.allow_inf_nan) {}
+
+  /** Whether to allow inf and nan */
+  bool allow_inf_nan;
 };
 
 /**
@@ -78,7 +94,7 @@ namespace fast_float {
 template <typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
 from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> parsed, 
-    const CharT* first, const CharT* last, T& value) noexcept;
+    const CharT* first, const CharT* last, T& value, preparsed_parse_options options) noexcept;
 }
 
 // namespace fast_float

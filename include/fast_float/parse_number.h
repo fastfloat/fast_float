@@ -143,15 +143,18 @@ from_chars_result<CharT> from_chars(const CharT *first, const CharT *last,
 
 template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, const CharT* first, const CharT* last, T& value) noexcept
+from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, const CharT* first, const CharT* last, T& value, preparsed_parse_options options) noexcept
 {
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
-  
+
   from_chars_result<CharT> answer;
   if (!pns.valid) {
-    return detail::parse_infnan(first, last, value);
+    return options.allow_inf_nan ? detail::parse_infnan(first, last, value) : answer;
   }
+  if (pns.too_many_digits)
+    truncate_exponent_mantissa(pns);
+
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
   // The implementation of the Clinger's fast path is convoluted because

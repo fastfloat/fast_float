@@ -157,7 +157,7 @@ uint32_t parse_eight_digits_unrolled(const char16_t* chars)  noexcept {
   if (cpp20_and_in_constexpr() || !has_simd()) {
     return parse_eight_digits_unrolled(read_u64(chars));
   }
-#if !FASTFLOAT_SSE2
+#if !FASTFLOAT_HAS_SIMD
   return 0; // never reaches here, satisfy compiler
 #else
 FASTFLOAT_SIMD_DISABLE_WARNINGS
@@ -184,7 +184,7 @@ bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noe
     i = i * 100000000 + parse_eight_digits_unrolled(read_u64(chars));
     return true;
   }
-#if !FASTFLOAT_SSE2
+#if !FASTFLOAT_HAS_SIMD
   return false; // never reaches here, satisfy compiler
 #else
 FASTFLOAT_SIMD_DISABLE_WARNINGS
@@ -210,10 +210,10 @@ template <typename CharT>
 struct parsed_number_string {
   int64_t exponent{0};
   uint64_t mantissa{0};
+  int64_t exp_number{0};
   const CharT *lastmatch{nullptr};
   bool negative{false};
   bool valid{false};
-  bool is_64bit_int{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
   span<const CharT> integer{};  // non-nullable
@@ -224,7 +224,7 @@ struct parsed_number_string {
 // parse an ASCII string.
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options, const bool parse_ints = false) noexcept {
+parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options) noexcept {
   const chars_format fmt = options.format;
   const parse_rules rules = options.rules;
   const CharT decimal_point = static_cast<CharT>(options.decimal_point);
@@ -322,7 +322,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
 
   answer.lastmatch = p;
   answer.valid = true;
-  answer.is_64bit_int = (p == end_of_integer_part);
+  answer.exp_number = exp_number;
 
   // If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
@@ -339,43 +339,47 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
       if(*start == static_cast<CharT>('0')) { digit_count --; }
       start++;
     }
-    constexpr uint64_t minimal_twenty_digit_integer{10000000000000000000ULL};
-    // maya: A 64-bit number may have up to 20 digits!
-    // If we're parsing ints, preserve accuracy up to 20 digits 
-    // instead of rounding them to a floating point value.
-    answer.too_many_digits = rules == parse_rules::json_rules && parse_ints && answer.is_64bit_int ?
-        (digit_count > 20 || i < minimal_twenty_digit_integer) : digit_count > 19;
-        
-    if (answer.too_many_digits) {
-      answer.is_64bit_int = false;
-      // Let us start again, this time, avoiding overflows.
-      // We don't need to check if is_integer, since we use the
-      // pre-tokenized spans from above.
-      i = 0;
-      p = answer.integer.ptr;
-      const CharT* int_end = p + answer.integer.len();
-      const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
-      while((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-        i = i * 10 + uint64_t(*p - static_cast<CharT>('0'));
-        ++p;
-      }
-      if (i >= minimal_nineteen_digit_integer) { // We have a big integers
-        exponent = end_of_integer_part - p + exp_number;
-      } else { // We have a value with a fractional component.
-          p = answer.fraction.ptr;
-          const CharT* frac_end = p + answer.fraction.len();
-          while((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-            i = i * 10 + uint64_t(*p - static_cast<CharT>('0'));
-            ++p;
-          }
-          exponent = answer.fraction.ptr - p + exp_number;
-      }
-      // We have now corrected both exponent and i, to a truncated value
-    }
+
+    // exponent/mantissa must be truncated later
+    answer.too_many_digits = digit_count > 19;
   }
   answer.exponent = exponent;
   answer.mantissa = i;
   return answer;
+}
+
+template <typename CharT>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+void truncate_exponent_mantissa(parsed_number_string<CharT>& ps)
+{
+  // Let us start again, this time, avoiding overflows.
+  // We don't need to check if is_integer, since we use the
+  // pre-tokenized spans.
+  uint64_t i = 0;
+  int64_t exponent = 0;
+  const CharT* p = ps.integer.ptr;
+  const CharT* const int_end = p + ps.integer.len();
+  const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
+  while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+    i = i * 10 + uint64_t(*p - static_cast<CharT>('0'));
+    ++p;
+  }
+  if (i >= minimal_nineteen_digit_integer) { // We have a big integers
+    exponent = int_end - p + ps.exp_number;
+  }
+  else { // We have a value with a fractional component.
+    p = ps.fraction.ptr;
+    const CharT* const frac_end = p + ps.fraction.len();
+    while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
+      i = i * 10 + uint64_t(*p - static_cast<CharT>('0'));
+      ++p;
+    }
+    exponent = ps.fraction.ptr - p + ps.exp_number;
+  }
+  // We have now corrected both exponent and i, to a truncated value
+
+  ps.exponent = exponent;
+  ps.mantissa = i;
 }
 
 } // namespace fast_float
