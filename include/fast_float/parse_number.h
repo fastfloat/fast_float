@@ -150,7 +150,13 @@ from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, c
 
   from_chars_result<CharT> answer;
   if (!pns.valid) {
-    return options.allow_inf_nan ? detail::parse_infnan(first, last, value) : answer;
+    if (options.allow_inf_nan)
+      return detail::parse_infnan(first, last, value);
+    else {
+      answer.ec = std::errc::invalid_argument;
+      answer.ptr = first;
+      return answer;
+    }
   }
   if (pns.too_many_digits)
     truncate_exponent_mantissa(pns);
@@ -226,7 +232,7 @@ from_chars_result<CharT> from_chars_advanced(const CharT *first, const CharT *la
     answer.ptr = first;
     return answer;
   }
-  answer = from_chars_preparsed(parse_number_string(first, last, options), first, last, value);
+  answer = from_chars_preparsed(parse_number_string(first, last, options), first, last, value, options);
   return answer;
 }
 
