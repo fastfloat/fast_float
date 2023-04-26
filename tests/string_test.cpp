@@ -62,6 +62,7 @@ template <typename T>
 bool test() {
   std::string input = "0.1 1e1000 100000 3.14159265359  -1e-500 001    1e01  1e0000001  -inf";
   std::vector<T> answers = {T(0.1), std::numeric_limits<T>::infinity(), 100000, T(3.14159265359),  -0.0, 1,    10,  10, -std::numeric_limits<T>::infinity()};
+  std::vector<std::errc> expected_ec = {std::errc(), std::errc::result_out_of_range, std::errc(), std::errc(), std::errc::result_out_of_range, std::errc(), std::errc(), std::errc(), std::errc()};
   const char * begin = input.data();
   const char * end = input.data() + input.size();
   for(size_t i = 0; i < answers.size(); i++) {
@@ -69,7 +70,7 @@ bool test() {
     while((begin < end) && (std::isspace(*begin))) { begin++; }
     auto result = fast_float::from_chars(begin, end,
                                       result_value);
-    if (result.ec != std::errc()) {
+    if (result.ec != expected_ec[i]) {
       printf("parsing %.*s\n", int(end - begin), begin);
       std::cerr << " I could not parse " << std::endl;
       return false;
@@ -84,7 +85,7 @@ bool test() {
   }
   if(begin != end) {
       std::cerr << " bad ending " << std::endl;
-      return false;    
+      return false;
   }
   return true;
 }
@@ -238,7 +239,7 @@ bool partow_test() {
     T result_value;
     auto result = fast_float::from_chars(st.data(), st.data() + st.size(),
                                       result_value);
-    if (result.ec != std::errc()) {
+    if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
       printf("parsing %.*s\n", int(st.size()), st.data());
       std::cerr << " I could not parse " << std::endl;
       return false;
@@ -269,7 +270,7 @@ int main() {
   std::cout << "32 bits checks" << std::endl;
   Assert(partow_test<float>());
   Assert(test<float>());
-  
+
   std::cout << "64 bits checks" << std::endl;
   Assert(partow_test<double>());
   Assert(test<double>());

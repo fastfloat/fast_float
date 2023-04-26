@@ -92,7 +92,6 @@ uint64_t read_u64(const CharT *chars) {
   return val;
 }
 
-
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void write_u64(uint8_t *chars, uint64_t val) {
   if (cpp20_and_in_constexpr()) {
@@ -208,7 +207,6 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 #endif
 }
 
-
 typedef span<const char> byte_span;
 
 template <typename CharT>
@@ -238,7 +236,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
   answer.valid = false;
   answer.too_many_digits = false;
   answer.negative = (*p == CharT('-'));
-#if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
+#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
   if ((*p == CharT('-')) || (*p == CharT('+'))) {
 #else
   if (*p == CharT('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here

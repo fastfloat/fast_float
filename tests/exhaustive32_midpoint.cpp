@@ -8,7 +8,7 @@
 #include <limits>
 #include <stdexcept>
 
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) 
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)
 // Anything at all that is related to cygwin, msys and so forth will
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
@@ -73,7 +73,7 @@ bool allvalues() {
     }
     uint32_t word = uint32_t(w);
     memcpy(&v, &word, sizeof(v));
-    if(std::isfinite(v)) { 
+    if(std::isfinite(v)) {
       float nextf = std::nextafterf(v, INFINITY);
       if(copysign(1,v) != copysign(1,nextf)) { continue; }
       if(!std::isfinite(nextf)) { continue; }
@@ -90,7 +90,10 @@ bool allvalues() {
 
       float result_value;
       auto result = fast_float::from_chars(buffer, string_end, result_value);
-      if (result.ec != std::errc()) {
+      // Starting with version 4.0 for fast_float, we return result_out_of_range if the
+      // value is either too small (too close to zero) or too large (effectively infinity).
+      // So std::errc::result_out_of_range is normal for well-formed input strings.
+      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
         std::cerr << "parsing error ? " << buffer << std::endl;
         return false;
       }
@@ -120,7 +123,7 @@ bool allvalues() {
         std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
         std::cout << "started with " << std::hexfloat << midv << std::endl;
         std::cout << "round down to " << std::hexfloat << str_answer << std::endl;
-        std::cout << "got back " << std::hexfloat << result_value << std::endl; 
+        std::cout << "got back " << std::hexfloat << result_value << std::endl;
         std::cout << std::dec;
         return false;
       }
@@ -133,7 +136,7 @@ bool allvalues() {
 inline void Assert(bool Assertion) {
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
   if (!Assertion) { std::cerr << "Omitting hard failure on msys/cygwin/sun systems."; }
-#else 
+#else
   if (!Assertion) { throw std::runtime_error("bug"); }
 #endif
 }

@@ -1,12 +1,12 @@
 #
-# Reference : 
+# Reference :
 # Noble Mushtak and Daniel Lemire, Fast Number Parsing Without Fallback (to appear)
 #
 
 all_tqs = []
 
 # Generates all possible values of T[q]
-# Appendix B of  Number parsing at a gigabyte per second. 
+# Appendix B of  Number parsing at a gigabyte per second.
 # Software: Practice and Experience 2021;51(8):1700–1727.
 for q in range(-342, -27):
     power5 = 5**-q
@@ -44,9 +44,9 @@ def continued_fraction(numer, denom):
         numer, denom = denom, rem
     return cf
 
-# Given a continued fraction [a0; a1, a2, ..., an], returns 
+# Given a continued fraction [a0; a1, a2, ..., an], returns
 # all the convergents of that continued fraction
-# as pairs of the form (numer, denom), where numer/denom is 
+# as pairs of the form (numer, denom), where numer/denom is
 # a convergent of the continued fraction in simple form.
 def convergents(cf):
     p_n_minus_2 = 0

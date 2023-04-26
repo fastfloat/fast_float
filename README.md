@@ -1,4 +1,8 @@
+
 ## fast_float number parsing library: 4x faster than strtod
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/fast_float.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:fast_float)
+[![VS17-CI](https://github.com/fastfloat/fast_float/actions/workflows/vs17-ci.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/vs17-ci.yml)
+[![Ubuntu 22.04 CI (GCC 11)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml)
 
 The fast_float library provides fast header-only implementations for the C++ from_chars
 functions for `float` and `double` types.  These functions convert ASCII strings representing
@@ -66,7 +70,7 @@ The library seeks to follow the C++17 (see [20.19.3](http://eel.is/c++draft/char
 Furthermore, we have the following restrictions:
 * We only support `float` and `double` types at this time.
 * We only support the decimal format: we do not support hexadecimal strings.
-* For values that are either very large or very small (e.g., `1e9999`), we represent it using the infinity or negative infinity value.
+* For values that are either very large or very small (e.g., `1e9999`), we represent it using the infinity or negative infinity value and the returned `ec` is set to `std::errc::result_out_of_range`.
 
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little endian. We support 32-bit and 64-bit systems.
 
@@ -189,11 +193,11 @@ It can parse random floating-point numbers at a speed of 1 GB/s on some systems.
 $ ./build/benchmarks/benchmark
 # parsing random integers in the range [0,1)
 volume = 2.09808 MB
-netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s 
-doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s 
-strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s 
-abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s 
-fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s 
+netlib                                  :   271.18 MB/s (+/- 1.2 %)    12.93 Mfloat/s
+doubleconversion                        :   225.35 MB/s (+/- 1.2 %)    10.74 Mfloat/s
+strtod                                  :   190.94 MB/s (+/- 1.6 %)     9.10 Mfloat/s
+abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfloat/s
+fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s
 ```
 
 See https://github.com/lemire/simple_fastfloat_benchmark for our benchmarking code.

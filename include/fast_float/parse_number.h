@@ -30,7 +30,7 @@ parse_infnan(const CharT *first, const CharT *last, T &value)  noexcept  {
       minusSign = true;
       ++first;
   }
-#if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
+#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
   if (*first == CharT('+')) {
       ++first;
   }
@@ -111,7 +111,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   //
   // Note: This may fail to be accurate if fast-math has been
   // enabled, as rounding conventions may not apply.
-  #if FASTFLOAT_VISUAL_STUDIO
+  #ifdef FASTFLOAT_VISUAL_STUDIO
   #   pragma warning(push)
   //  todo: is there a VS warning?
   //  see https://stackoverflow.com/questions/46079446/is-there-a-warning-for-floating-point-equality-checking-in-visual-studio-2013
@@ -123,7 +123,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   #   pragma GCC diagnostic ignored "-Wfloat-equal"
   #endif
   return (fmini + 1.0f == 1.0f - fmini);
-  #if FASTFLOAT_VISUAL_STUDIO
+  #ifdef FASTFLOAT_VISUAL_STUDIO
   #   pragma warning(pop)
   #elif defined(__clang__)
   #   pragma clang diagnostic pop
@@ -213,6 +213,10 @@ from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, c
   // then we need to go the long way around again. This is very uncommon.
   if(am.power2 < 0) { am = digit_comp<T>(pns, am); }
   to_float(pns.negative, am, value);
+  // Test for over/underflow.
+  if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) || am.power2 == binary_format<T>::infinite_power()) {
+    answer.ec = std::errc::result_out_of_range;
+  }
   return answer;
 }
 
@@ -222,7 +226,7 @@ from_chars_result<CharT> from_chars_advanced(const CharT *first, const CharT *la
                                       T &value, parse_options options)  noexcept  {
 
   from_chars_result<CharT> answer;
-#if FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
+#ifdef FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
   while ((first != last) && fast_float::is_space(uint8_t(*first))) {
     first++;
   }
