@@ -1,20 +1,12 @@
-name: Amalgamate Ubuntu 20.04 CI (GCC 9, 8)
+name: Amalgamate Ubuntu 20.04 CI (GCC 9)
 
 on: [push, pull_request]
 
 jobs:
   ubuntu-build:
     runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Legacy/x86 compilers cause CI failures.
-          #- {cxx: -DCMAKE_CXX_COMPILER=g++-8, arch:                         }
-          - {cxx:                           , arch:                         } # default=gcc9
-          #- {cxx:                           , arch: -DCMAKE_CXX_FLAGS="-m32"} # default=gcc9
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Compile with amalgamation
         run: |
           mkdir build &&

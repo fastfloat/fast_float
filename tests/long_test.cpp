@@ -22,7 +22,7 @@ bool test() {
     while((begin < end) && (std::isspace(*begin))) { begin++; }
     auto result = fast_float::from_chars(begin, end,
                                       result_value);
-    if (result.ec != std::errc()) {
+    if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
       printf("parsing %.*s\n", int(end - begin), begin);
       std::cerr << " I could not parse " << std::endl;
       return false;
@@ -40,7 +40,7 @@ bool test() {
   }
   if(begin != end) {
       std::cerr << " bad ending " << std::endl;
-      return false;    
+      return false;
   }
   return true;
 }

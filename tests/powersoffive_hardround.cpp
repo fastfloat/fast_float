@@ -105,7 +105,7 @@ bool tester() {
       double result_value;
       auto result =
           fast_float::from_chars(to_be_parsed.data(), to_be_parsed.data() + to_be_parsed.size(), result_value);
-      if (result.ec != std::errc()) {
+      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
         std::cout << to_be_parsed << std::endl;
         std::cerr << " I could not parse " << std::endl;
         return false;

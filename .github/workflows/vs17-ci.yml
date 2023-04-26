@@ -1,0 +1,43 @@
+name: VS17-CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Debug}
+          - {gen: Visual Studio 17 2022, arch: x64, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: x64, cfg: Debug}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: configure
+        run: |
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination
+      - name: build
+        run: |
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
+      - name: test
+        run: |
+          cd build &&
+          ctest --output-on-failure -C ${{matrix.cfg}}
+      - name: install
+        run: |
+          cd build &&
+          cmake --install .
+      - name: test install (find)
+        run: |
+          cd tests/installation_tests/find  &&
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination &&
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel
+      - name: test install (issue 72)
+        run: |
+          cd tests/installation_tests/issue72_installation  &&
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_INSTALL_PREFIX:PATH=../../../build/destination &&
+          cmake --build build --verbose --config ${{matrix.cfg}} --parallel

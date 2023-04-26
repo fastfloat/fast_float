@@ -29,9 +29,9 @@ static fast_float::value128 g_lehmer64_state;
  * Society 68.225 (1999): 249-260.
  */
 
-static inline void lehmer64_seed(uint64_t seed) { 
+static inline void lehmer64_seed(uint64_t seed) {
   g_lehmer64_state.high = 0;
-  g_lehmer64_state.low = seed; 
+  g_lehmer64_state.low = seed;
 }
 
 static inline uint64_t lehmer64() {
@@ -59,12 +59,16 @@ void random_values(size_t N) {
       const char *string_end = to_string(v, buffer);
       double result_value;
       auto result = fast_float::from_chars(buffer, string_end, result_value);
-      if (result.ec != std::errc()) {
+      // Starting with version 4.0 for fast_float, we return result_out_of_range if the
+      // value is either too small (too close to zero) or too large (effectively infinity).
+      // So std::errc::result_out_of_range is normal for well-formed input strings.
+      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
         std::cerr << "parsing error ? " << buffer << std::endl;
         errors++;
         if (errors > 10) {
           abort();
         }
+        continue;
       }
       if (std::isnan(v)) {
         if (!std::isnan(result_value)) {
@@ -82,7 +86,7 @@ void random_values(size_t N) {
       } else if (result_value != v) {
         std::cerr << "no match ? " << buffer << std::endl;
         std::cout << "started with " << std::hexfloat << v << std::endl;
-        std::cout << "got back " << std::hexfloat << result_value << std::endl; 
+        std::cout << "got back " << std::hexfloat << result_value << std::endl;
         std::cout << std::dec;
         errors++;
         if (errors > 10) {

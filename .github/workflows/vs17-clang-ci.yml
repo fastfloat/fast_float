@@ -1,0 +1,28 @@
+name: VS17-CLANG-CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Debug}
+          - {gen: Visual Studio 17 2022, arch: x64, cfg: Release}
+          - {gen: Visual Studio 17 2022, arch: x64, cfg: Debug}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Configure
+        run: |
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -T ClangCL -DFASTFLOAT_TEST=ON
+      - name: Build
+        run: cmake --build build --config ${{matrix.cfg}} --parallel --verbose
+      - name: Run basic tests
+        run: |
+          cd build
+          ctest -C ${{matrix.cfg}} --output-on-failure -R basictest
