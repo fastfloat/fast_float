@@ -9,7 +9,7 @@
 
 #include "float_common.h"
 
-#if FASTFLOAT_SSE2
+#ifdef FASTFLOAT_SSE2
 #include <emmintrin.h>
 #endif
 
@@ -20,7 +20,7 @@ namespace fast_float {
 // able to optimize it well.
 template <typename CharT>
 fastfloat_really_inline constexpr bool is_integer(CharT c) noexcept {
-  return c >= static_cast<CharT>('0') && c <= static_cast<CharT>('9');
+  return c >= CharT('0') && c <= CharT('9');
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
@@ -42,9 +42,10 @@ uint64_t fast_read_u64(const char* chars) {
 }
 
 // https://quick-bench.com/q/fk6Y07KDGu8XZ9iUtQD8QJTc3Hg
+// todo: add support for char32_t
 fastfloat_really_inline
 uint64_t fast_read_u64(const char16_t* chars) {
-#if FASTFLOAT_SSE2
+#ifdef FASTFLOAT_SSE2
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   static const char16_t masks[] = {0xff, 0xff, 0xff, 0xff};
   const __m128i m_masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks));
@@ -65,6 +66,7 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
   for (int i = 0; i < 8; ++i)
       bytes[i] = (unsigned char)chars[i];
 
+  // bit-cast
   uint64_t val;
   ::memcpy(&val, bytes, sizeof(uint64_t));
   return val;
@@ -77,7 +79,7 @@ uint64_t read_u64(const CharT *chars) {
   if (cpp20_and_in_constexpr()) {
     uint64_t val = 0;
     for(int i = 0; i < 8; ++i) {
-      val |= uint64_t(*chars) << (i*8);
+      val |= uint64_t(char(*chars)) << (i*8);
       ++chars;
     }
     return val;
@@ -121,7 +123,7 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
 }
 
 // http://0x80.pl/articles/simd-parsing-int-sequences.html
-#if FASTFLOAT_SSE2
+#ifdef FASTFLOAT_SSE2
 fastfloat_really_inline
 uint32_t parse_eight_digits_unrolled_c16(const __m128i val) {
   // x - '0'
@@ -152,13 +154,15 @@ uint32_t parse_eight_digits_unrolled(const char* chars)  noexcept {
     return parse_eight_digits_unrolled(read_u64(chars));
 }
 
+// Call this if you know chars are only digits
+//todo: add support for char32_t
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 uint32_t parse_eight_digits_unrolled(const char16_t* chars)  noexcept {
   if (cpp20_and_in_constexpr() || !has_simd()) {
     return parse_eight_digits_unrolled(read_u64(chars));
   }
-#if !FASTFLOAT_HAS_SIMD
-  return 0; // never reaches here, satisfy compiler
+#ifndef FASTFLOAT_HAS_SIMD
+  return 0; // never reaches here, remove warning
 #else
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   return parse_eight_digits_unrolled_c16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(chars)));
@@ -173,7 +177,9 @@ bool parse_if_eight_digits_unrolled(const char* chars, std::uint64_t& i) noexcep
     return all;
 }
 
+// Call this if you don't know whether chars are only digits
 // http://0x80.pl/articles/simd-parsing-int-sequences.html
+//todo: add support for char32_t
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noexcept {
   if (cpp20_and_in_constexpr() || !has_simd()) {
@@ -184,17 +190,16 @@ bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noe
     i = i * 100000000 + parse_eight_digits_unrolled(read_u64(chars));
     return true;
   }
-#if !FASTFLOAT_HAS_SIMD
-  return false; // never reaches here, satisfy compiler
+#ifndef FASTFLOAT_HAS_SIMD
+  return false; // never reaches here, remove warning
 #else
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(chars));
   // (x - '0') <= 9
   const __m128i t0 = _mm_sub_epi16(data, _mm_set1_epi16(80));
   const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-119));
-  const bool is_digits = _mm_movemask_epi8(t1) == 0;
 
-  if (is_digits) {
+  if (_mm_movemask_epi8(t1) == 0) {
     i = i * 100000000 + parse_eight_digits_unrolled_c16(data);
     return true;
   }
@@ -227,16 +232,16 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options) noexcept {
   const chars_format fmt = options.format;
   const parse_rules rules = options.rules;
-  const CharT decimal_point = static_cast<CharT>(options.decimal_point);
+  const CharT decimal_point = CharT(options.decimal_point);
 
   parsed_number_string<CharT> answer;
   answer.valid = false;
   answer.too_many_digits = false;
-  answer.negative = (*p == static_cast<CharT>('-'));
+  answer.negative = (*p == CharT('-'));
 #if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == static_cast<CharT>('-')) || (*p == static_cast<CharT>('+'))) {
+  if ((*p == CharT('-')) || (*p == CharT('+'))) {
 #else
-  if (*p == static_cast<CharT>('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if (*p == CharT('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
     ++p;
     if (p == pend) {
@@ -254,7 +259,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
-        uint64_t(*p - static_cast<CharT>('0')); // might overflow, we will handle the overflow later
+        uint64_t(*p - CharT('0')); // might overflow, we will handle the overflow later
     ++p;
   }
   const CharT *const end_of_integer_part = p;
@@ -271,7 +276,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
       p += 8;
     }
     while ((p != pend) && is_integer(*p)) {
-      i = i * 10 + uint64_t(*p - static_cast<CharT>('0')); // in rare cases, this will overflow, but that's ok
+      i = i * 10 + uint64_t(*p - CharT('0')); // in rare cases, this will overflow, but that's ok
       ++p;
     }
     exponent = before - p;
@@ -283,14 +288,14 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
-  if ((fmt & chars_format::scientific) && (p != pend) && ((static_cast<CharT>('e') == *p) || (static_cast<CharT>('E') == *p))) {
+  if ((fmt & chars_format::scientific) && (p != pend) && ((CharT('e') == *p) || (CharT('E') == *p))) {
     const CharT * location_of_e = p;
     ++p;
     bool neg_exp = false;
-    if ((p != pend) && (static_cast<CharT>('-') == *p)) {
+    if ((p != pend) && (CharT('-') == *p)) {
       neg_exp = true;
       ++p;
-    } else if ((p != pend) && (static_cast<CharT>('+') == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+    } else if ((p != pend) && (CharT('+') == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
       ++p;
     }
     if ((p == pend) || !is_integer(*p)) {
@@ -302,7 +307,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
       p = location_of_e;
     } else {
       while ((p != pend) && is_integer(*p)) {
-        uint8_t digit = uint8_t(*p - static_cast<CharT>('0'));
+        uint8_t digit = uint8_t(*p - CharT('0'));
         if (exp_number < 0x10000000) {
           exp_number = 10 * exp_number + digit;
         }
@@ -317,7 +322,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
   }
   
   // disallow leading zeros before the decimal point
-  if (rules == parse_rules::json_rules && start_digits[0] == static_cast<CharT>('0') && digit_count >= 2 && is_integer(start_digits[1]))
+  if (rules == parse_rules::json_rules && start_digits[0] == CharT('0') && digit_count >= 2 && is_integer(start_digits[1]))
       return answer;
 
   answer.lastmatch = p;
@@ -335,12 +340,13 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
     const CharT *start = start_digits;
-    while ((start != pend) && (*start == static_cast<CharT>('0') || *start == decimal_point)) {
-      if(*start == static_cast<CharT>('0')) { digit_count --; }
+    while ((start != pend) && (*start == CharT('0') || *start == decimal_point)) {
+      if(*start == CharT('0')) { digit_count --; }
       start++;
     }
 
     // exponent/mantissa must be truncated later
+    // this is unlikely, so don't inline truncation code with the rest of parse_number_string()
     answer.too_many_digits = digit_count > 19;
   }
   answer.exponent = exponent;
@@ -350,7 +356,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
 
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void truncate_exponent_mantissa(parsed_number_string<CharT>& ps)
+void parse_truncated_number_string(parsed_number_string<CharT>& ps)
 {
   // Let us start again, this time, avoiding overflows.
   // We don't need to check if is_integer, since we use the
@@ -361,7 +367,7 @@ void truncate_exponent_mantissa(parsed_number_string<CharT>& ps)
   const CharT* const int_end = p + ps.integer.len();
   const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
   while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-    i = i * 10 + uint64_t(*p - static_cast<CharT>('0'));
+    i = i * 10 + uint64_t(*p - CharT('0'));
     ++p;
   }
   if (i >= minimal_nineteen_digit_integer) { // We have a big integers
@@ -371,7 +377,7 @@ void truncate_exponent_mantissa(parsed_number_string<CharT>& ps)
     p = ps.fraction.ptr;
     const CharT* const frac_end = p + ps.fraction.len();
     while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-      i = i * 10 + uint64_t(*p - static_cast<CharT>('0'));
+      i = i * 10 + uint64_t(*p - CharT('0'));
       ++p;
     }
     exponent = ps.fraction.ptr - p + ps.exp_number;

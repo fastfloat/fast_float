@@ -158,16 +158,18 @@ void round_down(adjusted_mantissa& am, int32_t shift) noexcept {
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void skip_zeros(const CharT*& first, const CharT* last) noexcept {
-  uint64_t val;
-  while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
-    val = fast_read_u64(first);
-    if (val != 0x3030303030303030) {
-      break;
+  if (std::is_same<CharT, char>::value || has_simd()) {
+    uint64_t val;
+    while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
+      val = fast_read_u64(first);
+      if (val != 0x3030303030303030) {
+        break;
+      }
+      first += 8;
     }
-    first += 8;
   }
   while (first != last) {
-    if (*first != static_cast<CharT>('0')) {
+    if (*first != CharT('0')) {
       break;
     }
     first++;
@@ -179,17 +181,19 @@ void skip_zeros(const CharT*& first, const CharT* last) noexcept {
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool is_truncated(const CharT* first, const CharT* last) noexcept {
-  // do 8-bit optimizations, can just compare to 8 literal 0s.
-  uint64_t val;
-  while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
-    val = fast_read_u64(first);
-    if (val != 0x3030303030303030) {
-      return true;
+  if (std::is_same<CharT, char>::value || has_simd()) {
+    // do 8-bit optimizations, can just compare to 8 literal 0s.
+    uint64_t val;
+    while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
+      val = fast_read_u64(first);
+      if (val != 0x3030303030303030) {
+        return true;
+      }
+      first += 8;
     }
-    first += 8;
   }
   while (first != last) {
-    if (*first != static_cast<CharT>('0')) {
+    if (*first != CharT('0')) {
       return true;
     }
     first++;
@@ -215,7 +219,7 @@ void parse_eight_digits(const CharT*& p, limb& value, size_t& counter, size_t& c
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14
 void parse_one_digit(const CharT*& p, limb& value, size_t& counter, size_t& count) noexcept {
-  value = value * 10 + limb(*p - static_cast<CharT>('0'));
+  value = value * 10 + limb(*p - CharT('0'));
   p++;
   counter++;
   count++;

@@ -78,11 +78,12 @@
 #endif
 #endif
 
-#if FASTFLOAT_SSE2
+#ifdef FASTFLOAT_SSE2
 #define FASTFLOAT_HAS_SIMD (1)
 #endif
 
 #if defined(__GNUC__)
+// disable -Wcast-align=strict (GCC only)
 #define FASTFLOAT_SIMD_DISABLE_WARNINGS \
   _Pragma("GCC diagnostic push") \
   _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
@@ -141,7 +142,7 @@ inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(const CharT *input1, const char *input2, size_t length) {
   char running_diff{0};
   for (size_t i = 0; i < length; i++) {
-    running_diff |= (static_cast<char>(input1[i]) ^ input2[i]);
+    running_diff |= (char(input1[i]) ^ input2[i]);
   }
   return (running_diff == 0) || (running_diff == 32);
 }

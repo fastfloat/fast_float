@@ -26,12 +26,12 @@ parse_infnan(const CharT *first, const CharT *last, T &value)  noexcept  {
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
   bool minusSign = false;
-  if (*first == static_cast<CharT>('-')) { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
+  if (*first == CharT('-')) { // assume first < last, so dereference without checks; C++17 20.19.3.(7.1) explicitly forbids '+' here
       minusSign = true;
       ++first;
   }
 #if FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if (*first == static_cast<CharT>('+')) {
+  if (*first == CharT('+')) {
       ++first;
   }
 #endif
@@ -40,15 +40,15 @@ parse_infnan(const CharT *first, const CharT *last, T &value)  noexcept  {
       answer.ptr = (first += 3);
       value = minusSign ? -std::numeric_limits<T>::quiet_NaN() : std::numeric_limits<T>::quiet_NaN();
       // Check for possible nan(n-char-seq-opt), C++17 20.19.3.7, C11 7.20.1.3.3. At least MSVC produces nan(ind) and nan(snan).
-      if(first != last && *first == static_cast<CharT>('(')) {
+      if(first != last && *first == CharT('(')) {
         for(const CharT* ptr = first + 1; ptr != last; ++ptr) {
-          if (*ptr == static_cast<CharT>(')')) {
+          if (*ptr == CharT(')')) {
             answer.ptr = ptr + 1; // valid nan(n-char-seq-opt)
             break;
           }
-          else if(!((static_cast<CharT>('a') <= *ptr && *ptr <= static_cast<CharT>('z')) || 
-              (static_cast<CharT>('A') <= *ptr && *ptr <= static_cast<CharT>('Z')) || 
-              (static_cast<CharT>('0') <= *ptr && *ptr <= static_cast<CharT>('9')) || *ptr == static_cast<CharT>('_')))
+          else if(!((CharT('a') <= *ptr && *ptr <= CharT('z')) || 
+              (CharT('A') <= *ptr && *ptr <= CharT('Z')) || 
+              (CharT('0') <= *ptr && *ptr <= CharT('9')) || *ptr == CharT('_')))
             break; // forbidden char, not nan(n-char-seq-opt)
         }
       }
@@ -159,7 +159,7 @@ from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, c
     }
   }
   if (pns.too_many_digits)
-    truncate_exponent_mantissa(pns);
+    parse_truncated_number_string(pns);
 
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
