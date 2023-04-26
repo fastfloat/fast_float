@@ -27,13 +27,13 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
     | (val & 0x000000000000FF00) << 40
     | (val & 0x00000000000000FF) << 56;
 }
-template <typename UC>
+
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint64_t read_u64(UC const * chars) {
-  if (cpp20_and_in_constexpr() || sizeof(UC) > 1) {
-    uint64_t val{};
+uint64_t read_u64(const char *chars) {
+  if (cpp20_and_in_constexpr()) {
+    uint64_t val = 0;
     for(int i = 0; i < 8; ++i) {
-      val |= uint64_t(char(*chars)) << (i * 8);
+      val |= uint64_t(*chars) << (i*8);
       ++chars;
     }
     return val;
@@ -75,9 +75,9 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
   return uint32_t(val);
 }
-template <typename UC>
+
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(UC const * chars)  noexcept  {
+uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
   return parse_eight_digits_unrolled(read_u64(chars));
 }
 
@@ -87,9 +87,8 @@ fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val
      0x8080808080808080));
 }
 
-template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool is_made_of_eight_digits_fast(UC const * chars)  noexcept  {
+bool is_made_of_eight_digits_fast(const char *chars)  noexcept  {
   return is_made_of_eight_digits_fast(read_u64(chars));
 }
 
@@ -102,8 +101,8 @@ struct parsed_number_string_t {
   bool valid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
-  span<UC> integer{};  // non-nullable
-  span<UC> fraction{}; // nullable
+  span<const UC> integer{};  // non-nullable
+  span<const UC> fraction{}; // nullable
 };
 using byte_span = span<char>;
 using parsed_number_string = parsed_number_string_t<char>;
@@ -145,16 +144,18 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   }
   UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
-  answer.integer = span<UC>(start_digits, size_t(digit_count));
+  answer.integer = span<const UC>(start_digits, size_t(digit_count));
   int64_t exponent = 0;
   if ((p != pend) && (*p == decimal_point)) {
     ++p;
     UC const * before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
-      i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
-      p += 8;
+    if (std::is_same<UC,char>::value) {
+      while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast((const char *&)p)) {
+        i = i * 100000000 + parse_eight_digits_unrolled((const char *&)p); // in rare cases, this will overflow, but that's ok
+        p += 8;
+      }
     }
     while ((p != pend) && is_integer(*p)) {
       uint8_t digit = uint8_t(*p - UC('0'));
@@ -162,7 +163,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
       i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
     }
     exponent = before - p;
-    answer.fraction = span<UC>(before, size_t(p - before));
+    answer.fraction = span<const UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
   // we must have encountered at least one integer!
