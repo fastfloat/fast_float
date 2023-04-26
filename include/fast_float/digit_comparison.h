@@ -202,6 +202,16 @@ bool is_truncated(span<const UC> s) noexcept {
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+void parse_eight_digits(const char16_t*& , limb& , size_t& , size_t& ) noexcept {
+  // currently unused
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+void parse_eight_digits(const char32_t*& , limb& , size_t& , size_t& ) noexcept {
+  // currently unused
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void parse_eight_digits(const char*& p, limb& value, size_t& counter, size_t& count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
@@ -256,7 +266,7 @@ void parse_mantissa(bigint& result, parsed_number_string_t<UC>& num, size_t max_
   while (p != pend) {
     if (std::is_same<UC,char>::value) {
       while ((std::distance(p, pend) >= 8) && (step - counter >= 8) && (max_digits - digits >= 8)) {
-        parse_eight_digits((const char *&)p, value, counter, digits);
+        parse_eight_digits(p, value, counter, digits);
       }
     }
     while (counter < step && p != pend && digits < max_digits) {
@@ -291,7 +301,7 @@ void parse_mantissa(bigint& result, parsed_number_string_t<UC>& num, size_t max_
     while (p != pend) {
       if (std::is_same<UC,char>::value) {
         while ((std::distance(p, pend) >= 8) && (step - counter >= 8) && (max_digits - digits >= 8)) {
-          parse_eight_digits((const char *&)p, value, counter, digits);
+          parse_eight_digits(p, value, counter, digits);
         }
       }
       while (counter < step && p != pend && digits < max_digits) {

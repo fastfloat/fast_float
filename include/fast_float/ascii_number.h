@@ -76,6 +76,16 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
   return uint32_t(val);
 }
 
+fastfloat_really_inline constexpr
+uint32_t parse_eight_digits_unrolled(const char16_t *)  noexcept  {
+  return 0;
+}
+
+fastfloat_really_inline constexpr
+uint32_t parse_eight_digits_unrolled(const char32_t *)  noexcept  {
+  return 0;
+}
+
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
   return parse_eight_digits_unrolled(read_u64(chars));
@@ -85,6 +95,16 @@ uint32_t parse_eight_digits_unrolled(const char *chars)  noexcept  {
 fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
      0x8080808080808080));
+}
+
+fastfloat_really_inline constexpr
+bool is_made_of_eight_digits_fast(const char16_t *)  noexcept  {
+  return false;
+}
+
+fastfloat_really_inline constexpr
+bool is_made_of_eight_digits_fast(const char32_t *)  noexcept  {
+  return false;
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
@@ -152,8 +172,8 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     if (std::is_same<UC,char>::value) {
-      while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast((const char *&)p)) {
-        i = i * 100000000 + parse_eight_digits_unrolled((const char *&)p); // in rare cases, this will overflow, but that's ok
+      while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(p)) {
+        i = i * 100000000 + parse_eight_digits_unrolled(p); // in rare cases, this will overflow, but that's ok
         p += 8;
       }
     }
