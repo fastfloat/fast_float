@@ -158,10 +158,10 @@ void round_down(adjusted_mantissa& am, int32_t shift) noexcept {
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void skip_zeros(const CharT*& first, const CharT* last) noexcept {
-  if (std::is_same<CharT, char>::value || has_simd()) {
+  if (std::is_same<CharT, char>::value) {
     uint64_t val;
     while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
-      val = fast_read_u64(first);
+      ::memcpy(&val, first, sizeof(uint64_t));
       if (val != 0x3030303030303030) {
         break;
       }
@@ -181,11 +181,11 @@ void skip_zeros(const CharT*& first, const CharT* last) noexcept {
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool is_truncated(const CharT* first, const CharT* last) noexcept {
-  if (std::is_same<CharT, char>::value || has_simd()) {
+  if (std::is_same<CharT, char>::value) {
     // do 8-bit optimizations, can just compare to 8 literal 0s.
     uint64_t val;
     while (!cpp20_and_in_constexpr() && std::distance(first, last) >= 8) {
-      val = fast_read_u64(first);
+      ::memcpy(&val, first, sizeof(uint64_t));
       if (val != 0x3030303030303030) {
         return true;
       }

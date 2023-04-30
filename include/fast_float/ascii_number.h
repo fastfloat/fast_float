@@ -34,49 +34,47 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
     | (val & 0x00000000000000FF) << 56;
 }
 
+
+#ifdef FASTFLOAT_SSE2
+
 fastfloat_really_inline
-uint64_t fast_read_u64(const char* chars) {
-  uint64_t val;
-  ::memcpy(&val, chars, sizeof(uint64_t));
-  return val;
+__m128i load_packus_masks_c16(void) noexcept {
+FASTFLOAT_SIMD_DISABLE_WARNINGS
+  static const char16_t masks[] = { 0xff, 0xff, 0xff, 0xff };
+  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks));
+FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
-// https://quick-bench.com/q/fk6Y07KDGu8XZ9iUtQD8QJTc3Hg
-// todo: add support for char32_t
+// packus_masks is an argument only so its value may be preloaded.
+// it should always come from load_packus_masks_c16().
 fastfloat_really_inline
-uint64_t fast_read_u64(const char16_t* chars) {
-#ifdef FASTFLOAT_SSE2
+uint64_t simd_read8_to_u64(const char16_t* chars, const __m128i packus_masks) {
 FASTFLOAT_SIMD_DISABLE_WARNINGS
-  static const char16_t masks[] = {0xff, 0xff, 0xff, 0xff};
-  const __m128i m_masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks));
-
-  // mask hi bytes and pack
-  const char* const p = reinterpret_cast<const char*>(chars);
-  __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), m_masks);
-  __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), m_masks);
+  // process 4 and 4 chars simultaneously (loadu_si64 has high latency)
+  // with AVX512BW + AVX512VL, masking is not required as we have cvtepi16_epi8
+  const char* const p = reinterpret_cast<const char*>(chars); 
+  __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), packus_masks);
+  __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), packus_masks);
   __m128i packed = _mm_packus_epi16(i1, i2);
 
-  // extract
   uint64_t val;
   _mm_storeu_si64(&val, _mm_shuffle_epi32(packed, 0x8));
   return val;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
-#else
-  unsigned char bytes[8];
-  for (int i = 0; i < 8; ++i)
-      bytes[i] = (unsigned char)chars[i];
-
-  // bit-cast
-  uint64_t val;
-  ::memcpy(&val, bytes, sizeof(uint64_t));
-  return val;
-#endif
 }
 
+// https://quick-bench.com/q/fk6Y07KDGu8XZ9iUtQD8QJTc3Hg
+fastfloat_really_inline
+uint64_t simd_read8_to_u64(const char16_t* chars) {
+  return simd_read8_to_u64(chars, load_packus_masks_c16());
+}
+#endif
+
+// Read 8 CharT into a u64. Truncates CharT if != char.
 template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint64_t read_u64(const CharT *chars) {
-  if (cpp20_and_in_constexpr()) {
+uint64_t read8_to_u64(const CharT *chars) {
+  if (cpp20_and_in_constexpr() || !std::is_same<CharT, char>::value) {
     uint64_t val = 0;
     for(int i = 0; i < 8; ++i) {
       val |= uint64_t(char(*chars)) << (i*8);
@@ -84,7 +82,8 @@ uint64_t read_u64(const CharT *chars) {
     }
     return val;
   }
-  uint64_t val = fast_read_u64(chars);
+  uint64_t val;
+  ::memcpy(&val, chars, sizeof(uint64_t));
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
   val = byteswap(val);
@@ -121,91 +120,86 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
   return uint32_t(val);
 }
 
-// http://0x80.pl/articles/simd-parsing-int-sequences.html
-#ifdef FASTFLOAT_SSE2
-fastfloat_really_inline
-uint32_t parse_eight_digits_unrolled_c16(const __m128i val) {
-  // x - '0'
-  const __m128i s1digits16 = _mm_sub_epi16(val, _mm_set1_epi16('0'));
-  // 10 * x(b) + x(b-1) -> 2 digit numbers
-  const __m128i s2digits32 = _mm_madd_epi16(s1digits16, _mm_setr_epi16(10, 1, 10, 1, 10, 1, 10, 1));
-  const __m128i s2digits16 = _mm_packus_epi16(s2digits32, s2digits32);
-  // 100 * x(b) + x(b-1) -> 4 digit numbers
-  const __m128i s4digits32 = _mm_madd_epi16(s2digits16, _mm_setr_epi16(100, 1, 100, 1, 100, 1, 100, 1));
-  const __m128i s4digits16 = _mm_packus_epi16(s4digits32, s4digits32);
-  // 10000 * x(b) + x(b-1) -> 8 digit number
-  const __m128i s8digits32 = _mm_madd_epi16(s4digits16, _mm_setr_epi16(10000, 1, 10000, 1, 10000, 1, 10000, 1));
 
-  uint32_t value;
-  _mm_storeu_si32(&value, s8digits32);
-  return value;
-}
-#endif
-
-// credit @aqrit
-fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val)  noexcept  {
-  return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
-     0x8080808080808080));
-}
-
+// Call this if chars are definitely 8 digits.
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 uint32_t parse_eight_digits_unrolled(const char* chars)  noexcept {
-    return parse_eight_digits_unrolled(read_u64(chars));
+    return parse_eight_digits_unrolled(read8_to_u64(chars));
 }
 
-// Call this if you know chars are only digits
-//todo: add support for char32_t
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 uint32_t parse_eight_digits_unrolled(const char16_t* chars)  noexcept {
   if (cpp20_and_in_constexpr() || !has_simd()) {
-    return parse_eight_digits_unrolled(read_u64(chars));
+    return parse_eight_digits_unrolled(read8_to_u64(chars));
   }
-#ifndef FASTFLOAT_HAS_SIMD
-  return 0; // never reaches here, remove warning
+#ifdef FASTFLOAT_HAS_SIMD
+  return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
 #else
-FASTFLOAT_SIMD_DISABLE_WARNINGS
-  return parse_eight_digits_unrolled_c16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(chars)));
-FASTFLOAT_SIMD_RESTORE_WARNINGS
+  // never reaches here, remove warning
+  return 0;
 #endif
 }
 
+// todo, no simd optimization yet
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool parse_if_eight_digits_unrolled(const char* chars, std::uint64_t& i) noexcept {
-    const bool all = is_made_of_eight_digits_fast(read_u64(chars));
-    if (all) i = i * 100000000 + parse_eight_digits_unrolled(read_u64(chars));
-    return all;
+uint32_t parse_eight_digits_unrolled(const char32_t* chars)  noexcept {
+  return parse_eight_digits_unrolled(read8_to_u64(chars));
 }
 
-// Call this if you don't know whether chars are only digits
-// http://0x80.pl/articles/simd-parsing-int-sequences.html
-//todo: add support for char32_t
+
+// credit @aqrit
+fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val)  noexcept {
+  return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
+    0x8080808080808080));
+}
+
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool parse_if_eight_digits_unrolled(const char16_t* chars, std::uint64_t& i) noexcept {
-  if (cpp20_and_in_constexpr() || !has_simd()) {
-    for (int i = 0; i < 8; ++i) {
-      if (chars[i] < u'0' || chars[i] > u'9')
-        return false;
-    }
-    i = i * 100000000 + parse_eight_digits_unrolled(read_u64(chars));
-    return true;
+bool parse_if_eight_digits_unrolled(const char* chars, uint64_t& i) noexcept {
+  const bool is_digits = is_made_of_eight_digits_fast(read8_to_u64(chars));
+  if (is_digits) {
+    i = i * 100000000 + parse_eight_digits_unrolled(read8_to_u64(chars));
   }
-#ifndef FASTFLOAT_HAS_SIMD
-  return false; // never reaches here, remove warning
-#else
+  return is_digits;
+}
+
+// Call this if chars might not be 8 digits.
+// Using this (instead of is_made_of_eight_digits_fast() then parse_eight_digits_unrolled())
+// ensures we don't load SIMD registers twice.
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+bool parse_if_eight_digits_unrolled(const char16_t* chars, uint64_t& i) noexcept {
+#ifdef FASTFLOAT_SSE2
+  if (cpp20_and_in_constexpr()) {
+    return false;
+  }    
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(chars));
+  const __m128i packus_masks = load_packus_masks_c16(); // be optimistic, preload
+
   // (x - '0') <= 9
+  // http://0x80.pl/articles/simd-parsing-int-sequences.html
   const __m128i t0 = _mm_sub_epi16(data, _mm_set1_epi16(80));
   const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-119));
 
   if (_mm_movemask_epi8(t1) == 0) {
-    i = i * 100000000 + parse_eight_digits_unrolled_c16(data);
+    uint64_t digits = simd_read8_to_u64(chars, packus_masks);
+    i = i * 100000000 + parse_eight_digits_unrolled(digits);
     return true;
   }
   else return false;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
+
+#else // No SIMD available
+  return false;
 #endif
 }
+
+// todo, no simd optimization yet
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+bool parse_if_eight_digits_unrolled(const char32_t*, uint64_t&) noexcept {
+  return false;
+}
+
+
 
 typedef span<const char> byte_span;
 
