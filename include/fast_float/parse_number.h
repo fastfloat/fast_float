@@ -143,23 +143,30 @@ from_chars_result<CharT> from_chars(const CharT *first, const CharT *last,
 
 template<typename T, typename CharT>
 FASTFLOAT_CONSTEXPR20
-from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, const CharT* first, const CharT* last, T& value, preparsed_parse_options options) noexcept
+from_chars_result<CharT> from_chars_advanced(const CharT *first, const CharT *last,
+                                      T &value, parse_options options)  noexcept  {
 {
   static_assert (std::is_same<T, double>::value || std::is_same<T, float>::value, "only float and double are supported");
 
 
   from_chars_result<CharT> answer;
-  if (!pns.valid) {
-    if (options.allow_inf_nan)
-      return detail::parse_infnan(first, last, value);
-    else {
-      answer.ec = std::errc::invalid_argument;
-      answer.ptr = first;
-      return answer;
-    }
+#ifdef FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
+  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
+    first++;
   }
-  if (pns.too_many_digits)
+#endif
+  if (first == last) {
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = first;
+    return answer;
+  }
+  parsed_number_string<CharT> pns = parse_number_string(first, last, options);
+  if (!pns.valid) {
+    return detail::parse_infnan(first, last, value);
+  }
+  if (pns.too_many_digits) {
     parse_truncated_number_string(pns);
+  }
 
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
@@ -217,26 +224,6 @@ from_chars_result<CharT> from_chars_preparsed(parsed_number_string<CharT> pns, c
   if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) || am.power2 == binary_format<T>::infinite_power()) {
     answer.ec = std::errc::result_out_of_range;
   }
-  return answer;
-}
-
-template<typename T, typename CharT>
-FASTFLOAT_CONSTEXPR20
-from_chars_result<CharT> from_chars_advanced(const CharT *first, const CharT *last,
-                                      T &value, parse_options options)  noexcept  {
-
-  from_chars_result<CharT> answer;
-#ifdef FASTFLOAT_SKIP_WHITE_SPACE  // disabled by default
-  while ((first != last) && fast_float::is_space(uint8_t(*first))) {
-    first++;
-  }
-#endif
-  if (first == last) {
-    answer.ec = std::errc::invalid_argument;
-    answer.ptr = first;
-    return answer;
-  }
-  answer = from_chars_preparsed(parse_number_string(first, last, options), first, last, value, options);
   return answer;
 }
 

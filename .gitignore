@@ -7,7 +7,7 @@ compile_commands.json
 .vs/
 Debug/
 Release/
-/out/build/
+/out/
 *.sln
 *.vcxproj
 *.vcxproj.filters

@@ -51,7 +51,7 @@ fastfloat_really_inline
 uint64_t simd_read8_to_u64(const char16_t* chars, const __m128i packus_masks) {
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   // process 4 and 4 chars simultaneously (loadu_si64 has high latency)
-  // with AVX512BW + AVX512VL, masking is not required as we have cvtepi16_epi8
+  // with AVX512BW + AVX512VL, masking is not required as we can use cvtepi16_epi8
   const char* const p = reinterpret_cast<const char*>(chars); 
   __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), packus_masks);
   __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), packus_masks);
@@ -223,8 +223,7 @@ template <typename CharT>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options) noexcept {
   const chars_format fmt = options.format;
-  const parse_rules rules = options.rules;
-  const CharT decimal_point = CharT(options.decimal_point);
+  const CharT decimal_point = options.decimal_point;
 
   parsed_number_string<CharT> answer;
   answer.valid = false;
@@ -240,7 +239,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
       return answer;
     }
     // a sign must be followed by an integer or the dot
-    if (!is_integer(*p) && (rules == parse_rules::json_rules || *p != decimal_point))
+    if (!is_integer(*p) && *p != decimal_point)
         return answer;
   }
   const CharT *const start_digits = p;
@@ -275,8 +274,8 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     answer.fraction = span<const CharT>(before, size_t(p - before));
     digit_count -= exponent;
   }
-  // we must have encountered at least one integer (or two if a decimal point exists, with json rules).
-  if (digit_count == 0 || (rules == parse_rules::json_rules && has_decimal_point && digit_count == 1)) {
+  // we must have encountered at least one integer
+  if (digit_count == 0) {
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
@@ -312,11 +311,6 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     // If it scientific and not fixed, we have to bail out.
     if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; }
   }
-  
-  // disallow leading zeros before the decimal point
-  if (rules == parse_rules::json_rules && start_digits[0] == CharT('0') && digit_count >= 2 && is_integer(start_digits[1]))
-      return answer;
-
   answer.lastmatch = p;
   answer.valid = true;
   answer.exp_number = exp_number;
