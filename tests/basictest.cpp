@@ -644,9 +644,9 @@ enum class Diag { runtime, comptime };
 
 } // anonymous namespace
 
-template <Diag diag, class T>
-constexpr void check_basic_test_result(std::string_view str,
-                                       fast_float::from_chars_result result,
+template <Diag diag, class T, typename result_type, typename stringtype>
+constexpr void check_basic_test_result(stringtype str,
+                                       result_type result,
                                        T actual, T expected, std::errc expected_ec) {
   if constexpr (diag == Diag::runtime) {
       INFO(
@@ -702,11 +702,33 @@ constexpr void check_basic_test_result(std::string_view str,
 #undef FASTFLOAT_CHECK_EQ
 }
 
+
 template<Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected, std::errc expected_ec = std::errc()) {
   T actual;
   auto result = fast_float::from_chars(str.data(), str.data() + str.size(), actual);
   check_basic_test_result<diag>(str, result, actual, expected, expected_ec);
+  constexpr size_t global_string_capacity = 2048;
+
+  if(str.size() > global_string_capacity) {
+    return;
+  }
+  // We give plenty of memory: 2048 characters.
+  char16_t u16[global_string_capacity]{};
+
+  for (size_t i = 0; i < str.size(); i++) {
+    u16[i] = char16_t(str[i]);
+  }
+  auto result16 = fast_float::from_chars(u16, u16 + str.size(), actual);
+  check_basic_test_result<diag>(std::u16string_view(u16, str.size()), result16, actual, expected, expected_ec);
+
+  char32_t u32[global_string_capacity]{};
+
+  for (size_t i = 0; i < str.size(); i++) {
+    u32[i] = char32_t(str[i]);
+  }
+  auto result32 = fast_float::from_chars(u32, u32 + str.size(), actual);
+  check_basic_test_result<diag>(std::u32string_view(u32, str.size()), result32, actual, expected, expected_ec);
 }
 
 template<Diag diag, class T>

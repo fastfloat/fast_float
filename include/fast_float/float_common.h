@@ -106,11 +106,12 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 }
 
 // Compares two ASCII strings in a case insensitive manner.
+template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
-fastfloat_strncasecmp(const char *input1, const char *input2, size_t length) {
+fastfloat_strncasecmp(UC const * input1, UC const * input2, size_t length) {
   char running_diff{0};
-  for (size_t i = 0; i < length; i++) {
-    running_diff |= (input1[i] ^ input2[i]);
+  for (size_t i = 0; i < length; ++i) {
+    running_diff |= (char(input1[i]) ^ char(input2[i]));
   }
   return (running_diff == 0) || (running_diff == 32);
 }
@@ -503,6 +504,68 @@ constexpr bool space_lut<T>::value[];
 
 inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
 #endif
+
+template<typename UC>
+static constexpr uint64_t int_cmp_zeros()
+{
+    static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4), "Unsupported character size");
+    return (sizeof(UC) == 1) ? 0x3030303030303030 : (sizeof(UC) == 2) ? (uint64_t(UC('0')) << 48 | uint64_t(UC('0')) << 32 | uint64_t(UC('0')) << 16 | UC('0')) : (uint64_t(UC('0')) << 32 | UC('0'));
+}
+template<typename UC>
+static constexpr int int_cmp_len()
+{
+    return sizeof(uint64_t) / sizeof(UC);
+}
+template<typename UC>
+static constexpr UC const * str_const_nan()
+{
+    return nullptr;
+}
+template<>
+constexpr char const * str_const_nan<char>()
+{
+    return "nan";
+}
+template<>
+constexpr wchar_t const * str_const_nan<wchar_t>()
+{
+    return L"nan";
+}
+template<>
+constexpr char16_t const * str_const_nan<char16_t>()
+{
+    return u"nan";
+}
+template<>
+constexpr char32_t const * str_const_nan<char32_t>()
+{
+    return U"nan";
+}
+template<typename UC>
+static constexpr UC const * str_const_inf()
+{
+    return nullptr;
+}
+template<>
+constexpr char const * str_const_inf<char>()
+{
+    return "infinity";
+}
+template<>
+constexpr wchar_t const * str_const_inf<wchar_t>()
+{
+    return L"infinity";
+}
+template<>
+constexpr char16_t const * str_const_inf<char16_t>()
+{
+    return u"infinity";
+}
+template<>
+constexpr char32_t const * str_const_inf<char32_t>()
+{
+    return U"infinity";
+}
 } // namespace fast_float
 
 #endif
