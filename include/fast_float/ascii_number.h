@@ -9,12 +9,23 @@
 
 #include "float_common.h"
 
+#define FASTFLOAT_SSE2
+
 #ifdef FASTFLOAT_SSE2
 #include <emmintrin.h>
 #endif
 
 
 namespace fast_float {
+
+template <typename UC>
+fastfloat_really_inline constexpr bool has_simd_opts() {
+#ifdef FASTFLOAT_HAS_SIMD
+  return std::is_same<UC, char16_t>::value;
+#else
+  return false;
+#endif
+}
 
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
@@ -34,42 +45,6 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
     | (val & 0x00000000000000FF) << 56;
 }
 
-
-#ifdef FASTFLOAT_SSE2
-
-fastfloat_really_inline
-__m128i load_packus_masks_c16(void) noexcept {
-FASTFLOAT_SIMD_DISABLE_WARNINGS
-  static const char16_t masks[] = { 0xff, 0xff, 0xff, 0xff };
-  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks));
-FASTFLOAT_SIMD_RESTORE_WARNINGS
-}
-
-// packus_masks is an argument only so its value may be preloaded.
-// it should always come from load_packus_masks_c16().
-fastfloat_really_inline
-uint64_t simd_read8_to_u64(const char16_t* chars, const __m128i packus_masks) {
-FASTFLOAT_SIMD_DISABLE_WARNINGS
-  // process 4 and 4 chars simultaneously (loadu_si64 has high latency)
-  // with AVX512BW + AVX512VL, masking is not required as we can use cvtepi16_epi8
-  const char* const p = reinterpret_cast<const char*>(chars); 
-  __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), packus_masks);
-  __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), packus_masks);
-  __m128i packed = _mm_packus_epi16(i1, i2);
-
-  uint64_t val;
-  _mm_storeu_si64(&val, _mm_shuffle_epi32(packed, 0x8));
-  return val;
-FASTFLOAT_SIMD_RESTORE_WARNINGS
-}
-
-// https://quick-bench.com/q/fk6Y07KDGu8XZ9iUtQD8QJTc3Hg
-fastfloat_really_inline
-uint64_t simd_read8_to_u64(const char16_t* chars) {
-  return simd_read8_to_u64(chars, load_packus_masks_c16());
-}
-#endif
-
 // Read 8 UC into a u64. Truncates UC if not char.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
@@ -77,7 +52,7 @@ uint64_t read8_to_u64(const UC *chars) {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
     for(int i = 0; i < 8; ++i) {
-      val |= uint64_t(char(*chars)) << (i*8);
+      val |= uint64_t(uint8_t(*chars)) << (i*8);
       ++chars;
     }
     return val;
@@ -90,6 +65,35 @@ uint64_t read8_to_u64(const UC *chars) {
 #endif
   return val;
 }
+
+#ifdef FASTFLOAT_SSE2
+
+fastfloat_really_inline
+uint64_t simd_read8_to_u64(const char16_t* chars) {
+FASTFLOAT_SIMD_DISABLE_WARNINGS
+  static const char16_t kmasks[] = { 0xff, 0xff, 0xff, 0xff };
+  const __m128i masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(kmasks));
+
+  // pipeline 4 and 4 chars at the same time (since loadu_si64 has high latency)
+  // todo: with AVX512BW + AVX512VL, can use cvtepi16_epi8 instead
+  const char* const p = reinterpret_cast<const char*>(chars); 
+  __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), masks);
+  __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), masks);
+  __m128i packed = _mm_packus_epi16(i1, i2);
+
+  uint64_t val;
+  _mm_storeu_si64(&val, _mm_shuffle_epi32(packed, 0x8));
+  return val;
+FASTFLOAT_SIMD_RESTORE_WARNINGS
+}
+#endif
+
+// dummy for compile
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opts<UC>())>
+uint64_t simd_read8_to_u64(UC const*) {
+  return 0;
+}
+
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void write_u64(uint8_t *chars, uint64_t val) {
@@ -122,28 +126,13 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
 
 
 // Call this if chars are definitely 8 digits.
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(const char* chars)  noexcept {
-    return parse_eight_digits_unrolled(read8_to_u64(chars));
-}
-
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(const char16_t* chars)  noexcept {
-  if (cpp20_and_in_constexpr() || !has_simd()) {
-    return parse_eight_digits_unrolled(read8_to_u64(chars));
+uint32_t parse_eight_digits_unrolled(UC const * chars)  noexcept {
+  if (cpp20_and_in_constexpr() || !has_simd_opts<UC>()) {
+    return parse_eight_digits_unrolled(read8_to_u64(chars)); // truncation okay
   }
-#ifdef FASTFLOAT_HAS_SIMD
   return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
-#else
-  // never reaches here, removes warning
-  return 0;
-#endif
-}
-
-// todo, no simd optimization yet
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint32_t parse_eight_digits_unrolled(const char32_t* chars)  noexcept {
-  return parse_eight_digits_unrolled(read8_to_u64(chars));
 }
 
 
@@ -163,8 +152,12 @@ bool parse_if_eight_digits_unrolled(const char* chars, uint64_t& i) noexcept {
 }
 
 // Call this if chars might not be 8 digits.
-// Using this (instead of is_made_of_eight_digits_fast() then parse_eight_digits_unrolled())
+// Using this (instead of is_made_of_eight_digits_fast() and parse_eight_digits_unrolled())
 // ensures we don't load SIMD registers twice.
+//
+// Benchmark:
+// https://quick-bench.com/q/Bbn0B4WmZsdgS3qDZWpggAY-jgs
+//
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool parse_if_eight_digits_unrolled(const char16_t* chars, uint64_t& i) noexcept {
 #ifdef FASTFLOAT_SSE2
@@ -173,7 +166,6 @@ bool parse_if_eight_digits_unrolled(const char16_t* chars, uint64_t& i) noexcept
   }    
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(chars));
-  const __m128i packus_masks = load_packus_masks_c16(); // be optimistic, preload
 
   // (x - '0') <= 9
   // http://0x80.pl/articles/simd-parsing-int-sequences.html
@@ -181,7 +173,7 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-119));
 
   if (_mm_movemask_epi8(t1) == 0) {
-    uint64_t digits = simd_read8_to_u64(chars, packus_masks);
+    uint64_t digits = simd_read8_to_u64(chars);
     i = i * 100000000 + parse_eight_digits_unrolled(digits);
     return true;
   }
@@ -189,6 +181,8 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 
 #else // No SIMD available
+
+  (void)chars; (void)i; // unused
   return false;
 #endif
 }
@@ -212,8 +206,10 @@ struct parsed_number_string_t {
   span<const UC> integer{};  // non-nullable
   span<const UC> fraction{}; // nullable
 };
+
 using byte_span = span<const char>;
 using parsed_number_string = parsed_number_string_t<char>;
+
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
 template <typename UC>
@@ -265,6 +261,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     while ((p != pend) && is_integer(*p)) {
       uint8_t digit = uint8_t(*p - UC('0'));
       ++p;
+      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
     }
     exponent = before - p;
     answer.fraction = span<const UC>(before, size_t(p - before));
@@ -336,20 +333,20 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   return answer;
 }
 
-template <typename CharT>
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void parse_truncated_number_string(parsed_number_string<CharT>& ps)
+void parse_truncated_number_string(parsed_number_string_t<UC>& ps)
 {
   // Let us start again, this time, avoiding overflows.
   // We don't need to check if is_integer, since we use the
   // pre-tokenized spans.
   uint64_t i = 0;
   int64_t exponent = 0;
-  const CharT* p = ps.integer.ptr;
-  const CharT* const int_end = p + ps.integer.len();
+  const UC* p = ps.integer.ptr;
+  const UC* const int_end = p + ps.integer.len();
   const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
   while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-    i = i * 10 + uint64_t(*p - CharT('0'));
+    i = i * 10 + uint64_t(*p - UC('0'));
     ++p;
   }
   if (i >= minimal_nineteen_digit_integer) { // We have a big integers
@@ -357,9 +354,9 @@ void parse_truncated_number_string(parsed_number_string<CharT>& ps)
   }
   else { // We have a value with a fractional component.
     p = ps.fraction.ptr;
-    const CharT* const frac_end = p + ps.fraction.len();
+    const UC* const frac_end = p + ps.fraction.len();
     while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-      i = i * 10 + uint64_t(*p - CharT('0'));
+      i = i * 10 + uint64_t(*p - UC('0'));
       ++p;
     }
     exponent = ps.fraction.ptr - p + ps.exp_number;

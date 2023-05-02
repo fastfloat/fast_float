@@ -117,6 +117,9 @@
 // rust style `try!()` macro, or `?` operator
 #define FASTFLOAT_TRY(x) { if (!(x)) return false; }
 
+#define FASTFLOAT_ENABLE_IF(test) typename std::enable_if<(test), int>::type = 0
+
+
 namespace fast_float {
 
 fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
