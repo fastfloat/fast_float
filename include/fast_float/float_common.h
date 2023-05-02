@@ -78,8 +78,14 @@
 #endif
 #endif
 
+#if defined(__SSE2__) || \
+  (defined(FASTFLOAT_VISUAL_STUDIO) && \
+    (defined(_M_AMD64) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2)))
+#define FASTFLOAT_SSE2 1
+#endif
+
 #ifdef FASTFLOAT_SSE2
-#define FASTFLOAT_HAS_SIMD (1)
+#define FASTFLOAT_HAS_SIMD 1
 #endif
 
 #if defined(__GNUC__)

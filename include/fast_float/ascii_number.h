@@ -73,7 +73,7 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(kmasks));
 
   // pipeline 4 and 4 chars at the same time (since loadu_si64 has high latency)
-  // todo: with AVX512BW + AVX512VL, can use cvtepi16_epi8 instead
+  // todo: with AVX512BW + AVX512VL, can use cvtepi16_epi8 instead of masking + pack
   const char* const p = reinterpret_cast<const char*>(chars); 
   __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), masks);
   __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), masks);
@@ -150,8 +150,8 @@ bool parse_if_eight_digits_unrolled(const char* chars, uint64_t& i) noexcept {
 }
 
 // Call this if chars might not be 8 digits.
-// Using this (instead of is_made_of_eight_digits_fast() and parse_eight_digits_unrolled())
-// ensures we don't load SIMD registers twice.
+// Using this style (instead of is_made_of_eight_digits_fast() then parse_eight_digits_unrolled())
+// ensures we don't load SIMD registers twice if we don't have to.
 //
 // Benchmark:
 // https://quick-bench.com/q/Bbn0B4WmZsdgS3qDZWpggAY-jgs
