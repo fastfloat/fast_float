@@ -18,9 +18,9 @@ namespace fast_float {
 
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
-template <typename CharT>
-fastfloat_really_inline constexpr bool is_integer(CharT c) noexcept {
-  return c >= CharT('0') && c <= CharT('9');
+template <typename UC>
+fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
+  return !(c > UC('9') || c < UC('0'));
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
@@ -70,11 +70,11 @@ uint64_t simd_read8_to_u64(const char16_t* chars) {
 }
 #endif
 
-// Read 8 CharT into a u64. Truncates CharT if != char.
-template <typename CharT>
+// Read 8 UC into a u64. Truncates UC if not char.
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-uint64_t read8_to_u64(const CharT *chars) {
-  if (cpp20_and_in_constexpr() || !std::is_same<CharT, char>::value) {
+uint64_t read8_to_u64(const UC *chars) {
+  if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
     for(int i = 0; i < 8; ++i) {
       val |= uint64_t(char(*chars)) << (i*8);
@@ -135,7 +135,7 @@ uint32_t parse_eight_digits_unrolled(const char16_t* chars)  noexcept {
 #ifdef FASTFLOAT_HAS_SIMD
   return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
 #else
-  // never reaches here, remove warning
+  // never reaches here, removes warning
   return 0;
 #endif
 }
@@ -150,7 +150,7 @@ uint32_t parse_eight_digits_unrolled(const char32_t* chars)  noexcept {
 // credit @aqrit
 fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val)  noexcept {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
-    0x8080808080808080));
+     0x8080808080808080));
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
@@ -199,50 +199,47 @@ bool parse_if_eight_digits_unrolled(const char32_t*, uint64_t&) noexcept {
   return false;
 }
 
-
-
-typedef span<const char> byte_span;
-
-template <typename CharT>
-struct parsed_number_string {
+template <typename UC>
+struct parsed_number_string_t {
   int64_t exponent{0};
   uint64_t mantissa{0};
   int64_t exp_number{0};
-  const CharT *lastmatch{nullptr};
+  UC const * lastmatch{nullptr};
   bool negative{false};
   bool valid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
-  span<const CharT> integer{};  // non-nullable
-  span<const CharT> fraction{}; // nullable
+  span<const UC> integer{};  // non-nullable
+  span<const UC> fraction{}; // nullable
 };
-
+using byte_span = span<const char>;
+using parsed_number_string = parsed_number_string_t<char>;
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
-template <typename CharT>
+template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pend, parse_options options) noexcept {
-  const chars_format fmt = options.format;
-  const CharT decimal_point = options.decimal_point;
+parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, parse_options_t<UC> options) noexcept {
+  chars_format const fmt = options.format;
+  UC const decimal_point = options.decimal_point;
 
-  parsed_number_string<CharT> answer;
+  parsed_number_string_t<UC> answer;
   answer.valid = false;
   answer.too_many_digits = false;
-  answer.negative = (*p == CharT('-'));
+  answer.negative = (*p == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == CharT('-')) || (*p == CharT('+'))) {
+  if ((*p == UC('-')) || (*p == UC('+'))) {
 #else
-  if (*p == CharT('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
     ++p;
     if (p == pend) {
       return answer;
     }
-    // a sign must be followed by an integer or the dot
-    if (!is_integer(*p) && *p != decimal_point)
-        return answer;
+    if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
+      return answer;
+    }
   }
-  const CharT *const start_digits = p;
+  UC const * const start_digits = p;
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
 
@@ -250,43 +247,42 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
-        uint64_t(*p - CharT('0')); // might overflow, we will handle the overflow later
+        uint64_t(*p - UC('0')); // might overflow, we will handle the overflow later
     ++p;
   }
-  const CharT *const end_of_integer_part = p;
+  UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
-  answer.integer = span<const CharT>(start_digits, size_t(digit_count));
+  answer.integer = span<const UC>(start_digits, size_t(digit_count));
   int64_t exponent = 0;
-  const bool has_decimal_point = (p != pend) && (*p == decimal_point);
-  if (has_decimal_point) {
+  if ((p != pend) && (*p == decimal_point)) {
     ++p;
-    const CharT* before = p;
+    UC const * before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     while ((std::distance(p, pend) >= 8) && parse_if_eight_digits_unrolled(p, i)) {  // in rare cases, this will overflow, but that's ok
       p += 8;
     }
     while ((p != pend) && is_integer(*p)) {
-      i = i * 10 + uint64_t(*p - CharT('0')); // in rare cases, this will overflow, but that's ok
+      uint8_t digit = uint8_t(*p - UC('0'));
       ++p;
     }
     exponent = before - p;
-    answer.fraction = span<const CharT>(before, size_t(p - before));
+    answer.fraction = span<const UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
-  // we must have encountered at least one integer
+  // we must have encountered at least one integer!
   if (digit_count == 0) {
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
-  if ((fmt & chars_format::scientific) && (p != pend) && ((CharT('e') == *p) || (CharT('E') == *p))) {
-    const CharT * location_of_e = p;
+  if ((fmt & chars_format::scientific) && (p != pend) && ((UC('e') == *p) || (UC('E') == *p))) {
+    UC const * location_of_e = p;
     ++p;
     bool neg_exp = false;
-    if ((p != pend) && (CharT('-') == *p)) {
+    if ((p != pend) && (UC('-') == *p)) {
       neg_exp = true;
       ++p;
-    } else if ((p != pend) && (CharT('+') == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+    } else if ((p != pend) && (UC('+') == *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
       ++p;
     }
     if ((p == pend) || !is_integer(*p)) {
@@ -298,7 +294,7 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
       p = location_of_e;
     } else {
       while ((p != pend) && is_integer(*p)) {
-        uint8_t digit = uint8_t(*p - CharT('0'));
+        uint8_t digit = uint8_t(*p - UC('0'));
         if (exp_number < 0x10000000) {
           exp_number = 10 * exp_number + digit;
         }
@@ -325,13 +321,13 @@ parsed_number_string<CharT> parse_number_string(const CharT *p, const CharT *pen
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
-    const CharT *start = start_digits;
-    while ((start != pend) && (*start == CharT('0') || *start == decimal_point)) {
-      if(*start == CharT('0')) { digit_count --; }
+    UC const * start = start_digits;
+    while ((start != pend) && (*start == UC('0') || *start == decimal_point)) {
+      if(*start == UC('0')) { digit_count --; }
       start++;
     }
 
-    // exponent/mantissa must be truncated later
+    // exponent/mantissa must be truncated later!
     // this is unlikely, so don't inline truncation code with the rest of parse_number_string()
     answer.too_many_digits = digit_count > 19;
   }

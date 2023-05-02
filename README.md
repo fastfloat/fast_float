@@ -97,6 +97,24 @@ constexpr double constexptest() {
 }
 ```
 
+## Non-ASCII Inputs
+
+We also support UTF-16 and UTF-32 inputs, as well as ASCII/UTF-8, as in the following example:
+
+``` C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+    const std::u16string input =  u"3.1416 xyz ";
+    double result;
+    auto answer = fast_float::from_chars(input.data(), input.data()+input.size(), result);
+    if(answer.ec != std::errc()) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
+    std::cout << "parsed the number " << result << std::endl;
+    return EXIT_SUCCESS;
+}
+```
+
 ## Using commas as decimal separator
 
 
