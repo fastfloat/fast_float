@@ -9,8 +9,6 @@
 
 #include "float_common.h"
 
-#define FASTFLOAT_SSE2
-
 #ifdef FASTFLOAT_SSE2
 #include <emmintrin.h>
 #endif
