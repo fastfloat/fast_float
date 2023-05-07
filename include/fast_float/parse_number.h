@@ -4,6 +4,7 @@
 #include "ascii_number.h"
 #include "decimal_to_binary.h"
 #include "digit_comparison.h"
+#include "float_common.h"
 
 #include <cmath>
 #include <cstring>

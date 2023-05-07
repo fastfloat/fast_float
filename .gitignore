@@ -2,3 +2,21 @@ build/*
 Testing/*
 .cache/
 compile_commands.json
+
+# Visual Studio
+.vs/
+Debug/
+Release/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.psess
+*.vspx
+*.vsp
+*.diagsession
+*.hint
+
+# VS CMake
+/out/
+/CMakeSettings.json
