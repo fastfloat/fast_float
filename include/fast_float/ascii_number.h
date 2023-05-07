@@ -67,23 +67,28 @@ uint64_t read8_to_u64(const UC *chars) {
 #ifdef FASTFLOAT_SSE2
 
 fastfloat_really_inline
-uint64_t simd_read8_to_u64(const char16_t* chars) {
+uint64_t simd_read8_to_u64(const __m128i data) {
 FASTFLOAT_SIMD_DISABLE_WARNINGS
-  static const char16_t kmasks[] = { 0xff, 0xff, 0xff, 0xff };
+  static const char16_t kmasks[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
   const __m128i masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(kmasks));
 
-  // pipeline 4 and 4 chars at the same time (since loadu_si64 has high latency)
   // todo: with AVX512BW + AVX512VL, can use cvtepi16_epi8 instead of masking + pack
-  const char* const p = reinterpret_cast<const char*>(chars); 
-  __m128i i1 = _mm_and_si128(_mm_loadu_si64(p), masks);
-  __m128i i2 = _mm_and_si128(_mm_loadu_si64(p + 8), masks);
-  __m128i packed = _mm_packus_epi16(i1, i2);
+  __m128i masked = _mm_and_si128(data, masks);
+  __m128i packed = _mm_packus_epi16(masked, masked);
 
   uint64_t val;
-  _mm_storeu_si64(&val, _mm_shuffle_epi32(packed, 0x8));
+  _mm_storeu_si64(&val, packed);
   return val;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
+
+fastfloat_really_inline
+uint64_t simd_read8_to_u64(const char16_t* chars) {
+FASTFLOAT_SIMD_DISABLE_WARNINGS
+  return simd_read8_to_u64(_mm_loadu_si128(reinterpret_cast<const __m128i*>(chars)));
+FASTFLOAT_SIMD_RESTORE_WARNINGS
+}
+
 #endif
 
 // dummy for compile
@@ -142,11 +147,11 @@ fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 bool parse_if_eight_digits_unrolled(const char* chars, uint64_t& i) noexcept {
-  const bool is_digits = is_made_of_eight_digits_fast(read8_to_u64(chars));
-  if (is_digits) {
+  if (is_made_of_eight_digits_fast(read8_to_u64(chars))) {
     i = i * 100000000 + parse_eight_digits_unrolled(read8_to_u64(chars));
+    return true;
   }
-  return is_digits;
+  return false;
 }
 
 // Call this if chars might not be 8 digits.
@@ -171,8 +176,7 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-119));
 
   if (_mm_movemask_epi8(t1) == 0) {
-    uint64_t digits = simd_read8_to_u64(chars);
-    i = i * 100000000 + parse_eight_digits_unrolled(digits);
+    i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
   }
   else return false;
