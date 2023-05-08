@@ -31,9 +31,8 @@ for filename in ['LICENSE-MIT', 'LICENSE-APACHE']:
   processed_files[filename] = text
 
 # code
-for filename in [ 'constexpr_feature_detect.h', 'fast_float.h', 'float_common.h', 'ascii_number.h',
-                  'fast_table.h', 'decimal_to_binary.h', 'bigint.h',
-                  'ascii_number.h', 'digit_comparison.h', 'parse_number.h']:
+for filename in [ 'constexpr_feature_detect.h', 'float_common.h', 'fast_float.h', 'ascii_number.h',
+                  'fast_table.h', 'decimal_to_binary.h', 'bigint.h', 'digit_comparison.h', 'parse_number.h']:
   with open('include/fast_float/' + filename, encoding='utf8') as f:
     text = ''
     for line in f:
@@ -76,11 +75,10 @@ text = ''.join([
   processed_files['AUTHORS'], processed_files['CONTRIBUTORS'],
   *license_content(args.license),
   processed_files['constexpr_feature_detect.h'],
-  processed_files['fast_float.h'], processed_files['float_common.h'],
+  processed_files['float_common.h'], processed_files['fast_float.h'],
   processed_files['ascii_number.h'], processed_files['fast_table.h'],
   processed_files['decimal_to_binary.h'], processed_files['bigint.h'],
-  processed_files['ascii_number.h'], processed_files['digit_comparison.h'],
-  processed_files['parse_number.h']])
+  processed_files['digit_comparison.h'], processed_files['parse_number.h']])
 
 if args.output:
   with open(args.output, 'wt', encoding='utf8') as f:
