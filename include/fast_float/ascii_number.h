@@ -151,7 +151,7 @@ bool parse_if_eight_digits_unrolled(const char* chars, uint64_t& i) noexcept {
     i = i * 100000000 + parse_eight_digits_unrolled(read8_to_u64(chars));
     return true;
   }
-  return false;
+  else return false;
 }
 
 // Call this if chars might not be 8 digits.
@@ -199,7 +199,6 @@ template <typename UC>
 struct parsed_number_string_t {
   int64_t exponent{0};
   uint64_t mantissa{0};
-  int64_t exp_number{0};
   UC const * lastmatch{nullptr};
   bool negative{false};
   bool valid{false};
@@ -308,7 +307,6 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   }
   answer.lastmatch = p;
   answer.valid = true;
-  answer.exp_number = exp_number;
 
   // If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
@@ -326,47 +324,37 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
       start++;
     }
 
-    // exponent/mantissa must be truncated later!
-    // this is unlikely, so don't inline truncation code with the rest of parse_number_string()
-    answer.too_many_digits = digit_count > 19;
+    if (digit_count > 19) {
+      answer.too_many_digits = true;
+      // Let us start again, this time, avoiding overflows.
+      // We don't need to check if is_integer, since we use the
+      // pre-tokenized spans from above.
+      i = 0;
+      p = answer.integer.ptr;
+      UC const* int_end = p + answer.integer.len();
+      const uint64_t minimal_nineteen_digit_integer{ 1000000000000000000 };
+      while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+        i = i * 10 + uint64_t(*p - UC('0'));
+        ++p;
+      }
+      if (i >= minimal_nineteen_digit_integer) { // We have a big integers
+        exponent = end_of_integer_part - p + exp_number;
+      }
+      else { // We have a value with a fractional component.
+        p = answer.fraction.ptr;
+        UC const* frac_end = p + answer.fraction.len();
+        while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
+          i = i * 10 + uint64_t(*p - UC('0'));
+          ++p;
+        }
+        exponent = answer.fraction.ptr - p + exp_number;
+      }
+      // We have now corrected both exponent and i, to a truncated value
+    }
   }
   answer.exponent = exponent;
   answer.mantissa = i;
   return answer;
-}
-
-template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-void parse_truncated_number_string(parsed_number_string_t<UC>& ps)
-{
-  // Let us start again, this time, avoiding overflows.
-  // We don't need to check if is_integer, since we use the
-  // pre-tokenized spans.
-  uint64_t i = 0;
-  int64_t exponent = 0;
-  const UC* p = ps.integer.ptr;
-  const UC* const int_end = p + ps.integer.len();
-  const uint64_t minimal_nineteen_digit_integer{1000000000000000000};
-  while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-    i = i * 10 + uint64_t(*p - UC('0'));
-    ++p;
-  }
-  if (i >= minimal_nineteen_digit_integer) { // We have a big integers
-    exponent = int_end - p + ps.exp_number;
-  }
-  else { // We have a value with a fractional component.
-    p = ps.fraction.ptr;
-    const UC* const frac_end = p + ps.fraction.len();
-    while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-      i = i * 10 + uint64_t(*p - UC('0'));
-      ++p;
-    }
-    exponent = ps.fraction.ptr - p + ps.exp_number;
-  }
-  // We have now corrected both exponent and i, to a truncated value
-
-  ps.exponent = exponent;
-  ps.mantissa = i;
 }
 
 } // namespace fast_float

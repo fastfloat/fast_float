@@ -166,9 +166,6 @@ from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
   if (!pns.valid) {
     return detail::parse_infnan(first, last, value);
   }
-  if (pns.too_many_digits) {
-    parse_truncated_number_string(pns);
-  }
 
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
