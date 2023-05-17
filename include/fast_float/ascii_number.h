@@ -17,7 +17,7 @@
 namespace fast_float {
 
 template <typename UC>
-fastfloat_really_inline constexpr bool has_simd_opts() {
+fastfloat_really_inline constexpr bool has_simd_opt() {
 #ifdef FASTFLOAT_HAS_SIMD
   return std::is_same<UC, char16_t>::value;
 #else
@@ -68,18 +68,7 @@ uint64_t read8_to_u64(const UC *chars) {
 
 fastfloat_really_inline
 uint64_t simd_read8_to_u64(const __m128i data) {
-FASTFLOAT_SIMD_DISABLE_WARNINGS
-  static const char16_t kmasks[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-  const __m128i masks = _mm_loadu_si128(reinterpret_cast<const __m128i*>(kmasks));
-
-  // todo: with AVX512BW + AVX512VL, can use cvtepi16_epi8 instead of masking + pack
-  __m128i masked = _mm_and_si128(data, masks);
-  __m128i packed = _mm_packus_epi16(masked, masked);
-
-  uint64_t val;
-  _mm_storeu_si64(&val, packed);
-  return val;
-FASTFLOAT_SIMD_RESTORE_WARNINGS
+  return _mm_cvtsi128_si64x(_mm_packus_epi16(data, data));
 }
 
 fastfloat_really_inline
@@ -92,7 +81,7 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 #endif
 
 // dummy for compile
-template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opts<UC>())>
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
 uint64_t simd_read8_to_u64(UC const*) {
   return 0;
 }
@@ -132,7 +121,7 @@ uint32_t parse_eight_digits_unrolled(uint64_t val) {
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 uint32_t parse_eight_digits_unrolled(UC const * chars)  noexcept {
-  if (cpp20_and_in_constexpr() || !has_simd_opts<UC>()) {
+  if (cpp20_and_in_constexpr() || !has_simd_opt<UC>()) {
     return parse_eight_digits_unrolled(read8_to_u64(chars)); // truncation okay
   }
   return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
@@ -145,28 +134,18 @@ fastfloat_really_inline constexpr bool is_made_of_eight_digits_fast(uint64_t val
      0x8080808080808080));
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool parse_if_eight_digits_unrolled(const char* chars, uint64_t& i) noexcept {
-  if (is_made_of_eight_digits_fast(read8_to_u64(chars))) {
-    i = i * 100000000 + parse_eight_digits_unrolled(read8_to_u64(chars));
-    return true;
-  }
-  else return false;
-}
+
+#ifdef FASTFLOAT_HAS_SIMD
 
 // Call this if chars might not be 8 digits.
 // Using this style (instead of is_made_of_eight_digits_fast() then parse_eight_digits_unrolled())
-// ensures we don't load SIMD registers twice if we don't have to.
-//
-// Benchmark:
-// https://quick-bench.com/q/Bbn0B4WmZsdgS3qDZWpggAY-jgs
-//
+// ensures we don't load SIMD registers twice.
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool parse_if_eight_digits_unrolled(const char16_t* chars, uint64_t& i) noexcept {
-#ifdef FASTFLOAT_SSE2
+bool simd_parse_if_eight_digits_unrolled(const char16_t* chars, uint64_t& i) noexcept {
   if (cpp20_and_in_constexpr()) {
     return false;
-  }    
+  }   
+#ifdef FASTFLOAT_SSE2
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(chars));
 
@@ -181,18 +160,36 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
   }
   else return false;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
-
-#else // No SIMD available
-
-  (void)chars; (void)i; // unused
-  return false;
 #endif
 }
 
-// todo, no simd optimization yet
+#endif
+
+// dummy for compile
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+uint64_t simd_parse_if_eight_digits_unrolled(UC const*, uint64_t&) {
+  return 0;
+}
+
+
+template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value)>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-bool parse_if_eight_digits_unrolled(const char32_t*, uint64_t&) noexcept {
-  return false;
+void loop_parse_if_eight_digits(const UC*& p, const UC* const pend, uint64_t& i) {
+  if (!has_simd_opt<UC>()) {
+    return;
+  }
+  while ((std::distance(p, pend) >= 8) && simd_parse_if_eight_digits_unrolled(p, i)) { // in rare cases, this will overflow, but that's ok
+    p += 8;
+  }
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+void loop_parse_if_eight_digits(const char*& p, const char* const pend, uint64_t& i) {
+  // optimizes better than parse_if_eight_digits_unrolled() for UC = char.
+  while ((std::distance(p, pend) >= 8) && is_made_of_eight_digits_fast(read8_to_u64(p))) {
+    i = i * 100000000 + parse_eight_digits_unrolled(read8_to_u64(p)); // in rare cases, this will overflow, but that's ok
+    p += 8;
+  }
 }
 
 template <typename UC>
@@ -256,9 +253,8 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     UC const * before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    while ((std::distance(p, pend) >= 8) && parse_if_eight_digits_unrolled(p, i)) {  // in rare cases, this will overflow, but that's ok
-      p += 8;
-    }
+    loop_parse_if_eight_digits(p, pend, i);
+
     while ((p != pend) && is_integer(*p)) {
       uint8_t digit = uint8_t(*p - UC('0'));
       ++p;

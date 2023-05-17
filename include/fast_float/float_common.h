@@ -157,7 +157,7 @@ using parse_options = parse_options_t<char>;
 // rust style `try!()` macro, or `?` operator
 #define FASTFLOAT_TRY(x) { if (!(x)) return false; }
 
-#define FASTFLOAT_ENABLE_IF(test) typename std::enable_if<(test), int>::type = 0
+#define FASTFLOAT_ENABLE_IF(...) typename std::enable_if<(__VA_ARGS__), int>::type = 0
 
 
 namespace fast_float {
