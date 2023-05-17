@@ -69,7 +69,15 @@ uint64_t read8_to_u64(const UC *chars) {
 fastfloat_really_inline
 uint64_t simd_read8_to_u64(const __m128i data) {
 FASTFLOAT_SIMD_DISABLE_WARNINGS
-  return uint64_t(_mm_cvtsi128_si64x(_mm_packus_epi16(data, data)));
+  const __m128i packed = _mm_packus_epi16(data, data);
+#ifdef FASTFLOAT_64BIT
+  return uint64_t(_mm_cvtsi128_si64x(packed));
+#else
+  uint64_t value;
+  // Visual Studio + older versions of GCC don't support _mm_storeu_si64
+  _mm_storel_epi64(reinterpret_cast<__m128i*>(&value), packed);
+  return value;
+#endif
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
