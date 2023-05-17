@@ -68,7 +68,9 @@ uint64_t read8_to_u64(const UC *chars) {
 
 fastfloat_really_inline
 uint64_t simd_read8_to_u64(const __m128i data) {
-  return _mm_cvtsi128_si64x(_mm_packus_epi16(data, data));
+FASTFLOAT_SIMD_DISABLE_WARNINGS
+  return uint64_t(_mm_cvtsi128_si64x(_mm_packus_epi16(data, data)));
+FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 fastfloat_really_inline
