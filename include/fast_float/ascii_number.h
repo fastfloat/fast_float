@@ -161,8 +161,8 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
 
   // (x - '0') <= 9
   // http://0x80.pl/articles/simd-parsing-int-sequences.html
-  const __m128i t0 = _mm_sub_epi16(data, _mm_set1_epi16(80));
-  const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-119));
+  const __m128i t0 = _mm_add_epi16(data, _mm_set1_epi16(32720));
+  const __m128i t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-32759));
 
   if (_mm_movemask_epi8(t1) == 0) {
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));

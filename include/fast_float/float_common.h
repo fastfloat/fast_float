@@ -170,14 +170,6 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 #endif
 }
 
-fastfloat_really_inline constexpr bool has_simd() {
-#if FASTFLOAT_HAS_SIMD
-  return true;
-#else
-  return false;
-#endif
-}
-
 // Compares two ASCII strings in a case insensitive manner.
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
