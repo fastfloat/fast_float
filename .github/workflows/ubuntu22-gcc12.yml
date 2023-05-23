@@ -18,6 +18,6 @@ jobs:
         run: |
           mkdir build20 &&
           cd build20 &&
-          CXX=g++-12 CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DCMAKE_CXX_STANDARD=20 -DFASTFLOAT_TEST=ON  ..  &&
+          CXX=g++-12 CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DFASTFLOAT_CXX_STANDARD=20 -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure
