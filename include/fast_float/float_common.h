@@ -126,11 +126,6 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_DEBUG_ASSERT(x) { ((void)(x)); }
 #endif
 
-
- #if defined(__SSE2__) || defined(__x86_64__) || defined(__x86_64) || (defined(_M_AMD64) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2))
- #define FASTFLOAT_SSE2 1
- #endif
-
 // rust style `try!()` macro, or `?` operator
 #define FASTFLOAT_TRY(x) { if (!(x)) return false; }
 
