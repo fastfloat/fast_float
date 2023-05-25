@@ -10,10 +10,10 @@ for filename in ['AUTHORS', 'CONTRIBUTORS']:
         text += '// fast_float by ' + line
       if filename == 'CONTRIBUTORS':
         text += '// with contributions from ' + line
-    processed_files[filename] = text + '//\n'
+    processed_files[filename] = text + '//\n//\n'
 
 # licenses
-for filename in ['LICENSE-MIT', 'LICENSE-APACHE']:
+for filename in ['LICENSE-MIT', 'LICENSE-APACHE', 'LICENSE-BOOST']:
   lines = []
   with open(filename, encoding='utf8') as f:
     lines = f.readlines()
@@ -44,14 +44,20 @@ for filename in [ 'constexpr_feature_detect.h', 'float_common.h', 'fast_float.h'
 import argparse
 
 parser = argparse.ArgumentParser(description='Amalgamate fast_float.')
-parser.add_argument('--license', default='DUAL', choices=['DUAL', 'MIT', 'APACHE'], help='choose license')
+parser.add_argument('--license', default='TRIPLE', choices=['DUAL', 'TRIPLE', 'MIT', 'APACHE', 'BOOST'], help='choose license')
 parser.add_argument('--output', default='', help='output file (stdout if none')
 
 args = parser.parse_args()
 
 def license_content(license_arg):
   result = []
-
+  if license_arg == 'TRIPLE':
+    result += [
+      '// Licensed under the Apache License, Version 2.0, or the\n',
+      '// MIT License or the Boost License. This file may not be copied,\n',
+      '// modified, or distributed except according to those terms.\n',
+      '//\n'
+    ]
   if license_arg == 'DUAL':
     result += [
       '// Licensed under the Apache License, Version 2.0, or the\n',
@@ -60,13 +66,17 @@ def license_content(license_arg):
       '//\n'
     ]
 
-  if license_arg in ('DUAL', 'MIT'):
+  if license_arg in ('DUAL', 'TRIPLE', 'MIT'):
     result.append('// MIT License Notice\n//\n')
     result.append(processed_files['LICENSE-MIT'])
     result.append('//\n')
-  if license_arg in ('DUAL', 'APACHE'):
+  if license_arg in ('DUAL', 'TRIPLE', 'APACHE'):
     result.append('// Apache License (Version 2.0) Notice\n//\n')
     result.append(processed_files['LICENSE-APACHE'])
+    result.append('//\n')
+  if license_arg in ('TRIPLE', 'BOOST'):
+    result.append('// BOOST License Notice\n//\n')
+    result.append(processed_files['LICENSE-BOOST'])
     result.append('//\n')
 
   return result
