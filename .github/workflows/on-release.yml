@@ -1,0 +1,41 @@
+name: On Release
+
+# By default, a workflow only has read permissions.
+# Add the needed permission to write release assets
+permissions:
+  contents: write
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Add Release Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Amalgamate fast_float.h
+        run: |
+          mkdir build
+          mkdir build/fast_float
+          python3 ./script/amalgamate.py > build/fast_float/fast_float.h
+
+      - name: Test Amalgamation
+        run: |
+          cp tests/string_test.cpp build/
+          cd build
+          g++ string_test.cpp
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/fast_float/fast_float.h
+          asset_name: fast_float.h
+          asset_content_type: text/plain
