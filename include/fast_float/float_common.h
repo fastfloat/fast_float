@@ -88,6 +88,8 @@ using parse_options = parse_options_t<char>;
 #include <machine/endian.h>
 #elif defined(sun) || defined(__sun)
 #include <sys/byteorder.h>
+#elif defined(__MVS__)
+#include <sys/endian.h>
 #else
 #ifdef __has_include
 #if __has_include(<endian.h>)
