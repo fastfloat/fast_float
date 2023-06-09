@@ -206,7 +206,9 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
   }
   else return false;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
-
+#else
+  (void)chars; (void)i;
+  return false;
 #endif // FASTFLOAT_SSE2
 }
 
@@ -214,7 +216,7 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 
 // dummy for compile
 template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
-uint64_t simd_parse_if_eight_digits_unrolled(UC const*, uint64_t&) {
+bool simd_parse_if_eight_digits_unrolled(UC const*, uint64_t&) {
   return 0;
 }
 
