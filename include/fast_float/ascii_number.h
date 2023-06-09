@@ -91,21 +91,21 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
-#elif defined(FASTFLOAT_ARM64)
+#elif defined(FASTFLOAT_NEON)
 
 
 fastfloat_really_inline
 uint64_t simd_read8_to_u64(const uint16x8_t data) {
 FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint8x8_t utf8_packed = vmovn_u16(data);
-  vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);
+  return vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 fastfloat_really_inline
 uint64_t simd_read8_to_u64(const char16_t* chars) {
 FASTFLOAT_SIMD_DISABLE_WARNINGS
-  return simd_read8_to_u64(vld1q_u16(reinterpret_cast<const uint16_t*>(values)));
+  return simd_read8_to_u64(vld1q_u16(reinterpret_cast<const uint16_t*>(chars)));
 FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
@@ -191,9 +191,9 @@ FASTFLOAT_SIMD_DISABLE_WARNINGS
   }
   else return false;
 FASTFLOAT_SIMD_RESTORE_WARNINGS
-#elif defined(FASTFLOAT_ARM64)
+#elif defined(FASTFLOAT_NEON)
 FASTFLOAT_SIMD_DISABLE_WARNINGS
-  const uint16x8_t data = vld1q_u16(reinterpret_cast<const uint16_t*>(chars))
+  const uint16x8_t data = vld1q_u16(reinterpret_cast<const uint16_t*>(chars));
   
   // (x - '0') <= 9
   // http://0x80.pl/articles/simd-parsing-int-sequences.html
