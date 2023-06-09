@@ -3,10 +3,11 @@ Testing/*
 .cache/
 compile_commands.json
 
-# Visual Studio
+# Visual studio
 .vs/
 Debug/
 Release/
+/out/
 *.sln
 *.vcxproj
 *.vcxproj.filters
