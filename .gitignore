@@ -21,4 +21,3 @@ Release/
 # VS CMake
 /out/
 /CMakeSettings.json
-/include/fast_float/fast_float_parser.h
