@@ -572,7 +572,7 @@ template <> inline constexpr binary_format<double>::equiv_uint
 template<typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void to_float(bool negative, adjusted_mantissa am, T &value) {
-  using uint = typename binary_format<T>::equiv_uint;
+  using fastfloat_uint = typename binary_format<T>::equiv_uint;
   uint word = (uint)am.mantissa;
   word |= uint(am.power2) << binary_format<T>::mantissa_explicit_bits();
   word |= uint(negative) << binary_format<T>::sign_index();
