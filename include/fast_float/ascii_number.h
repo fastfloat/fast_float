@@ -112,7 +112,8 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 #endif // FASTFLOAT_SSE2
 
 // dummy for compile
-template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+//template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+template <typename UC>
 uint64_t simd_read8_to_u64(UC const*) {
   return 0;
 }
