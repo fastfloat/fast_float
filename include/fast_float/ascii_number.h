@@ -111,9 +111,13 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 
 #endif // FASTFLOAT_SSE2
 
-// dummy for compile
-//template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+// MSVC SFINAE is broken pre-VS2017
+#if defined(_MSC_VER) && _MSC_VER <= 1900
 template <typename UC>
+#else
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+#endif
+// dummy for compile
 uint64_t simd_read8_to_u64(UC const*) {
   return 0;
 }
@@ -215,8 +219,13 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 
 #endif // FASTFLOAT_HAS_SIMD
 
-// dummy for compile
+// MSVC SFINAE is broken pre-VS2017
+#if defined(_MSC_VER) && _MSC_VER <= 1900
+template <typename UC>
+#else
 template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+#endif
+// dummy for compile
 bool simd_parse_if_eight_digits_unrolled(UC const*, uint64_t&) {
   return 0;
 }
