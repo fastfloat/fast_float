@@ -217,8 +217,8 @@ struct value128 {
   constexpr value128() : low(0), high(0) {}
 };
 
-/* Helper C++11 constexpr generic implementation of leading_zeroes */
-fastfloat_really_inline constexpr
+/* Helper C++14 constexpr generic implementation of leading_zeroes */
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
 int leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
     if(input_num & uint64_t(0xffffffff00000000)) { input_num >>= 32; last_bit |= 32; }
     if(input_num & uint64_t(        0xffff0000)) { input_num >>= 16; last_bit |= 16; }
