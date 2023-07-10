@@ -217,18 +217,16 @@ struct value128 {
   constexpr value128() : low(0), high(0) {}
 };
 
-/* Helper C++11 constexpr generic implementation of leading_zeroes */
-fastfloat_really_inline constexpr
+/* Helper C++14 constexpr generic implementation of leading_zeroes */
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
 int leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
-  return (
-    ((input_num & uint64_t(0xffffffff00000000)) && (input_num >>= 32, last_bit |= 32)),
-    ((input_num & uint64_t(        0xffff0000)) && (input_num >>= 16, last_bit |= 16)),
-    ((input_num & uint64_t(            0xff00)) && (input_num >>=  8, last_bit |=  8)),
-    ((input_num & uint64_t(              0xf0)) && (input_num >>=  4, last_bit |=  4)),
-    ((input_num & uint64_t(               0xc)) && (input_num >>=  2, last_bit |=  2)),
-    ((input_num & uint64_t(               0x2)) && (input_num >>=  1, last_bit |=  1)),
-    63 - last_bit
-  );
+    if(input_num & uint64_t(0xffffffff00000000)) { input_num >>= 32; last_bit |= 32; }
+    if(input_num & uint64_t(        0xffff0000)) { input_num >>= 16; last_bit |= 16; }
+    if(input_num & uint64_t(            0xff00)) { input_num >>=  8; last_bit |=  8; }
+    if(input_num & uint64_t(              0xf0)) { input_num >>=  4; last_bit |=  4; }
+    if(input_num & uint64_t(               0xc)) { input_num >>=  2; last_bit |=  2; }
+    if(input_num & uint64_t(               0x2)) { input_num >>=  1; last_bit |=  1; }
+    return 63 - last_bit;
 }
 
 /* result might be undefined when input_num is zero */
