@@ -128,7 +128,8 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   // is easily predicted. Which is best is data specific.
   int upperbit = int(product.high >> 63);
 
-  answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
+  int shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
+  answer.mantissa = product.high >> shift;
 
   answer.power2 = int32_t(detail::power(int32_t(q)) + upperbit - lz - binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal?
@@ -159,15 +160,8 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   // usually, we round *up*, but if we fall right in between and and we have an
   // even basis, we need to round down
   // We are only concerned with the cases where 5**q fits in single 64-bit word.
-  if ((product.low <= 1) &&  (q >= binary::min_exponent_round_to_even()) && (q <= binary::max_exponent_round_to_even()) &&
-      ((answer.mantissa & 3) == 1) ) { // we may fall between two floats!
-    // To be in-between two floats we need that in doing
-    //   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
-    // ... we dropped out only zeroes. But if this happened, then we can go back!!!
-    if((answer.mantissa  << (upperbit + 64 - binary::mantissa_explicit_bits() - 3)) ==  product.high) {
-      answer.mantissa &= ~uint64_t(1);          // flip it so that we do not round up
-    }
-  }
+  uint64_t mask = (4ULL << shift) - 1;
+  answer.mantissa ^= (product.low == 0) & ((product.high & mask) == (1ULL << shift));
 
   answer.mantissa += (answer.mantissa & 1); // round up
   answer.mantissa >>= 1;
