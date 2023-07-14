@@ -58,6 +58,17 @@ namespace detail {
   constexpr fastfloat_really_inline int32_t power(int32_t q)  noexcept  {
     return (((152170 + 65536) * q) >> 16) + 63;
   }
+
+/**
+ * /!\ If the value is right in the middle of two float,
+ *     we must round to even!
+ * We detect such occurence when m ends with 01 and then
+ * we have a continuous streak of 0s.
+ */
+  constexpr fastfloat_really_inline bool shouldRoundUp(uint64_t product, int shift) noexcept {
+    uint64_t mantissa = product >> shift;
+    return ((mantissa << shift) != product) | ((mantissa & 3) == 3);
+  }
 } // namespace detail
 
 // create an adjusted mantissa, biased by the invalid power2
@@ -127,8 +138,8 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
   // but in practice, we can win big with the compute_product_approximation if its additional branch
   // is easily predicted. Which is best is data specific.
   int upperbit = int(product.high >> 63);
-
-  answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
+  int shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
+  answer.mantissa = product.high >> shift;
 
   answer.power2 = int32_t(detail::power(int32_t(q)) + upperbit - lz - binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal?
@@ -156,20 +167,12 @@ adjusted_mantissa compute_float(int64_t q, uint64_t w)  noexcept  {
     return answer;
   }
 
-  // usually, we round *up*, but if we fall right in between and and we have an
-  // even basis, we need to round down
-  // We are only concerned with the cases where 5**q fits in single 64-bit word.
-  if ((product.low <= 1) &&  (q >= binary::min_exponent_round_to_even()) && (q <= binary::max_exponent_round_to_even()) &&
-      ((answer.mantissa & 3) == 1) ) { // we may fall between two floats!
-    // To be in-between two floats we need that in doing
-    //   answer.mantissa = product.high >> (upperbit + 64 - binary::mantissa_explicit_bits() - 3);
-    // ... we dropped out only zeroes. But if this happened, then we can go back!!!
-    if((answer.mantissa  << (upperbit + 64 - binary::mantissa_explicit_bits() - 3)) ==  product.high) {
-      answer.mantissa &= ~uint64_t(1);          // flip it so that we do not round up
-    }
+  // Usually, we round *up*, but if we fall right in between and and we have an
+  // even basis, we need to round to even.
+  if (product.low != 0 || detail::shouldRoundUp(product.high, shift)) {
+    answer.mantissa += 1;
   }
 
-  answer.mantissa += (answer.mantissa & 1); // round up
   answer.mantissa >>= 1;
   if (answer.mantissa >= (uint64_t(2) << binary::mantissa_explicit_bits())) {
     answer.mantissa = (uint64_t(1) << binary::mantissa_explicit_bits());
