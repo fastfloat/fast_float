@@ -328,9 +328,17 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
-  if ((fmt & chars_format::scientific) && (p != pend) && ((UC('e') == *p) || (UC('E') == *p))) {
+  if ( ((fmt & chars_format::scientific) &&
+        (p != pend) &&
+        ((UC('e') == *p) || (UC('E') == *p)))
+       ||
+       ((fmt & chars_format::fortran) &&
+        (p != pend) &&
+        ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) || (UC('D') == *p)))) {
     UC const * location_of_e = p;
-    ++p;
+    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) || (UC('D') == *p)) {
+      ++p;
+    }
     bool neg_exp = false;
     if ((p != pend) && (UC('-') == *p)) {
       neg_exp = true;

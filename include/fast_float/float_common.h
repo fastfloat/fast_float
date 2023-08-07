@@ -16,6 +16,7 @@ enum chars_format {
   scientific = 1 << 0,
   fixed = 1 << 2,
   hex = 1 << 3,
+  fortran = 1 << 4 | fixed | scientific,
   general = fixed | scientific
 };
 
