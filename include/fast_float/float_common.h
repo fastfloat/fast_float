@@ -19,6 +19,11 @@ enum chars_format {
   general = fixed | scientific
 };
 
+enum class parse_rules {
+  std,
+  json
+};
+
 template <typename UC>
 struct from_chars_result_t {
   UC const* ptr;
@@ -29,13 +34,15 @@ using from_chars_result = from_chars_result_t<char>;
 template <typename UC>
 struct parse_options_t {
   constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
-    UC dot = UC('.'))
-    : format(fmt), decimal_point(dot) {}
+    UC dot = UC('.'), parse_rules prules = parse_rules::std)
+    : format(fmt), decimal_point(dot), rules(prules) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
   UC decimal_point;
+  /** Rules to use for parsing */
+  parse_rules rules;
 };
 using parse_options = parse_options_t<char>;
 

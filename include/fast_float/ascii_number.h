@@ -273,6 +273,7 @@ template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, parse_options_t<UC> options) noexcept {
   chars_format const fmt = options.format;
+  parse_rules const rules = options.rules;
   UC const decimal_point = options.decimal_point;
 
   parsed_number_string_t<UC> answer;
@@ -288,8 +289,15 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     if (p == pend) {
       return answer;
     }
-    if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
-      return answer;
+    if (rules == parse_rules::json) {
+      if (!is_integer(*p)) { // a sign must be followed by an integer
+        return answer;
+      }    
+    } else {
+      FASTFLOAT_DEBUG_ASSERT(rules == parse_rules::std);
+      if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
+        return answer;
+      }
     }
   }
   UC const * const start_digits = p;
@@ -306,8 +314,14 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<const UC>(start_digits, size_t(digit_count));
+  // disallow leading zeros
+  if (rules == parse_rules::json && start_digits[0] == UC('0') && digit_count > 1) {
+    return answer;
+  }
+
   int64_t exponent = 0;
-  if ((p != pend) && (*p == decimal_point)) {
+  const bool has_decimal_point = (p != pend) && (*p == decimal_point);
+  if (has_decimal_point) {
     ++p;
     UC const * before = p;
     // can occur at most twice without overflowing, but let it occur more, since
@@ -325,6 +339,10 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   }
   // we must have encountered at least one integer!
   if (digit_count == 0) {
+    return answer;
+  }
+  // or at least two if a decimal point exists, with json rules
+  else if (rules == parse_rules::json && has_decimal_point && digit_count == 1) {
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
