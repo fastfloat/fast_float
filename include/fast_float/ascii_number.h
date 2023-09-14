@@ -312,9 +312,11 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<const UC>(start_digits, size_t(digit_count));
-  // disallow leading zeros
-  if (fmt == chars_format::json && start_digits[0] == UC('0') && digit_count > 1) {
-    return answer;
+  if (fmt == chars_format::json) {
+    // at least 1 digit in integer part, without leading zeros
+    if (digit_count == 0 || (start_digits[0] == UC('0') && digit_count > 1)) {
+      return answer;
+    }
   }
 
   int64_t exponent = 0;
@@ -335,12 +337,13 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     answer.fraction = span<const UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
-  // we must have encountered at least one integer!
-  if (digit_count == 0) {
-    return answer;
-  }
-  // or at least two if a decimal point exists, with json rules
-  else if (fmt == chars_format::json && has_decimal_point && digit_count == 1) {
+  if (fmt == chars_format::json) {
+    // at least 1 digit in fractional part
+    if (has_decimal_point && exponent == 0) {
+      return answer;
+    }
+  } 
+  else if (digit_count == 0) { // we must have encountered at least one integer!
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
