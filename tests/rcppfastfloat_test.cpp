@@ -34,7 +34,9 @@ bool eddelbuettel() {
                                      "NaN",
                                      "",
                                      "-Inf",
-                                     "+2.2"};
+                                     "+2.2",
+                                     "1d+4",
+                                     "1d-1"};
   std::vector<std::pair<bool, double>> expected_results = {
       {true, std::numeric_limits<double>::infinity()},
       {true, 3.16227766016838},
@@ -60,7 +62,9 @@ bool eddelbuettel() {
       {true, std::numeric_limits<double>::quiet_NaN()},
       {false, -1},
       {true, -std::numeric_limits<double>::infinity()},
-      {true, 2.2}};
+      {true, 2.2},
+      {false, -1},
+      {false, -1}};
   for (size_t i = 0; i < inputs.size(); i++) {
     std::string &input = inputs[i];
     std::pair<bool, double> expected = expected_results[i];
