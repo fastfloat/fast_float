@@ -280,7 +280,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   answer.too_many_digits = false;
   answer.negative = (*p == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == UC('-')) || (*p == UC('+'))) {
+  if ((*p == UC('-')) || (fmt != chars_format::json && *p == UC('+'))) {
 #else
   if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
