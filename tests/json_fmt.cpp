@@ -12,7 +12,7 @@ int main()
 {
   const std::vector<double> expected{ -0.2, 0.02, 0.002, 1., 0. };
   const std::vector<std::string> accept{ "-0.2", "0.02", "0.002", "1e+0000", "0e-2" };
-  const std::vector<std::string> reject{ "-.2", "00.02", "0.e+1", "00.e+1", ".25", "+0.25"};
+  const std::vector<std::string> reject{ "-.2", "00.02", "0.e+1", "00.e+1", ".25", "+0.25", "inf", "nan(snan)"};
   const auto fmt = fast_float::chars_format::json;
 
   for (std::size_t i = 0; i < accept.size(); ++i)

@@ -12,11 +12,14 @@
 
 namespace fast_float {
 
+#define FASTFLOAT_JSONFMT (1 << 5)
+
 enum chars_format {
   scientific = 1 << 0,
   fixed = 1 << 2,
   hex = 1 << 3,
-  json = 1 << 4 | fixed | scientific,
+  no_infnan = 1 << 4,
+  json = FASTFLOAT_JSONFMT | fixed | scientific | no_infnan,
   general = fixed | scientific
 };
 

@@ -280,7 +280,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   answer.too_many_digits = false;
   answer.negative = (*p == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == UC('-')) || (fmt != chars_format::json && *p == UC('+'))) {
+  if ((*p == UC('-')) || (!(fmt & FASTFLOAT_JSONFMT) && *p == UC('+'))) {
 #else
   if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
@@ -288,7 +288,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     if (p == pend) {
       return answer;
     }
-    if (fmt == chars_format::json) {
+    if (fmt & FASTFLOAT_JSONFMT) {
       if (!is_integer(*p)) { // a sign must be followed by an integer
         return answer;
       }    
@@ -312,7 +312,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<const UC>(start_digits, size_t(digit_count));
-  if (fmt == chars_format::json) {
+  if (fmt & FASTFLOAT_JSONFMT) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0 || (start_digits[0] == UC('0') && digit_count > 1)) {
       return answer;
@@ -337,7 +337,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     answer.fraction = span<const UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
-  if (fmt == chars_format::json) {
+  if (fmt & FASTFLOAT_JSONFMT) {
     // at least 1 digit in fractional part
     if (has_decimal_point && exponent == 0) {
       return answer;
