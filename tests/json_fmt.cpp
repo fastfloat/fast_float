@@ -8,6 +8,34 @@
 
 #include "fast_float/fast_float.h"
 
+int main_readme() {
+    const std::string input =  "+.1"; // not valid
+    double result;
+    fast_float::parse_options options{ fast_float::chars_format::json };
+    auto answer = fast_float::from_chars_advanced(input.data(), input.data()+input.size(), result, options);
+    if(answer.ec == std::errc()) { std::cerr << "should have failed\n"; return EXIT_FAILURE; }
+    return EXIT_SUCCESS;
+}
+
+
+int main_readme2() {
+    const std::string input =  "inf"; // not valid in JSON
+    double result;
+    fast_float::parse_options options{ fast_float::chars_format::json };
+    auto answer = fast_float::from_chars_advanced(input.data(), input.data()+input.size(), result, options);
+    if(answer.ec == std::errc()) { std::cerr << "should have failed\n"; return EXIT_FAILURE; }
+    return EXIT_SUCCESS;
+}
+
+int main_readme3() {
+    const std::string input =  "inf"; // not valid in JSON but we allow it with json_or_infnan
+    double result;
+    fast_float::parse_options options{ fast_float::chars_format::json_or_infnan };
+    auto answer = fast_float::from_chars_advanced(input.data(), input.data()+input.size(), result, options);
+    if(answer.ec != std::errc() || (!std::isinf(result))) { std::cerr << "should have parsed infinity\n"; return EXIT_FAILURE; }
+    return EXIT_SUCCESS;
+}
+
 int main()
 {
   const std::vector<double> expected{ -0.2, 0.02, 0.002, 1., 0., std::numeric_limits<double>::infinity() };
@@ -35,6 +63,9 @@ int main()
       return EXIT_FAILURE;
     }
   }
+
+  if(main_readme() != EXIT_SUCCESS) { return EXIT_FAILURE; }
+  if(main_readme2() != EXIT_SUCCESS) { return EXIT_FAILURE; }
 
   return EXIT_SUCCESS;
 }

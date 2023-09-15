@@ -13,14 +13,18 @@
 namespace fast_float {
 
 #define FASTFLOAT_JSONFMT (1 << 5)
+#define FASTFLOAT_FORTRANFMT (1 << 6)
 
 enum chars_format {
   scientific = 1 << 0,
   fixed = 1 << 2,
   hex = 1 << 3,
   no_infnan = 1 << 4,
+  // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
   json = FASTFLOAT_JSONFMT | fixed | scientific | no_infnan,
+  // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
   json_or_infnan = FASTFLOAT_JSONFMT | fixed | scientific,
+  fortran = FASTFLOAT_FORTRANFMT | fixed | scientific,
   general = fixed | scientific
 };
 
