@@ -280,7 +280,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   answer.too_many_digits = false;
   answer.negative = (*p == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == UC('-')) || (*p == UC('+'))) {
+  if ((*p == UC('-')) || (!(fmt & FASTFLOAT_JSONFMT) && *p == UC('+'))) {
 #else
   if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
@@ -288,8 +288,14 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     if (p == pend) {
       return answer;
     }
-    if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
-      return answer;
+    if (fmt & FASTFLOAT_JSONFMT) {
+      if (!is_integer(*p)) { // a sign must be followed by an integer
+        return answer;
+      }    
+    } else {
+      if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
+        return answer;
+      }
     }
   }
   UC const * const start_digits = p;
@@ -306,8 +312,16 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   UC const * const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<const UC>(start_digits, size_t(digit_count));
+  if (fmt & FASTFLOAT_JSONFMT) {
+    // at least 1 digit in integer part, without leading zeros
+    if (digit_count == 0 || (start_digits[0] == UC('0') && digit_count > 1)) {
+      return answer;
+    }
+  }
+
   int64_t exponent = 0;
-  if ((p != pend) && (*p == decimal_point)) {
+  const bool has_decimal_point = (p != pend) && (*p == decimal_point);
+  if (has_decimal_point) {
     ++p;
     UC const * before = p;
     // can occur at most twice without overflowing, but let it occur more, since
@@ -323,8 +337,13 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     answer.fraction = span<const UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
-  // we must have encountered at least one integer!
-  if (digit_count == 0) {
+  if (fmt & FASTFLOAT_JSONFMT) {
+    // at least 1 digit in fractional part
+    if (has_decimal_point && exponent == 0) {
+      return answer;
+    }
+  } 
+  else if (digit_count == 0) { // we must have encountered at least one integer!
     return answer;
   }
   int64_t exp_number = 0;            // explicit exponential part
