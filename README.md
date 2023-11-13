@@ -331,7 +331,7 @@ the command line help.
 
 You may directly download automatically generated single-header files:
 
-https://github.com/fastfloat/fast_float/releases/download/v5.2.0/fast_float.h
+https://github.com/fastfloat/fast_float/releases/download/v5.3.0/fast_float.h
 
 ## Credit
 
