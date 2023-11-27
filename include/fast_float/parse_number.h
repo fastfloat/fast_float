@@ -202,7 +202,7 @@ from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
       // We do not have that fegetround() == FE_TONEAREST.
       // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's proposal
       if (pns.exponent >= 0 && pns.mantissa <=binary_format<T>::max_mantissa_fast_path(pns.exponent)) {
-#if defined(__clang__)
+#if defined(__clang__) || defined(FASTFLOAT_32BIT)
         // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
         if(pns.mantissa == 0) {
           value = pns.negative ? -0. : 0.;
