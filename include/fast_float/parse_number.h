@@ -205,7 +205,7 @@ from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
 #if defined(__clang__) || defined(FASTFLOAT_32BIT)
         // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
         if(pns.mantissa == 0) {
-          value = pns.negative ? -0. : 0.;
+          value = pns.negative ? T(-0.) : T(0.);
           return answer;
         }
 #endif
