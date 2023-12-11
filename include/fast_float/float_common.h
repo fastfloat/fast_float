@@ -747,7 +747,7 @@ fastfloat_really_inline
 constexpr int max_digits_u64(int base) { return int_luts<>::maxdigits_u64[base - 2]; }
 
 // If a u64 is exactly max_digits_u64() in length, this is
-// the minimum value below which it has definitely overflowed. 
+// the value below which it has definitely overflowed. 
 fastfloat_really_inline
 constexpr uint64_t min_safe_u64(int base) { return int_luts<>::min_safe_u64[base - 2]; }
 

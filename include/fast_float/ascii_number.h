@@ -460,6 +460,11 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
     ++p;
   }
 
+  // skip leading zeros
+  while (p != pend && *p == UC('0')) {
+    ++p;
+  }
+
   UC const* const start_digits = p;
 
   uint64_t i = 0;
