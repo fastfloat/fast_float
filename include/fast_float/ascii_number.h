@@ -445,11 +445,11 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, int base)
 {
   from_chars_result_t<UC> answer;
-  answer.ec = std::errc::invalid_argument;
-  answer.ptr = p;
 
   bool negative = (*p == UC('-'));
   if (!std::is_signed<T>::value && negative) {
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = p;
     return answer;
   }
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
@@ -473,14 +473,16 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
     if (digit > base) {
       break;
     }
-    i = base * i + digit; // might overflow, check this later
+    i = uint64_t(base) * i + digit; // might overflow, check this later
     p++; 
   }
   
   size_t digit_count = size_t(p - start_digits);
+  answer.ec = std::errc::result_out_of_range;
+  answer.ptr = p;
 
   // check u64 overflow
-  constexpr int max_digits = max_digits_u64(base);
+  size_t max_digits = max_digits_u64(base);
   if (digit_count == 0 || digit_count > max_digits) {
     return answer; 
   }
@@ -495,8 +497,19 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
       return answer;
     }
   }
-  
-  return negative ? (~i + 1) : i;
+
+  if (negative) {
+    // this weird workaround is required because:
+    // - converting unsigned to signed when its value is greater than signed max is UB pre-C++23.
+    // - reinterpret_cast<T>(~i + 1) would have worked, but it is not constexpr
+    // this should be optimized away.
+    value = -std::numeric_limits<T>::max() - 
+      static_cast<T>(i - std::numeric_limits<T>::max());
+  }
+  else value = T(i);
+
+  answer.ec = std::errc();
+  return answer;
 }
 
 } // namespace fast_float

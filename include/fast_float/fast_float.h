@@ -40,6 +40,7 @@ from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
 * from_chars for integer types.
 */
 template <typename T, typename UC = char, typename = FASTFLOAT_ENABLE_IF(!is_supported_float_type<T>())>
+FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> from_chars(UC const * first, UC const * last, T& value, int base = 10) noexcept;
 
 } // namespace fast_float
