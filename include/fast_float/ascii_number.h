@@ -445,11 +445,13 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, int base)
 {
   from_chars_result_t<UC> answer;
+  
+  UC const* const first = p;
 
   bool negative = (*p == UC('-'));
   if (!std::is_signed<T>::value && negative) {
     answer.ec = std::errc::invalid_argument;
-    answer.ptr = p;
+    answer.ptr = first;
     return answer;
   }
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
@@ -478,22 +480,31 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   }
   
   size_t digit_count = size_t(p - start_digits);
-  answer.ec = std::errc::result_out_of_range;
+
+  if (digit_count == 0) {
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = first;
+    return answer; 
+  }
+
   answer.ptr = p;
 
   // check u64 overflow
   size_t max_digits = max_digits_u64(base);
-  if (digit_count == 0 || digit_count > max_digits) {
-    return answer; 
+  if (digit_count > max_digits) {
+    answer.ec = std::errc::result_out_of_range;
+    return answer;
   }
   // this check can be eliminated for all other types, but they will all require a max_digits(base) equivalent
-  if (digit_count == max_digits && i < min_safe_u64(base)) { 
+  if (digit_count == max_digits && i < min_safe_u64(base)) {
+    answer.ec = std::errc::result_out_of_range;
     return answer;
   }
 
   // check other types overflow
   if (!std::is_same<T, uint64_t>::value) {
     if (i > uint64_t(std::numeric_limits<T>::max()) + uint64_t(negative)) {
+      answer.ec = std::errc::result_out_of_range;
       return answer;
     }
   }
