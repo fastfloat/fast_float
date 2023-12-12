@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>
+#include <limits>
 #include <type_traits>
 
 #include "float_common.h"
@@ -115,7 +116,7 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 #if defined(_MSC_VER) && _MSC_VER <= 1900
 template <typename UC>
 #else
-template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>()) = 0>
 #endif
 // dummy for compile
 uint64_t simd_read8_to_u64(UC const*) {
@@ -223,7 +224,7 @@ FASTFLOAT_SIMD_RESTORE_WARNINGS
 #if defined(_MSC_VER) && _MSC_VER <= 1900
 template <typename UC>
 #else
-template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>())>
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>()) = 0>
 #endif
 // dummy for compile
 bool simd_parse_if_eight_digits_unrolled(UC const*, uint64_t&) {
@@ -231,7 +232,7 @@ bool simd_parse_if_eight_digits_unrolled(UC const*, uint64_t&) {
 }
 
 
-template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value)>
+template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
 void loop_parse_if_eight_digits(const UC*& p, const UC* const pend, uint64_t& i) {
   if (!has_simd_opt<UC>()) {
@@ -436,6 +437,89 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   }
   answer.exponent = exponent;
   answer.mantissa = i;
+  return answer;
+}
+
+template <typename T, typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, int base)
+{
+  from_chars_result_t<UC> answer;
+  
+  UC const* const first = p;
+
+  bool negative = (*p == UC('-'));
+  if (!std::is_signed<T>::value && negative) {
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = first;
+    return answer;
+  }
+#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
+  if ((*p == UC('-')) || (*p == UC('+'))) {
+#else
+  if (*p == UC('-')) {
+#endif
+    ++p;
+  }
+
+  // skip leading zeros
+  while (p != pend && *p == UC('0')) {
+    ++p;
+  }
+
+  UC const* const start_digits = p;
+
+  uint64_t i = 0;
+  while (p != pend) {
+    uint8_t digit = ch_to_digit(*p);
+    if (digit > base) {
+      break;
+    }
+    i = uint64_t(base) * i + digit; // might overflow, check this later
+    p++; 
+  }
+  
+  size_t digit_count = size_t(p - start_digits);
+
+  if (digit_count == 0) {
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = first;
+    return answer; 
+  }
+
+  answer.ptr = p;
+
+  // check u64 overflow
+  size_t max_digits = max_digits_u64(base);
+  if (digit_count > max_digits) {
+    answer.ec = std::errc::result_out_of_range;
+    return answer;
+  }
+  // this check can be eliminated for all other types, but they will all require a max_digits(base) equivalent
+  if (digit_count == max_digits && i < min_safe_u64(base)) {
+    answer.ec = std::errc::result_out_of_range;
+    return answer;
+  }
+
+  // check other types overflow
+  if (!std::is_same<T, uint64_t>::value) {
+    if (i > uint64_t(std::numeric_limits<T>::max()) + uint64_t(negative)) {
+      answer.ec = std::errc::result_out_of_range;
+      return answer;
+    }
+  }
+
+  if (negative) {
+    // this weird workaround is required because:
+    // - converting unsigned to signed when its value is greater than signed max is UB pre-C++23.
+    // - reinterpret_cast<T>(~i + 1) would have worked, but it is not constexpr
+    // this should be optimized away.
+    value = -std::numeric_limits<T>::max() - 
+      static_cast<T>(i - std::numeric_limits<T>::max());
+  }
+  else value = T(i);
+
+  answer.ec = std::errc();
   return answer;
 }
 
