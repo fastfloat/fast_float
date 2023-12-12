@@ -226,66 +226,66 @@ int main()
   // int pointer test #2 (string behind numbers)
   const std::string int_pointer_test_2 = "1001 with text";
 
-  const auto& f = int_pointer_test_2;
-  int result;
-  auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
-  if (strcmp(answer.ptr, " with text") != 0) {
-    std::cerr << "ptr of result "  << std::quoted(f) << " did not match with expected ptr: " << std::quoted(" with text") << std::endl;
+  const auto& f2 = int_pointer_test_2;
+  int result2;
+  auto answer2 = fast_float::from_chars(f2.data(), f2.data() + f2.size(), result2);
+  if (strcmp(answer2.ptr, " with text") != 0) {
+    std::cerr << "ptr of result "  << std::quoted(f2) << " did not match with expected ptr: " << std::quoted(" with text") << std::endl;
     return EXIT_FAILURE;
   }
 
   // int pointer test #3 (string with newline behind numbers)
   const std::string int_pointer_test_3 = "1001 with text\n";
 
-  const auto& f = int_pointer_test_3;
-  int result;
-  auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
-  if (strcmp(answer.ptr, " with text\n") != 0) {
-    std::cerr << "ptr of result "  << std::quoted(f) << " did not match with expected ptr: " << std::quoted(" with text") << std::endl;
+  const auto& f3 = int_pointer_test_3;
+  int result3;
+  auto answer3 = fast_float::from_chars(f3.data(), f3.data() + f3.size(), result3);
+  if (strcmp(answer3.ptr, " with text\n") != 0) {
+    std::cerr << "ptr of result "  << std::quoted(f3) << " did not match with expected ptr: " << std::quoted(" with text") << std::endl;
     return EXIT_FAILURE;
   }
 
   // int pointer test #4 (float)
   const std::string int_pointer_test_4 = "9.999";
 
-  const auto& f = int_pointer_test_4;
-  int result;
-  auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
-  if (strcmp(answer.ptr, ".999") != 0) {
-    std::cerr << "ptr of result "  << std::quoted(f) << " did not match with expected ptr: " << std::quoted(".999") << std::endl;
+  const auto& f4 = int_pointer_test_4;
+  int result4;
+  auto answer4 = fast_float::from_chars(f4.data(), f4.data() + f4.size(), result4);
+  if (strcmp(answer4.ptr, ".999") != 0) {
+    std::cerr << "ptr of result "  << std::quoted(f4) << " did not match with expected ptr: " << std::quoted(".999") << std::endl;
     return EXIT_FAILURE;
   }
 
   // int pointer test #5 (invalid int)
   const std::string int_pointer_test_5 = "+50";
 
-  const auto& f = int_pointer_test_5;
-  int result;
-  auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
-  if (strcmp(answer.ptr, "+50") != 0) {
-    std::cerr << "ptr of result "  << std::quoted(f) << " did not match with expected ptr: " << std::quoted("+50") << std::endl;
+  const auto& f5 = int_pointer_test_5;
+  int result5;
+  auto answer5 = fast_float::from_chars(f5.data(), f5.data() + f5.size(), result5);
+  if (strcmp(answer5.ptr, "+50") != 0) {
+    std::cerr << "ptr of result "  << std::quoted(f5) << " did not match with expected ptr: " << std::quoted("+50") << std::endl;
     return EXIT_FAILURE;
   }
 
-  // unsigned pointer test #1 (string behind numbers)
+  // unsigned pointer test #2 (string behind numbers)
   const std::string unsigned_pointer_test_1 = "1001 with text";
 
-  const auto& f = unsigned_pointer_test_1;
-  unsigned result;
-  auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
-  if (strcmp(answer.ptr, " with text") != 0) {
-    std::cerr << "ptr of result "  << std::quoted(f) << " did not match with expected ptr: " << std::quoted(" with text") << std::endl;
+  const auto& f6 = unsigned_pointer_test_1;
+  unsigned result6;
+  auto answer6 = fast_float::from_chars(f6.data(), f6.data() + f6.size(), result6);
+  if (strcmp(answer6.ptr, " with text") != 0) {
+    std::cerr << "ptr of result "  << std::quoted(f6) << " did not match with expected ptr: " << std::quoted(" with text") << std::endl;
     return EXIT_FAILURE;
   }
 
   // unsigned pointer test #2 (invalid unsigned)
   const std::string unsigned_pointer_test_2 = "-50";
 
-  const auto& f = unsigned_pointer_test_2;
-  unsigned result;
-  auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
-  if (strcmp(answer.ptr, "-50") != 0) {
-    std::cerr << "ptr of result "  << std::quoted(f) << " did not match with expected ptr: " << std::quoted("-50") << std::endl;
+  const auto& f7 = unsigned_pointer_test_2;
+  unsigned result7;
+  auto answer7 = fast_float::from_chars(f7.data(), f7.data() + f7.size(), result7);
+  if (strcmp(answer7.ptr, "-50") != 0) {
+    std::cerr << "ptr of result "  << std::quoted(f7) << " did not match with expected ptr: " << std::quoted("-50") << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -492,13 +492,13 @@ int main()
                                                               "-2PIJMIKEXRXP9",
                                                               "1Y2P0IJ32E8E8",
                                                               "-1Y2P0IJ32E8E9" };
-  int base = 2;
+  int base_int = 2;
   int counter = 0;
   for (std::size_t i = 0; i < int_out_of_range_base_test.size(); ++i)
   {
     const auto& f = int_out_of_range_base_test[i];
     int64_t result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base);
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base_int);
     if (answer.ec != std::errc::result_out_of_range) {
       std::cerr << "expected error for should be 'result_out_of_range': " << std::quoted(f) << std::endl;
       return EXIT_FAILURE;
@@ -507,7 +507,7 @@ int main()
       ++counter;    
     }
     else {
-      ++base;
+      ++base_int;
       ++counter;
     }
   }
@@ -548,17 +548,17 @@ int main()
                                                                    "7ORP63SH4DPHI",
                                                                    "5G24A25TWKWFG",
                                                                    "3W5E11264SGSG" };
-  int base = 2;
+  int base_unsigned = 2;
   for (std::size_t i = 0; i < unsigned_out_of_range_base_test.size(); ++i)
   {
     const auto& f = unsigned_out_of_range_base_test[i];
     uint64_t result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base);
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base_unsigned);
     if (answer.ec != std::errc::result_out_of_range) {
       std::cerr << "expected error for should be 'result_out_of_range': " << std::quoted(f) << std::endl;
       return EXIT_FAILURE;
     }
-    ++base;
+    ++base_unsigned;
   }
 
   return EXIT_SUCCESS;
