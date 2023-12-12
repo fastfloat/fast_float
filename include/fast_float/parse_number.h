@@ -137,7 +137,7 @@ template<typename T, typename UC>
 FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
-#ifdef __STDCPP_FLOAT32_T__
+#ifdef defined(__STDCPP_FLOAT32_T__)
   // if std::float32_t is defined, then we are in C++23 mode; macro set for float32; 
   // set value to float due to equivalence between float and float32_t
   if(std::is_same<T, std::float32_t>::value){
@@ -147,7 +147,7 @@ from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
     return ret;
   }
 #endif
-#ifdef __STDCPP_FLOAT64_T__
+#ifdef defined(__STDCPP_FLOAT64_T__)
   // if std::float64_t is defined, then we are in C++23 mode; macro set for float64;
   // set value as double due to equivalence between double and float64_t
   if(std::is_same<T, std::float64_t>::value){
