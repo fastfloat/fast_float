@@ -8,7 +8,7 @@
 #endif
 
 // Testing for https://wg21.link/N3652, adopted in C++14
-#if __cpp_constexpr >= 201304
+#if __cpp_constexpr >= 201304`
 #define FASTFLOAT_CONSTEXPR14 constexpr
 #else
 #define FASTFLOAT_CONSTEXPR14

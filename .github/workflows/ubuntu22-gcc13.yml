@@ -14,10 +14,10 @@ jobs:
           CXX=g++-13 CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure
-      - name: Use cmake CXX20
+      - name: Use cmake CXX23
         run: |
           mkdir build20 &&
           cd build20 &&
-          CXX=g++-13 CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DFASTFLOAT_CXX_STANDARD=20 -DFASTFLOAT_TEST=ON  ..  &&
+          CXX=g++-13 CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DFASTFLOAT_CXX_STANDARD=23 -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure
