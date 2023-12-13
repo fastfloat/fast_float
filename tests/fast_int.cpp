@@ -22,6 +22,7 @@ octal tests - numbers are converted from octal to decimal
 hex tests - numbers are converted from hex to decimal (Note: 0x and 0X are considered invalid)
 invalid base tests - any base not within 2-36 is invalid
 out of range base tests - numbers exceeding int/unsigned bit size after converted from base (Note: only 64 bit int and unsigned are tested)
+within range base tests - max/min numbers are still within int/unsigned bit size after converted from base (Note: only 64 bit int and unsigned are tested)
 */
 
 int main()
@@ -568,6 +569,146 @@ int main()
       return EXIT_FAILURE;
     }
     ++base_unsigned;
+  }
+
+  // just within range base test (64 bit)
+  const std::vector<std::string> int_within_range_base_test { "111111111111111111111111111111111111111111111111111111111111111",
+                                                              "-1000000000000000000000000000000000000000000000000000000000000000",
+                                                              "2021110011022210012102010021220101220221",
+                                                              "-2021110011022210012102010021220101220222",
+                                                              "13333333333333333333333333333333",
+                                                              "-20000000000000000000000000000000",
+                                                              "1104332401304422434310311212",
+                                                              "-1104332401304422434310311213",
+                                                              "1540241003031030222122211",
+                                                              "-1540241003031030222122212"
+                                                              "22341010611245052052300",
+                                                              "-22341010611245052052301"
+                                                              "777777777777777777777",
+                                                              "-1000000000000000000000",
+                                                              "67404283172107811827",
+                                                              "-67404283172107811828",
+                                                              "9223372036854775807",
+                                                              "-9223372036854775808",
+                                                              "1728002635214590697",
+                                                              "-1728002635214590698",
+                                                              "41A792678515120367",
+                                                              "-41A792678515120368",
+                                                              "10B269549075433C37",
+                                                              "-10B269549075433C38",
+                                                              "4340724C6C71DC7A7",
+                                                              "-4340724C6C71DC7A8",
+                                                              "160E2AD3246366807",
+                                                              "-160E2AD3246366808",
+                                                              "7FFFFFFFFFFFFFFF",
+                                                              "-8000000000000000",
+                                                              "33D3D8307B214008",
+                                                              "-33D3D8307B214009",
+                                                              "16AGH595DF825FA7",
+                                                              "-16AGH595DF825FA8",
+                                                              "BA643DCI0FFEEHH",
+                                                              "-BA643DCI0FFEEHI"
+                                                              "5CBFJIA3FH26JA7",
+                                                              "-5CBFJIA3FH26JA8",
+                                                              "2HEICIIIE82DH97",
+                                                              "-2HEICIIIE82DH98",
+                                                              "1ADAIBB21DCKFA7",
+                                                              "-1ADAIBB21DCKFA8",
+                                                              "I6K448CF4192C2",
+                                                              "-I6K448CF4192C3",
+                                                              "ACD772JNC9L0L7",
+                                                              "-ACD772JNC9L0L8",
+                                                              "64IE1FOCNN5G77",
+                                                              "-64IE1FOCNN5G78",
+                                                              "3IGOECJBMCA687",
+                                                              "-3IGOECJBMCA688",
+                                                              "27C48L5B37OAOP",
+                                                              "-27C48L5B37OAOQ",
+                                                              "1BK39F3AH3DMQ7",
+                                                              "-1BK39F3AH3DMQ8",
+                                                              "Q1SE8F0M04ISB",
+                                                              "-Q1SE8F0M04ISC",
+                                                              "HAJPPBC1FC207",
+                                                              "-HAJPPBC1FC208",
+                                                              "BM03I95HIA437",
+                                                              "-BM03I95HIA438",
+                                                              "7VVVVVVVVVVVV",
+                                                              "-8000000000000"
+                                                              "5HG4CK9JD4U37",
+                                                              "-5HG4CK9JD4U38",
+                                                              "3TDTK1V8J6TPP",
+                                                              "-3TDTK1V8J6TPQ",
+                                                              "2PIJMIKEXRXP7",
+                                                              "-2PIJMIKEXRXP8",
+                                                              "1Y2P0IJ32E8E7",
+                                                              "-1Y2P0IJ32E8E8" };
+  int base_int2 = 2;
+  int counter2 = 0;
+  for (std::size_t i = 0; i < int_within_range_base_test.size(); ++i)
+  {
+    const auto& f = int_within_range_base_test[i];
+    int64_t result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base_int2);
+    if (answer.ec != std::errc()) {
+      std::cerr << "converting " << std::quoted(f) << " to int failed (most likely out of range)" << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (!(counter2)) {
+      ++counter2;    
+    }
+    else {
+      ++base_int2;
+      ++counter2;
+    }
+  }
+
+  // unsigned within range base test (64 bit)
+  const std::vector<std::string> unsigned_within_range_base_test { "1111111111111111111111111111111111111111111111111111111111111111",
+                                                                   "11112220022122120101211020120210210211220",
+                                                                   "33333333333333333333333333333333",
+                                                                   "2214220303114400424121122430",
+                                                                   "3520522010102100444244423",
+                                                                   "45012021522523134134601",
+                                                                   "1777777777777777777777",
+                                                                   "145808576354216723756",
+                                                                   "18446744073709551615",
+                                                                   "335500516A429071284",
+                                                                   "839365134A2A240713",
+                                                                   "219505A9511A867B72",
+                                                                   "8681049ADB03DB171",
+                                                                   "2C1D56B648C6CD110",
+                                                                   "FFFFFFFFFFFFFFFF",
+                                                                   "67979G60F5428010",
+                                                                   "2D3FGB0B9CG4BD2F",
+                                                                   "141C8786H1CCAAGG",
+                                                                   "B53BJH07BE4DJ0F",
+                                                                   "5E8G4GGG7G56DIF",
+                                                                   "2L4LF104353J8KF",
+                                                                   "1DDH88H2782I515",
+                                                                   "L12EE5FN0JI1IF",
+                                                                   "C9C336O0MLB7EF",
+                                                                   "7B7N2PCNIOKCGF",
+                                                                   "4EO8HFAM6FLLMO",
+                                                                   "2NC6J26L66RHOF",
+                                                                   "1N3RSH11F098RO",
+                                                                   "14L9LKMO30O40F",
+                                                                   "ND075IB45K86F",
+                                                                   "FVVVVVVVVVVVV",
+                                                                   "B1W8P7J5Q9R6F",
+                                                                   "7ORP63SH4DPHH",
+                                                                   "5G24A25TWKWFF",
+                                                                   "3W5E11264SGSF" };
+  int base_unsigned2 = 2;
+  for (std::size_t i = 0; i < unsigned_within_range_base_test.size(); ++i)
+  {
+    const auto& f = unsigned_within_range_base_test[i];
+    uint64_t result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base_unsigned2);
+    if (answer.ec != std::errc()) {
+      std::cerr << "converting " << std::quoted(f) << " to unsigned failed (most likely out of range)" << std::endl;
+      return EXIT_FAILURE;
+    }
+    ++base_unsigned2;
   }
 
   return EXIT_SUCCESS;
