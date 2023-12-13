@@ -385,7 +385,7 @@ int main()
   }
 
   // hex test
-  const std::vector<int> base_hex_test_expected { 0, 1, 15, 16, 0, 16};
+  const std::vector<int> base_hex_test_expected { 0, 1, 15, 31, 0, 16};
   const std::vector<std::string> base_hex_test { "0", "1", "F", "01f", "0x11", "10X11" };
 
   for (std::size_t i = 0; i < base_hex_test.size(); ++i)
@@ -441,9 +441,9 @@ int main()
                                                               "1104332401304422434310311213",
                                                               "-1104332401304422434310311214",
                                                               "1540241003031030222122212",
-                                                              "-1540241003031030222122213"
+                                                              "-1540241003031030222122213",
                                                               "22341010611245052052301",
-                                                              "-22341010611245052052302"
+                                                              "-22341010611245052052302",
                                                               "1000000000000000000000",
                                                               "-1000000000000000000001",
                                                               "67404283172107811828",
@@ -467,7 +467,7 @@ int main()
                                                               "16AGH595DF825FA8",
                                                               "-16AGH595DF825FA9",
                                                               "BA643DCI0FFEEHI",
-                                                              "-BA643DCI0FFEEI0"
+                                                              "-BA643DCI0FFEEI0",
                                                               "5CBFJIA3FH26JA8",
                                                               "-5CBFJIA3FH26JA9",
                                                               "2HEICIIIE82DH98",
@@ -493,7 +493,7 @@ int main()
                                                               "BM03I95HIA438",
                                                               "-BM03I95HIA439",
                                                               "8000000000000",
-                                                              "-8000000000001"
+                                                              "-8000000000001",
                                                               "5HG4CK9JD4U38",
                                                               "-5HG4CK9JD4U39",
                                                               "3TDTK1V8J6TPQ",
@@ -502,23 +502,15 @@ int main()
                                                               "-2PIJMIKEXRXP9",
                                                               "1Y2P0IJ32E8E8",
                                                               "-1Y2P0IJ32E8E9" };
-  int base_int = 2;
-  int counter = 0;
+
   for (std::size_t i = 0; i < int_out_of_range_base_test.size(); ++i)
   {
     const auto& f = int_out_of_range_base_test[i];
     int64_t result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base_int);
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, 2 + (i / 2));
     if (answer.ec != std::errc::result_out_of_range) {
       std::cerr << "expected error for should be 'result_out_of_range': " << std::quoted(f) << std::endl;
       return EXIT_FAILURE;
-    }
-    if (!(counter)) {
-      ++counter;    
-    }
-    else {
-      ++base_int;
-      ++counter;
     }
   }
 
@@ -581,9 +573,9 @@ int main()
                                                               "1104332401304422434310311212",
                                                               "-1104332401304422434310311213",
                                                               "1540241003031030222122211",
-                                                              "-1540241003031030222122212"
+                                                              "-1540241003031030222122212",
                                                               "22341010611245052052300",
-                                                              "-22341010611245052052301"
+                                                              "-22341010611245052052301",
                                                               "777777777777777777777",
                                                               "-1000000000000000000000",
                                                               "67404283172107811827",
@@ -607,7 +599,7 @@ int main()
                                                               "16AGH595DF825FA7",
                                                               "-16AGH595DF825FA8",
                                                               "BA643DCI0FFEEHH",
-                                                              "-BA643DCI0FFEEHI"
+                                                              "-BA643DCI0FFEEHI",
                                                               "5CBFJIA3FH26JA7",
                                                               "-5CBFJIA3FH26JA8",
                                                               "2HEICIIIE82DH97",
@@ -633,7 +625,7 @@ int main()
                                                               "BM03I95HIA437",
                                                               "-BM03I95HIA438",
                                                               "7VVVVVVVVVVVV",
-                                                              "-8000000000000"
+                                                              "-8000000000000",
                                                               "5HG4CK9JD4U37",
                                                               "-5HG4CK9JD4U38",
                                                               "3TDTK1V8J6TPP",
@@ -642,23 +634,15 @@ int main()
                                                               "-2PIJMIKEXRXP8",
                                                               "1Y2P0IJ32E8E7",
                                                               "-1Y2P0IJ32E8E8" };
-  int base_int2 = 2;
-  int counter2 = 0;
+
   for (std::size_t i = 0; i < int_within_range_base_test.size(); ++i)
   {
     const auto& f = int_within_range_base_test[i];
     int64_t result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, base_int2);
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, 2 + (i / 2));
     if (answer.ec != std::errc()) {
       std::cerr << "converting " << std::quoted(f) << " to int failed (most likely out of range)" << std::endl;
       return EXIT_FAILURE;
-    }
-    if (!(counter2)) {
-      ++counter2;    
-    }
-    else {
-      ++base_int2;
-      ++counter2;
     }
   }
 
@@ -690,7 +674,7 @@ int main()
                                                                    "7B7N2PCNIOKCGF",
                                                                    "4EO8HFAM6FLLMO",
                                                                    "2NC6J26L66RHOF",
-                                                                   "1N3RSH11F098RO",
+                                                                   "1N3RSH11F098RN",
                                                                    "14L9LKMO30O40F",
                                                                    "ND075IB45K86F",
                                                                    "FVVVVVVVVVVVV",
