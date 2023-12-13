@@ -160,7 +160,7 @@ int main()
   }
 
   // unsigned out of range error test #1 (8 bit)
-  const std::vector<std::string> unsigned_out_of_range_test_1{ "2000000000000000000000", "255" };
+  const std::vector<std::string> unsigned_out_of_range_test_1{ "2000000000000000000000", "256" };
 
   for (std::size_t i = 0; i < unsigned_out_of_range_test_1.size(); ++i)
   {

@@ -7,6 +7,7 @@
 #include <iterator>
 #include <limits>
 #include <type_traits>
+#include <charconv>
 
 #include "float_common.h"
 
@@ -462,11 +463,6 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
     ++p;
   }
 
-  // skip leading zeros
-  while (p != pend && *p == UC('0')) {
-    ++p;
-  }
-
   UC const* const start_digits = p;
 
   uint64_t i = 0;
@@ -512,10 +508,9 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   if (negative) {
     // this weird workaround is required because:
     // - converting unsigned to signed when its value is greater than signed max is UB pre-C++23.
-    // - reinterpret_cast<T>(~i + 1) would have worked, but it is not constexpr
-    // this should be optimized away.
-    value = -std::numeric_limits<T>::max() - 
-      static_cast<T>(i - std::numeric_limits<T>::max());
+    // - reinterpret_casting (~i + 1) would work, but it is not constexpr
+    // this is always optimized into a neg instruction.
+    value = T(-std::numeric_limits<T>::max() - T(i - std::numeric_limits<T>::max()));
   }
   else value = T(i);
 
