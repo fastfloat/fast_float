@@ -463,6 +463,12 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
     ++p;
   }
 
+  UC const* const start_num = p;
+  while (*p == UC('0')) { 
+    ++p; 
+  }
+  const bool has_leading_zeros = p > start_num;
+
   UC const* const start_digits = p;
 
   uint64_t i = 0;
@@ -478,8 +484,15 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   size_t digit_count = size_t(p - start_digits);
 
   if (digit_count == 0) {
-    answer.ec = std::errc::invalid_argument;
-    answer.ptr = first;
+    if (has_leading_zeros) {
+      value = 0;
+      answer.ec = std::errc();
+      answer.ptr = p;
+    }
+    else {
+      answer.ec = std::errc::invalid_argument;
+      answer.ptr = first;
+    }
     return answer; 
   }
 
