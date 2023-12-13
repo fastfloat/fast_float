@@ -39,13 +39,13 @@ int main()
 
     if (answer.ec != std::errc()) {
       if (answer.ec == std::errc::invalid_argument) {
-        std::cerr << "could not convert to int for input: " << std::quoted(f) << "because of invalid arguement, output: " << result << " , ptr: " << answer.ptr << std::endl;
+        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because of invalid arguement, output: " << result << " , ptr: " << answer.ptr << std::endl;
       }
       else if (answer.ec == std::errc::result_out_of_range) {
-        std::cerr << "could not convert to int for input: " << std::quoted(f) << "because it's out of range, output: " << result << " , ptr: " << answer.ptr << std::endl;
+        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because it's out of range, output: " << result << " , ptr: " << answer.ptr << std::endl;
       }
       else {
-        std::cerr << "could not convert to int for input: " << std::quoted(f) << "because of an unknown error, output: " << result << " , ptr: " << answer.ptr << std::endl;
+        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because of an unknown error, output: " << result << " , ptr: " << answer.ptr << std::endl;
       }
       return EXIT_FAILURE;
     }
