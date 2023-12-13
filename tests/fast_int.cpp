@@ -36,8 +36,9 @@ int main()
     const auto& f = int_basic_test[i];
     int result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+
     if (answer.ec != std::errc()) {
-      std::cerr << "could not convert to int for input: " << std::quoted(f) << std::endl;
+      std::cerr << "1. could not convert to int for input: " << std::quoted(f) << " " << result << " " << answer.ptr << std::endl;
       return EXIT_FAILURE;
     }
     else if (result != int_basic_test_expected[i]) {
