@@ -40,13 +40,13 @@ int main()
 
     if (answer.ec != std::errc()) {
       if (answer.ec == std::errc::invalid_argument) {
-        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because of invalid arguement, output: " << result << " , ptr: " << answer.ptr << std::endl;
+        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because of invalid arguement" << std::endl;
       }
       else if (answer.ec == std::errc::result_out_of_range) {
-        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because it's out of range, output: " << result << " , ptr: " << answer.ptr << std::endl;
+        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because it's out of range" << std::endl;
       }
       else {
-        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because of an unknown error, output: " << result << " , ptr: " << answer.ptr << std::endl;
+        std::cerr << "could not convert to int for input: " << std::quoted(f) << " because of an unknown error" << std::endl;
       }
       return EXIT_FAILURE;
     }
@@ -507,7 +507,7 @@ int main()
   {
     const auto& f = int_out_of_range_base_test[i];
     int64_t result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, 2 + (i / 2));
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, int(2 + (i / 2)));
     if (answer.ec != std::errc::result_out_of_range) {
       std::cerr << "expected error for should be 'result_out_of_range': " << std::quoted(f) << std::endl;
       return EXIT_FAILURE;
@@ -639,7 +639,7 @@ int main()
   {
     const auto& f = int_within_range_base_test[i];
     int64_t result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, 2 + (i / 2));
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, int(2 + (i / 2)));
     if (answer.ec != std::errc()) {
       std::cerr << "converting " << std::quoted(f) << " to int failed (most likely out of range)" << std::endl;
       return EXIT_FAILURE;
