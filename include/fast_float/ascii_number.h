@@ -7,7 +7,6 @@
 #include <iterator>
 #include <limits>
 #include <type_traits>
-#include <charconv>
 
 #include "float_common.h"
 
@@ -472,6 +471,9 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   UC const* const start_digits = p;
 
   uint64_t i = 0;
+  if (base == 10) {
+    loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
+  }
   while (p != pend) {
     uint8_t digit = ch_to_digit(*p);
     if (digit >= base) {
@@ -519,11 +521,18 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   }
 
   if (negative) {
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#pragma warning(push)
+#pragma warning(disable: 4146) 
+#endif
     // this weird workaround is required because:
     // - converting unsigned to signed when its value is greater than signed max is UB pre-C++23.
     // - reinterpret_casting (~i + 1) would work, but it is not constexpr
     // this is always optimized into a neg instruction.
     value = T(-std::numeric_limits<T>::max() - T(i - std::numeric_limits<T>::max()));
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#pragma warning(pop)
+#endif
   }
   else value = T(i);
 
