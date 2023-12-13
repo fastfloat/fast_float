@@ -134,7 +134,7 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_NEON 1
 #endif
 
-#if defined(FASTFLOAT_SSE2) || defined(FASTFLOAT_ARM64)
+#if defined(FASTFLOAT_SSE2) || defined(FASTFLOAT_NEON)
 #define FASTFLOAT_HAS_SIMD 1
 #endif
 
