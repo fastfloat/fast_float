@@ -10,8 +10,10 @@
 #include <cstring>
 #include <limits>
 #include <system_error>
-#if __cplusplus >= 202300L || _MSVC_LANG >= 202300L
-  #include <stdfloat>
+#ifdef __has_include
+  #if __has_include(<stdfloat>)
+    #include <stdfloat>
+  #endif
 #endif
 namespace fast_float {
 
@@ -135,33 +137,59 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 
 } // namespace detail
 
+template <typename T>
+struct from_chars_caller
+{
+  template <typename UC>
+  FASTFLOAT_CONSTEXPR20
+  static from_chars_result_t<UC> call(UC const * first, UC const * last,
+                                      T &value, parse_options_t<UC> options)  noexcept {
+    return from_chars_advanced(first, last, value, options);
+  }
+};
+
+#if __STDCPP_FLOAT32_T__ == 1
+template <>
+struct from_chars_caller<std::float32_t>
+{
+  template <typename UC>
+  FASTFLOAT_CONSTEXPR20
+  static from_chars_result_t<UC> call(UC const * first, UC const * last,
+                                      std::float32_t &value, parse_options_t<UC> options) noexcept{
+    // if std::float32_t is defined, and we are in C++23 mode; macro set for float32; 
+    // set value to float due to equivalence between float and float32_t
+    float val;
+    auto ret = from_chars_advanced(first, last, val, options);
+    value = val;
+    return ret;
+  }
+};
+#endif
+
+#if __STDCPP_FLOAT64_T__ == 1
+template <>
+struct from_chars_caller<std::float64_t>
+{
+  template <typename UC>
+  FASTFLOAT_CONSTEXPR20
+  static from_chars_result_t<UC> call(UC const * first, UC const * last,
+                                      std::float64_t &value, parse_options_t<UC> options) noexcept{
+    // if std::float64_t is defined, and we are in C++23 mode; macro set for float64;
+    // set value as double due to equivalence between double and float64_t
+    double val;
+    auto ret = from_chars_advanced(first, last, val, options);
+    value = val;
+    return ret;
+  }
+};
+#endif
+
+
 template<typename T, typename UC>
 FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
-#if __cplusplus >= 202300L || _MSVC_LANG >= 202300L
-  #ifdef __STDCPP_FLOAT32_T__
-  // if std::float32_t is defined, and we are in C++23 mode; macro set for float32; 
-  // set value to float due to equivalence between float and float32_t
-  if(std::is_same<T, std::float32_t>::value){
-    float value32; 
-    from_chars_result_t<UC> ret = from_chars_advanced(first, last, value32, parse_options_t<UC>{fmt});
-    value = value32;
-    return ret;
-  }
-  #endif
-  #ifdef __STDCPP_FLOAT64_T__
-  // if std::float64_t is defined, and we are in C++23 mode; macro set for float64;
-  // set value as double due to equivalence between double and float64_t
-  if(std::is_same<T, std::float64_t>::value){
-    double value64; 
-    from_chars_result_t<UC> ret = from_chars_advanced(first, last, value64, parse_options_t<UC>{fmt});
-    value = value64;
-    return ret;
-  }
-  #endif
-#endif
-  return from_chars_advanced(first, last, value, parse_options_t<UC>{fmt});
+  return from_chars_caller<T>::call(first, last, value, parse_options_t<UC>(fmt));
 }
 
 template<typename T, typename UC>
