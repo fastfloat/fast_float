@@ -242,7 +242,7 @@ from_chars_result_t<UC> from_chars(UC const* first, UC const* last, T& value, in
     first++;
   }
 #endif
-  if (first == last) {
+  if (first == last || base < 2 || base > 36) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;

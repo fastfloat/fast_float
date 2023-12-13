@@ -468,7 +468,7 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   uint64_t i = 0;
   while (p != pend) {
     uint8_t digit = ch_to_digit(*p);
-    if (digit > base) {
+    if (digit >= base) {
       break;
     }
     i = uint64_t(base) * i + digit; // might overflow, check this later
