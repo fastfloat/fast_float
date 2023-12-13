@@ -23,6 +23,7 @@ hex tests - numbers are converted from hex to decimal (Note: 0x and 0X are consi
 invalid base tests - any base not within 2-36 is invalid
 out of range base tests - numbers exceeding int/unsigned bit size after converted from base (Note: only 64 bit int and unsigned are tested)
 within range base tests - max/min numbers are still within int/unsigned bit size after converted from base (Note: only 64 bit int and unsigned are tested)
+leading zeros tests - ignores all zeroes in front of valid number after converted from base
 */
 
 int main()
@@ -693,6 +694,58 @@ int main()
       return EXIT_FAILURE;
     }
     ++base_unsigned2;
+  }
+
+  // int leading zeros test
+  const std::vector<std::string> int_leading_zeros_test { "00000000000000000000000000000000000000000000000000000000000000000000001111110111",
+                                                          "000000000000000000000000000000000000000000000000001101121",
+                                                          "000000000000000000000000000000000000000033313",
+                                                          "00000000000000000000000000000013030",
+                                                          "0000000000000000000000000000004411",
+                                                          "0000000000000000000000000000002650",
+                                                          "0000000000000000000000000000001767",
+                                                          "0000000000000000000000000000001347",
+                                                          "0000000000000000000000000000001015",
+                                                          "00000000000000000000843",
+                                                          "00000000000000000000707",
+                                                          "00000000000000000000601",
+                                                          "00000000000000000000527",
+                                                          "0000000000000000000047A",
+                                                          "000000000000000000003F7",
+                                                          "0000000000000000000038C",
+                                                          "00000000000000000000327",
+                                                          "000000000000000000002F8",
+                                                          "000000000000000000002AF",
+                                                          "00000000000000000000267",
+                                                          "00000000000000000000223",
+                                                          "000000000000000000001L3",
+                                                          "000000000000000000001I7",
+                                                          "000000000000000000001FF",
+                                                          "000000000000000000001D1",
+                                                          "000000000000000000001AG",
+                                                          "00000000000000000000187",
+                                                          "00000000000000000000160",
+                                                          "0000000000000000000013P",
+                                                          "0000000000000000000011N",
+                                                          "00000000000000000000VN",
+                                                          "00000000000000000000UP",
+                                                          "00000000000000000000TT",
+                                                          "00000000000000000000T0",
+                                                          "00000000000000000000S7" };
+
+  for (std::size_t i = 0; i < int_leading_zeros_test.size(); ++i)
+  {
+    const auto& f = int_leading_zeros_test[i];
+    int result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, int(i + 2));
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to int for input: " << std::quoted(f) << std::endl;
+      return EXIT_FAILURE;
+    }
+    else if (result != 1015) {
+      std::cerr << "result "  << std::quoted(f) << " did not match with expected int: " << 1015 << std::endl;
+      return EXIT_FAILURE;
+    }
   }
 
   return EXIT_SUCCESS;
