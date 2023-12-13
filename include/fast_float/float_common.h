@@ -741,7 +741,7 @@ constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 template <typename UC>
 fastfloat_really_inline
-constexpr uint8_t ch_to_digit(UC c) { return int_luts<>::chdigit[c]; }
+constexpr uint8_t ch_to_digit(UC c) { return int_luts<>::chdigit[static_cast<unsigned char>(c)]; }
 
 fastfloat_really_inline
 constexpr size_t max_digits_u64(int base) { return int_luts<>::maxdigits_u64[base - 2]; }
