@@ -534,7 +534,7 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
 #pragma warning(pop)
 #endif
   }
-  else value = T(i);
+  else { value = T(i); }
 
   answer.ec = std::errc();
   return answer;
