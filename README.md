@@ -373,6 +373,10 @@ You may directly download automatically generated single-header files:
 
 https://github.com/fastfloat/fast_float/releases/download/v6.0.0/fast_float.h
 
+## RFC 7159 
+
+If you need support for RFC 7159 (JSON standard), you may want to consider using the [fast_double_parser](https://github.com/lemire/fast_double_parser/) library instead.
+
 ## Credit
 
 Though this work is inspired by many different people, this work benefited especially from exchanges with
