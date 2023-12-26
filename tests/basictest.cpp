@@ -246,6 +246,7 @@ TEST_CASE("parse_negative_zero") {
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 }
 
+#if FASTFLOAT_SUPPLEMENTAL_TESTS
 // C++ 17 because it is otherwise annoying to browse all files in a directory.
 // We also only run these tests on little endian systems.
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) && !defined(FASTFLOAT_ODDPLATFORM)
@@ -335,6 +336,7 @@ TEST_CASE("supplemental") {
         CHECK(check_file(entry.path().string()));
     }
 }
+#endif
 #endif
 
 TEST_CASE("leading_zeroes") {
