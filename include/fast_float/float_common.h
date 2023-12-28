@@ -284,10 +284,10 @@ uint64_t umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) {
   uint64_t ad = emulu((uint32_t)(ab >> 32), (uint32_t)cd);
   uint64_t bd = emulu((uint32_t)ab, (uint32_t)cd);
   uint64_t adbc = ad + emulu((uint32_t)ab, (uint32_t)(cd >> 32));
-  uint64_t adbc_carry = !!(adbc < ad);
+  uint64_t adbc_carry = (uint64_t)(adbc < ad);
   uint64_t lo = bd + (adbc << 32);
   *hi = emulu((uint32_t)(ab >> 32), (uint32_t)(cd >> 32)) + (adbc >> 32) +
-        (adbc_carry << 32) + !!(lo < bd);
+        (adbc_carry << 32) + (uint64_t)(lo < bd);
   return lo;
 }
 
