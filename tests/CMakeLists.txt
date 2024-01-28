@@ -72,6 +72,7 @@ fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)
 fast_float_add_cpp_test(fast_int)
+target_compile_features(fast_int PRIVATE cxx_std_17)
 fast_float_add_cpp_test(json_fmt)
 fast_float_add_cpp_test(fortran)
 

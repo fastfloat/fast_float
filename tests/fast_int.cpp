@@ -1,3 +1,4 @@
+#if defined(__cplusplus) && (__cplusplus >= 201703L)
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -742,3 +743,9 @@ int main() {
 
   return EXIT_SUCCESS;
 }
+#else
+int main() {
+  std::cerr << "The test requires C++17." << std::endl;
+  return EXIT_SUCCESS;
+}
+#endif
