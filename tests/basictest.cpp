@@ -827,6 +827,7 @@ TEST_CASE("64bit.inf") {
 }
 
 TEST_CASE("64bit.general") {
+  verify("0.95000000000000000000",0.95);
   verify("22250738585072012e-324",0x1p-1022); /* limit between normal and subnormal*/
   verify("-22250738585072012e-324",-0x1p-1022); /* limit between normal and subnormal*/
   verify("-1e-999", -0.0, std::errc::result_out_of_range);
