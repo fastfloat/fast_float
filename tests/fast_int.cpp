@@ -1,4 +1,20 @@
-#if defined(__cplusplus) && (__cplusplus >= 201703L)
+#ifndef __cplusplus
+#error fastfloat requires a C++ compiler
+#endif
+
+// We want to enable the tests only for C++17 and above.
+#ifndef FASTFLOAT_CPLUSPLUS
+#if defined(_MSVC_LANG) && !defined(__clang__)
+#define FASTFLOAT_CPLUSPLUS (_MSC_VER == 1900 ? 201103L : _MSVC_LANG)
+#else
+#define FASTFLOAT_CPLUSPLUS __cplusplus
+#endif
+#endif
+
+
+#if FASTFLOAT_CPLUSPLUS >= 201703L
+
+
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -744,6 +760,9 @@ int main() {
   return EXIT_SUCCESS;
 }
 #else
+#include <iostream>
+#include <cstdlib>
+
 int main() {
   std::cerr << "The test requires C++17." << std::endl;
   return EXIT_SUCCESS;
