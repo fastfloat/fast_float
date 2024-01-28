@@ -85,6 +85,12 @@ target_compile_features(fast_int PRIVATE cxx_std_17)
 fast_float_add_cpp_test(json_fmt)
 fast_float_add_cpp_test(fortran)
 
+option(FASTFLOAT_FIXEDWIDTH_TESTS "Require fixed width test for C++23 (build will fail if the compiler won't support it)" OFF)
+if (FASTFLOAT_FIXEDWIDTH_TESTS)
+  fast_float_add_cpp_test(fixedwidthtest)
+  target_compile_features(fixedwidthtest PRIVATE cxx_std_23)
+endif()
+
 option(FASTFLOAT_EXHAUSTIVE "Exhaustive tests" OFF)
 
 if (FASTFLOAT_EXHAUSTIVE)
