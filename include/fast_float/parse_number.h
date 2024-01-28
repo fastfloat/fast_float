@@ -10,11 +10,6 @@
 #include <cstring>
 #include <limits>
 #include <system_error>
-#ifdef __has_include
-  #if __has_include(<stdfloat>)
-    #include <stdfloat>
-  #endif
-#endif
 namespace fast_float {
 
 
@@ -189,6 +184,7 @@ template<typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
+printf("from_chars to call\n");
   return from_chars_caller<T>::call(first, last, value, parse_options_t<UC>(fmt));
 }
 
@@ -197,7 +193,7 @@ FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
                                       T &value, parse_options_t<UC> options)  noexcept  {
 
-  static_assert (is_supported_float_type<T>(), "only float and double are supported");
+  static_assert (is_supported_float_type<T>(), "only some floating-point types are supported");
   static_assert (is_supported_char_type<UC>(), "only char, wchar_t, char16_t and char32_t are supported");
 
   from_chars_result_t<UC> answer;
