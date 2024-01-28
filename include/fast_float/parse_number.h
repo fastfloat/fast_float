@@ -232,8 +232,7 @@ from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
 
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20
-from_chars_result_t<UC> from_chars(UC const* first, UC const* last, T& value, int base) noexcept
-{
+from_chars_result_t<UC> from_chars(UC const* first, UC const* last, T& value, int base) noexcept {
   static_assert (is_supported_char_type<UC>(), "only char, wchar_t, char16_t and char32_t are supported");
 
   from_chars_result_t<UC> answer;

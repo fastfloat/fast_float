@@ -9,7 +9,7 @@ option(SYSTEM_DOCTEST "Use system copy of doctest" OFF)
 if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/onqtam/doctest.git
-    GIT_TAG v2.4.10)
+    GIT_TAG v2.4.11)
 endif()
 FetchContent_Declare(supplemental_test_files
   GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git

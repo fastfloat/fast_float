@@ -442,8 +442,7 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
 
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20
-from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, int base)
-{
+from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, int base) {
   from_chars_result_t<UC> answer;
   
   UC const* const first = p;
@@ -463,9 +462,11 @@ from_chars_result_t<UC> parse_int_string(UC const* p, UC const* pend, T& value, 
   }
 
   UC const* const start_num = p;
-  while (*p == UC('0')) { 
+
+  while (p!= pend && *p == UC('0')) {
     ++p; 
   }
+
   const bool has_leading_zeros = p > start_num;
 
   UC const* const start_digits = p;
