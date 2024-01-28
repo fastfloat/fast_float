@@ -10,7 +10,7 @@ option(FASTFLOAT_SUPPLEMENTAL_TESTS "Run supplemental tests" ON)
 if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/onqtam/doctest.git
-    GIT_TAG v2.4.10)
+    GIT_TAG v2.4.11)
 endif()
 if (FASTFLOAT_SUPPLEMENTAL_TESTS)
   FetchContent_Declare(supplemental_test_files
@@ -81,6 +81,7 @@ fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)
 fast_float_add_cpp_test(fast_int)
+target_compile_features(fast_int PRIVATE cxx_std_17)
 fast_float_add_cpp_test(json_fmt)
 fast_float_add_cpp_test(fortran)
 
