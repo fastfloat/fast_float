@@ -7,7 +7,11 @@
 #include <cstring>
 #include <type_traits>
 #include <system_error>
-
+#ifdef __has_include
+  #if __has_include(<stdfloat>)
+    #include <stdfloat>
+  #endif
+#endif
 #include "constexpr_feature_detect.h"
 
 namespace fast_float {
@@ -188,7 +192,14 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 
 template <typename T>
 fastfloat_really_inline constexpr bool is_supported_float_type() {
-  return std::is_same<T, float>::value || std::is_same<T, double>::value;
+  return std::is_same<T, float>::value || std::is_same<T, double>::value
+#if __STDCPP_FLOAT32_T__
+    || std::is_same<T, std::float32_t>::value
+#endif
+#if __STDCPP_FLOAT64_T__
+    || std::is_same<T, std::float64_t>::value
+#endif
+  ;
 }
 
 template <typename UC>
