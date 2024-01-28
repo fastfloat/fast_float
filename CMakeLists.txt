@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(fast_float VERSION 5.3.0 LANGUAGES CXX)
+project(fast_float VERSION 6.0.0 LANGUAGES CXX)
 option(FASTFLOAT_TEST "Enable tests" OFF)
 if(FASTFLOAT_TEST)
   enable_testing()

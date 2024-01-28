@@ -5,16 +5,18 @@ cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 include(FetchContent)
 
 option(SYSTEM_DOCTEST "Use system copy of doctest" OFF)
+option(FASTFLOAT_SUPPLEMENTAL_TESTS "Run supplemental tests" ON)
 
 if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/onqtam/doctest.git
     GIT_TAG v2.4.10)
 endif()
-FetchContent_Declare(supplemental_test_files
-  GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git
-  GIT_TAG origin/main)
-
+if (FASTFLOAT_SUPPLEMENTAL_TESTS)
+  FetchContent_Declare(supplemental_test_files
+    GIT_REPOSITORY https://github.com/fastfloat/supplemental_test_files.git
+    GIT_TAG origin/main)
+endif()
 
 
 # FetchContent_MakeAvailable() was only introduced in 3.14
@@ -27,15 +29,19 @@ if (NOT SYSTEM_DOCTEST)
     add_subdirectory(${doctest_SOURCE_DIR} ${doctest_BINARY_DIR})
   endif()
 endif()
-FetchContent_GetProperties(supplemental_test_files)
-if(NOT supplemental_test_files_POPULATED)
-  message(STATUS "Tests enabled. Retrieving test files.")
-  FetchContent_Populate(supplemental_test_files)
-  message(STATUS "Test files retrieved.")
-  add_subdirectory(${supplemental_test_files_SOURCE_DIR} ${supplemental_test_files_BINARY_DIR})
-endif()
+
 add_library(supplemental-data INTERFACE)
-target_compile_definitions(supplemental-data INTERFACE SUPPLEMENTAL_TEST_DATA_DIR="${supplemental_test_files_BINARY_DIR}/data")
+if (FASTFLOAT_SUPPLEMENTAL_TESTS)
+  FetchContent_GetProperties(supplemental_test_files)
+  if(NOT supplemental_test_files_POPULATED)
+    message(STATUS "Supplemental tests enabled. Retrieving test files.")
+    FetchContent_Populate(supplemental_test_files)
+    message(STATUS "Supplemental test files retrieved.")
+    add_subdirectory(${supplemental_test_files_SOURCE_DIR} ${supplemental_test_files_BINARY_DIR})
+  endif()
+  target_compile_definitions(supplemental-data INTERFACE SUPPLEMENTAL_TEST_DATA_DIR="${supplemental_test_files_BINARY_DIR}/data")
+endif()
+
 function(fast_float_add_cpp_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
     if(CMAKE_CROSSCOMPILING)
@@ -67,11 +73,14 @@ if (FASTFLOAT_CONSTEXPR_TESTS)
 else()
   target_compile_features(basictest PRIVATE cxx_std_17)
 endif()
+if (FASTFLOAT_SUPPLEMENTAL_TESTS)
+  target_compile_definitions(basictest PRIVATE FASTFLOAT_SUPPLEMENTAL_TESTS)
+endif()
 
 fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)
-
+fast_float_add_cpp_test(fast_int)
 fast_float_add_cpp_test(json_fmt)
 fast_float_add_cpp_test(fortran)
 
