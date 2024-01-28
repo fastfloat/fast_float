@@ -185,7 +185,7 @@ struct from_chars_caller<std::float64_t>
 #endif
 
 
-template<typename T, typename UC>
+template<typename T, typename UC, typename>
 from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
                              T &value, chars_format fmt /*= chars_format::general*/)  noexcept  {
   return from_chars_caller<T>::call(first, last, value, parse_options_t<UC>(fmt));
