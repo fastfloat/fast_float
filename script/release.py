@@ -104,6 +104,18 @@ for line in fileinput.input(readmefile, inplace=1, backup='.bak'):
     print(line)
 
 print("modified "+readmefile+", a backup was made")
+
+
+print("running amalgamate.py")
+with open(maindir+ os.sep + 'fast_float.h', "w") as outfile:
+    cp = subprocess.run(["python3", maindir+ os.sep + "script/amalgamate.py"], stdout=outfile)  
+
+if(cp.returncode != 0):
+    print("Failed to run amalgamate")
+else:
+    print("amalgamate.py ran successfully")
+    print("You should upload "+ maindir+ os.sep + 'fast_float.h')
+
 print("Please run the tests before issuing a release. \n")
 print("to issue release, enter \n git commit -a && git push  &&  git tag -a v"+toversionstring(*newversion)+" -m \"version "+toversionstring(*newversion)+"\" &&  git push --tags \n")
 
