@@ -187,6 +187,11 @@ from_chars_result_t<UC> from_chars(UC const * first, UC const * last,
   return from_chars_caller<T>::call(first, last, value, parse_options_t<UC>(fmt));
 }
 
+/**
+ * This function overload takes parsed_number_string_t structure that is created and populated
+ * either by from_chars_advanced function taking chars range and parsing options
+ * or other parsing custom function implemented by user.
+ */
 template<typename T, typename UC>
 FASTFLOAT_CONSTEXPR20
 from_chars_result_t<UC> from_chars_advanced(parsed_number_string_t<UC>& pns,
@@ -286,6 +291,7 @@ from_chars_result_t<UC> from_chars_advanced(UC const * first, UC const * last,
     }
   }
 
+  // call overload that takes parsed_number_string_t directly.
   return from_chars_advanced(pns, value);
 }
 
