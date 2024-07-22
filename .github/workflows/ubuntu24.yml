@@ -4,20 +4,20 @@ on: [push, pull_request]
 
 jobs:
   ubuntu-build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Use cmake
         run: |
           mkdir build &&
           cd build &&
-          CXX=g++-13 CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON  ..  &&
+          CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure
       - name: Use cmake CXX23
         run: |
           mkdir build20 &&
           cd build20 &&
-          CXX=g++-13 CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DFASTFLOAT_FIXEDWIDTH_TESTS=ON -DFASTFLOAT_CXX_STANDARD=23 -DFASTFLOAT_TEST=ON  ..  &&
+          CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DFASTFLOAT_FIXEDWIDTH_TESTS=ON -DFASTFLOAT_CXX_STANDARD=23 -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure
