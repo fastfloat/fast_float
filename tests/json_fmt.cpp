@@ -40,7 +40,9 @@ int main()
 {
   const std::vector<double> expected{ -0.2, 0.02, 0.002, 1., 0., std::numeric_limits<double>::infinity() };
   const std::vector<std::string> accept{ "-0.2", "0.02", "0.002", "1e+0000", "0e-2", "inf" };
-  const std::vector<std::string> reject{ "-.2", "00.02", "0.e+1", "00.e+1", ".25", "+0.25", "inf", "nan(snan)" };
+  const std::vector<std::string> reject{"-.2", "00.02",    "0.e+1", "00.e+1",
+                                        "1e",  "1e+",      ".25",   "+0.25",
+                                        "inf", "nan(snan)"};
 
   for (std::size_t i = 0; i < accept.size(); ++i)
   {
