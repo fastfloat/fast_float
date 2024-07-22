@@ -16,7 +16,7 @@ def colored(r, g, b, text):
     return "\033[38;2;{};{};{}m{} \033[38;2;255;255;255m".format(r, g, b, text)
 
 def extractnumbers(s):
-    return tuple(map(int,re.findall("(\d+)\.(\d+)\.(\d+)",str(s))[0]))
+    return tuple(map(int,re.findall(r"(\d+)\.(\d+)\.(\d+)",str(s))[0]))
 
 def toversionstring(major, minor, rev):
     return str(major)+"."+str(minor)+"."+str(rev)
@@ -90,7 +90,7 @@ cmakefile = maindir + os.sep + "CMakeLists.txt"
 
 
 for line in fileinput.input(cmakefile, inplace=1, backup='.bak'):
-    line = re.sub('project\(fast_float VERSION \d+\.\d+\.\d+ LANGUAGES CXX\)','project(fast_float VERSION '+newmajorversionstring+'.'+mewminorversionstring+'.'+newrevversionstring+" LANGUAGES CXX)", line.rstrip())
+    line = re.sub(r'project\(fast_float VERSION \d+\.\d+\.\d+ LANGUAGES CXX\)','project(fast_float VERSION '+newmajorversionstring+'.'+mewminorversionstring+'.'+newrevversionstring+" LANGUAGES CXX)", line.rstrip())
     print(line)
 
 print("modified "+cmakefile+", a backup was made")
@@ -100,7 +100,7 @@ readmefile = maindir + os.sep + "README.md"
 
 
 for line in fileinput.input(readmefile, inplace=1, backup='.bak'):
-    line = re.sub('https://github.com/fastfloat/fast_float/releases/download/v(\d+\.\d+\.\d+)/fast_float.h','https://github.com/fastfloat/fast_float/releases/download/v'+newmajorversionstring+'.'+mewminorversionstring+'.'+newrevversionstring+'/fast_float.h', line.rstrip())
+    line = re.sub(r'https://github.com/fastfloat/fast_float/releases/download/v(\d+\.\d+\.\d+)/fast_float.h','https://github.com/fastfloat/fast_float/releases/download/v'+newmajorversionstring+'.'+mewminorversionstring+'.'+newrevversionstring+'/fast_float.h', line.rstrip())
     print(line)
 
 print("modified "+readmefile+", a backup was made")
