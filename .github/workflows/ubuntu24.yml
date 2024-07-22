@@ -1,4 +1,4 @@
-name: Ubuntu 22.04 CI (GCC 13)
+name: Ubuntu 24.04 CI (GCC 13)
 
 on: [push, pull_request]
 
