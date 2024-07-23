@@ -36,32 +36,55 @@ int main_readme3() {
     return EXIT_SUCCESS;
 }
 
-int main()
-{
-  const std::vector<double> expected{ -0.2, 0.02, 0.002, 1., 0., std::numeric_limits<double>::infinity() };
-  const std::vector<std::string> accept{ "-0.2", "0.02", "0.002", "1e+0000", "0e-2", "inf" };
-  const std::vector<std::string> reject{"-.2", "00.02",    "0.e+1", "00.e+1",
-                                        "1e",  "1e+",      ".25",   "+0.25",
-                                        "inf", "nan(snan)"};
+struct ExpectedResult {
+  double value;
+  std::string junk_chars;
+};
+struct AcceptedValue {
+  std::string input;
+  ExpectedResult expected;
+};
+
+int main() {
+  const std::vector<AcceptedValue> accept{
+      {"-0.2", {-0.2, ""}},
+      {"0.02", {0.02, ""}},
+      {"0.002", {0.002, ""}},
+      {"1e+0000", {1., ""}},
+      {"0e-2", {0., ""}},
+      {"1e", {1., "e"}},
+      {"1e+", {1., "e+"}},
+      {"inf", {std::numeric_limits<double>::infinity(), ""}}};
+  const std::vector<std::string> reject{"-.2", "00.02", "0.e+1", "00.e+1",
+                                        ".25", "+0.25", "inf",   "nan(snan)"};
 
   for (std::size_t i = 0; i < accept.size(); ++i)
   {
-    const auto& f = accept[i];
+    const auto& s = accept[i].input;
+    const auto& expected = accept[i].expected;
     double result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, fast_float::chars_format::json_or_infnan);
-    if (answer.ec != std::errc() || result != expected[i]) {
-      std::cerr << "json fmt rejected valid json " << f << std::endl;
+    auto answer = fast_float::from_chars(s.data(), s.data() + s.size(), result, fast_float::chars_format::json_or_infnan);
+    if (answer.ec != std::errc()) {
+      std::cerr << "json fmt rejected valid json " << s << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (result != expected.value) {
+      std::cerr << "json fmt gave wrong result " << s << " (expected " << expected.value << " got " << result << ")" << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (std::string(answer.ptr) != expected.junk_chars) {
+      std::cerr << "json fmt has wrong trailing characters " << s << " (expected " << expected.junk_chars << " got " << answer.ptr << ")" << std::endl;
       return EXIT_FAILURE;
     }
   }
 
   for (std::size_t i = 0; i < reject.size(); ++i)
   {
-    const auto& f = reject[i];
+    const auto& s = reject[i];
     double result;
-    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result, fast_float::chars_format::json);
+    auto answer = fast_float::from_chars(s.data(), s.data() + s.size(), result, fast_float::chars_format::json);
     if (answer.ec == std::errc()) {
-      std::cerr << "json fmt accepted invalid json " << f << std::endl;
+      std::cerr << "json fmt accepted invalid json " << s << std::endl;
       return EXIT_FAILURE;
     }
   }
