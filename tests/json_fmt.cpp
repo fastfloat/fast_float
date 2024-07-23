@@ -45,6 +45,15 @@ struct AcceptedValue {
   ExpectedResult expected;
 };
 
+struct RejectReason {
+  fast_float::parse_error error;
+  intptr_t location_offset;
+};
+struct RejectedValue {
+  std::string input;
+  RejectReason reason;
+};
+
 int main() {
   const std::vector<AcceptedValue> accept{
       {"-0.2", {-0.2, ""}},
@@ -55,8 +64,18 @@ int main() {
       {"1e", {1., "e"}},
       {"1e+", {1., "e+"}},
       {"inf", {std::numeric_limits<double>::infinity(), ""}}};
-  const std::vector<std::string> reject{"-.2", "00.02", "0.e+1", "00.e+1",
-                                        ".25", "+0.25", "inf",   "nan(snan)"};
+  const std::vector<RejectedValue> reject{
+      {"-.2", {fast_float::parse_error::missing_integer_after_sign, 1}},
+      {"00.02", {fast_float::parse_error::leading_zeros_in_integer_part, 0}},
+      {"0.e+1", {fast_float::parse_error::no_digits_in_fractional_part, 2}},
+      {"00.e+1", {fast_float::parse_error::leading_zeros_in_integer_part, 0}},
+      {".25", {fast_float::parse_error::no_digits_in_integer_part, 0}},
+      // The following cases already start as invalid JSON, so they are
+      // handled as trailing junk and the error is for not having digits in the
+      // empty string before the invalid token.
+      {"+0.25", {fast_float::parse_error::no_digits_in_integer_part, 0}},
+      {"inf", {fast_float::parse_error::no_digits_in_integer_part, 0}},
+      {"nan(snan)", {fast_float::parse_error::no_digits_in_integer_part, 0}}};
 
   for (std::size_t i = 0; i < accept.size(); ++i)
   {
@@ -80,11 +99,36 @@ int main() {
 
   for (std::size_t i = 0; i < reject.size(); ++i)
   {
-    const auto& s = reject[i];
+    const auto& s = reject[i].input;
     double result;
     auto answer = fast_float::from_chars(s.data(), s.data() + s.size(), result, fast_float::chars_format::json);
     if (answer.ec == std::errc()) {
       std::cerr << "json fmt accepted invalid json " << s << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  for (std::size_t i = 0; i < reject.size(); ++i)
+  {
+    const auto& f = reject[i].input;
+    const auto& expected_reason = reject[i].reason;
+    auto answer = fast_float::parse_number_string(
+        f.data(), f.data() + f.size(),
+        fast_float::parse_options(fast_float::chars_format::json));
+    if (answer.valid) {
+      std::cerr << "json parse accepted invalid json " << f << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (answer.error != expected_reason.error) {
+      std::cerr << "json parse failure had invalid error reason " << f
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+    intptr_t error_location = answer.lastmatch - f.data();
+    if (error_location != expected_reason.location_offset) {
+      std::cerr << "json parse failure had invalid error location " << f
+                << " (expected " << expected_reason.location_offset << " got "
+                << error_location << ")" << std::endl;
       return EXIT_FAILURE;
     }
   }
