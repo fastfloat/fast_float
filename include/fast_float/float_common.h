@@ -391,32 +391,32 @@ struct binary_format_lookup_tables<double, U> {
       1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
 
   // Largest integer value v so that (5**index * v) <= 1<<53.
-  // 0x10000000000000 == 1 << 53
+  // 0x20000000000000 == 1 << 53
   static constexpr uint64_t max_mantissa[] = {
-      0x10000000000000,
-      0x10000000000000 / 5,
-      0x10000000000000 / (5 * 5),
-      0x10000000000000 / (5 * 5 * 5),
-      0x10000000000000 / (5 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555),
-      0x10000000000000 / (constant_55555 * 5),
-      0x10000000000000 / (constant_55555 * 5 * 5),
-      0x10000000000000 / (constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555 * 5 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555),
-      0x10000000000000 / (constant_55555 * constant_55555 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
-      0x10000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5)};
+      0x20000000000000,
+      0x20000000000000 / 5,
+      0x20000000000000 / (5 * 5),
+      0x20000000000000 / (5 * 5 * 5),
+      0x20000000000000 / (5 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555),
+      0x20000000000000 / (constant_55555 * 5),
+      0x20000000000000 / (constant_55555 * 5 * 5),
+      0x20000000000000 / (constant_55555 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * 5 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555),
+      0x20000000000000 / (constant_55555 * constant_55555 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * constant_55555 * 5 * 5 * 5 * 5)};
 };
 
 template <typename U>
