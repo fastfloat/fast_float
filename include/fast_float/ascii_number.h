@@ -234,6 +234,25 @@ void loop_parse_if_eight_digits(const char*& p, const char* const pend, uint64_t
   }
 }
 
+enum class parse_error {
+  no_error,
+  // [JSON-only] The minus sign must be followed by an integer.
+  missing_integer_after_sign,
+  // A sign must be followed by an integer or dot.
+  missing_integer_or_dot_after_sign,
+  // [JSON-only] The integer part must not have leading zeros.
+  leading_zeros_in_integer_part,
+  // [JSON-only] The integer part must have at least one digit.
+  no_digits_in_integer_part,
+  // [JSON-only] If there is a decimal point, there must be digits in the
+  // fractional part.
+  no_digits_in_fractional_part,
+  // The mantissa must have at least one digit.
+  no_digits_in_mantissa,
+  // Scientific notation requires an exponential part.
+  missing_exponential_part,
+};
+
 template <typename UC>
 struct parsed_number_string_t {
   int64_t exponent{0};
@@ -245,10 +264,21 @@ struct parsed_number_string_t {
   // contains the range of the significant digits
   span<const UC> integer{};  // non-nullable
   span<const UC> fraction{}; // nullable
+  parse_error error{parse_error::no_error};
 };
 
 using byte_span = span<const char>;
 using parsed_number_string = parsed_number_string_t<char>;
+
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
+report_parse_error(UC const* p, parse_error error) {
+  parsed_number_string_t<UC> answer;
+  answer.valid = false;
+  answer.lastmatch = p;
+  answer.error = error;
+  return answer;
+}
 
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
@@ -269,15 +299,16 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
 #endif
     ++p;
     if (p == pend) {
-      return answer;
+        return report_parse_error<UC>(
+            p, parse_error::missing_integer_or_dot_after_sign);
     }
     if (fmt & FASTFLOAT_JSONFMT) {
       if (!is_integer(*p)) { // a sign must be followed by an integer
-        return answer;
+        return report_parse_error<UC>(p, parse_error::missing_integer_after_sign);
       }    
     } else {
       if (!is_integer(*p) && (*p != decimal_point)) { // a sign must be followed by an integer or the dot
-        return answer;
+        return report_parse_error<UC>(p, parse_error::missing_integer_or_dot_after_sign);
       }
     }
   }
@@ -297,8 +328,12 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   answer.integer = span<const UC>(start_digits, size_t(digit_count));
   if (fmt & FASTFLOAT_JSONFMT) {
     // at least 1 digit in integer part, without leading zeros
-    if (digit_count == 0 || (start_digits[0] == UC('0') && digit_count > 1)) {
-      return answer;
+    if (digit_count == 0) {
+      return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
+    }
+    if ((start_digits[0] == UC('0') && digit_count > 1)) {
+      return report_parse_error<UC>(start_digits,
+                                    parse_error::leading_zeros_in_integer_part);
     }
   }
 
@@ -323,11 +358,10 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
   if (fmt & FASTFLOAT_JSONFMT) {
     // at least 1 digit in fractional part
     if (has_decimal_point && exponent == 0) {
-      return answer;
+      return report_parse_error<UC>(p, parse_error::no_digits_in_fractional_part);
     }
-  } 
-  else if (digit_count == 0) { // we must have encountered at least one integer!
-    return answer;
+  } else if (digit_count == 0) {  // we must have encountered at least one integer!
+    return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   int64_t exp_number = 0;            // explicit exponential part
   if ( ((fmt & chars_format::scientific) &&
@@ -350,8 +384,10 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     }
     if ((p == pend) || !is_integer(*p)) {
       if(!(fmt & chars_format::fixed)) {
-        // We are in error.
-        return answer;
+        // The exponential part is invalid for scientific notation, so it must
+        // be a trailing token for fixed notation. However, fixed notation is
+        // disabled, so report a scientific notation error.
+        return report_parse_error<UC>(p, parse_error::missing_exponential_part);
       }
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
@@ -368,7 +404,9 @@ parsed_number_string_t<UC> parse_number_string(UC const *p, UC const * pend, par
     }
   } else {
     // If it scientific and not fixed, we have to bail out.
-    if((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) { return answer; }
+    if ((fmt & chars_format::scientific) && !(fmt & chars_format::fixed)) {
+      return report_parse_error<UC>(p, parse_error::missing_exponential_part);
+    }
   }
   answer.lastmatch = p;
   answer.valid = true;
