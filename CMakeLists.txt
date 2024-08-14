@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 
-project(fast_float VERSION 6.1.3 LANGUAGES CXX)
+project(fast_float VERSION 6.1.4 LANGUAGES CXX)
 set(FASTFLOAT_CXX_STANDARD 11 CACHE STRING "the C++ standard to use for fastfloat")
 set(CMAKE_CXX_STANDARD ${FASTFLOAT_CXX_STANDARD})
 option(FASTFLOAT_TEST "Enable tests" OFF)
