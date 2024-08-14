@@ -15,29 +15,37 @@
 #include <locale>
 #include <sstream>
 // workaround for CYGWIN
-double cygwin_strtod_l(const char* start, char** end) {
-    double d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    if(ss.fail()) { *end = nullptr; }
-    if(ss.eof()) { ss.clear(); }
-    auto nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+double cygwin_strtod_l(const char *start, char **end) {
+  double d;
+  std::stringstream ss;
+  ss.imbue(std::locale::classic());
+  ss << start;
+  ss >> d;
+  if (ss.fail()) {
+    *end = nullptr;
+  }
+  if (ss.eof()) {
+    ss.clear();
+  }
+  auto nread = ss.tellg();
+  *end = const_cast<char *>(start) + nread;
+  return d;
 }
-float cygwin_strtof_l(const char* start, char** end) {
-    float d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    if(ss.fail()) { *end = nullptr; }
-    if(ss.eof()) { ss.clear(); }
-    auto nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+float cygwin_strtof_l(const char *start, char **end) {
+  float d;
+  std::stringstream ss;
+  ss.imbue(std::locale::classic());
+  ss << start;
+  ss >> d;
+  if (ss.fail()) {
+    *end = nullptr;
+  }
+  if (ss.eof()) {
+    ss.clear();
+  }
+  auto nread = ss.tellg();
+  *end = const_cast<char *>(start) + nread;
+  return d;
 }
 #endif
 
@@ -47,20 +55,21 @@ template <typename T> char *to_string(T d, char *buffer) {
   return buffer + written;
 }
 
-void strtof_from_string(const char * st, float& d) {
-    char *pr = (char *)st;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-    d = cygwin_strtof_l(st, &pr);
+void strtof_from_string(const char *st, float &d) {
+  char *pr = (char *)st;
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
+  d = cygwin_strtof_l(st, &pr);
 #elif defined(_WIN32)
-    static _locale_t c_locale = _create_locale(LC_ALL, "C");
-    d = _strtof_l(st, &pr,  c_locale);
+  static _locale_t c_locale = _create_locale(LC_ALL, "C");
+  d = _strtof_l(st, &pr, c_locale);
 #else
-    static locale_t c_locale = newlocale(LC_ALL_MASK, "C", NULL);
-    d = strtof_l(st, &pr,  c_locale);
+  static locale_t c_locale = newlocale(LC_ALL_MASK, "C", NULL);
+  d = strtof_l(st, &pr, c_locale);
 #endif
-    if (pr == st) {
-      throw std::runtime_error("bug in strtod_from_string");
-    }
+  if (pr == st) {
+    throw std::runtime_error("bug in strtod_from_string");
+  }
 }
 
 bool allvalues() {
@@ -73,10 +82,14 @@ bool allvalues() {
     }
     uint32_t word = uint32_t(w);
     memcpy(&v, &word, sizeof(v));
-    if(std::isfinite(v)) {
+    if (std::isfinite(v)) {
       float nextf = std::nextafterf(v, INFINITY);
-      if(copysign(1,v) != copysign(1,nextf)) { continue; }
-      if(!std::isfinite(nextf)) { continue; }
+      if (copysign(1, v) != copysign(1, nextf)) {
+        continue;
+      }
+      if (!std::isfinite(nextf)) {
+        continue;
+      }
       double v1{v};
       assert(float(v1) == v);
       double v2{nextf};
@@ -90,10 +103,12 @@ bool allvalues() {
 
       float result_value;
       auto result = fast_float::from_chars(buffer, string_end, result_value);
-      // Starting with version 4.0 for fast_float, we return result_out_of_range if the
-      // value is either too small (too close to zero) or too large (effectively infinity).
-      // So std::errc::result_out_of_range is normal for well-formed input strings.
-      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
+      // Starting with version 4.0 for fast_float, we return result_out_of_range
+      // if the value is either too small (too close to zero) or too large
+      // (effectively infinity). So std::errc::result_out_of_range is normal for
+      // well-formed input strings.
+      if (result.ec != std::errc() &&
+          result.ec != std::errc::result_out_of_range) {
         std::cerr << "parsing error ? " << buffer << std::endl;
         return false;
       }
@@ -103,26 +118,30 @@ bool allvalues() {
           std::cerr << "v " << std::hexfloat << v << std::endl;
           std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
           std::cerr << "midv " << std::hexfloat << midv << std::endl;
-          std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
+          std::cerr << "expected_midv " << std::hexfloat << expected_midv
+                    << std::endl;
           return false;
         }
-      } else if(copysign(1,result_value) != copysign(1,v)) {
+      } else if (copysign(1, result_value) != copysign(1, v)) {
         std::cerr << buffer << std::endl;
         std::cerr << "v " << std::hexfloat << v << std::endl;
         std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
         std::cerr << "midv " << std::hexfloat << midv << std::endl;
-        std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
-        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
-              << std::endl;
+        std::cerr << "expected_midv " << std::hexfloat << expected_midv
+                  << std::endl;
+        std::cerr << "I got " << std::hexfloat << result_value
+                  << " but I was expecting " << v << std::endl;
         return false;
       } else if (result_value != str_answer) {
         std::cerr << "no match ? " << buffer << std::endl;
         std::cerr << "v " << std::hexfloat << v << std::endl;
         std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
         std::cerr << "midv " << std::hexfloat << midv << std::endl;
-        std::cerr << "expected_midv " << std::hexfloat << expected_midv << std::endl;
+        std::cerr << "expected_midv " << std::hexfloat << expected_midv
+                  << std::endl;
         std::cout << "started with " << std::hexfloat << midv << std::endl;
-        std::cout << "round down to " << std::hexfloat << str_answer << std::endl;
+        std::cout << "round down to " << std::hexfloat << str_answer
+                  << std::endl;
         std::cout << "got back " << std::hexfloat << result_value << std::endl;
         std::cout << std::dec;
         return false;
@@ -134,15 +153,24 @@ bool allvalues() {
 }
 
 inline void Assert(bool Assertion) {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-  if (!Assertion) { std::cerr << "Omitting hard failure on msys/cygwin/sun systems."; }
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
+  if (!Assertion) {
+    std::cerr << "Omitting hard failure on msys/cygwin/sun systems.";
+  }
 #else
-  if (!Assertion) { throw std::runtime_error("bug"); }
+  if (!Assertion) {
+    throw std::runtime_error("bug");
+  }
 #endif
 }
 int main() {
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
-  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely to generate false failures due to our reliance on the underlying runtime library as a gold standard." << std::endl;
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test "
+               "is likely to generate false failures due to our reliance on "
+               "the underlying runtime library as a gold standard."
+            << std::endl;
 #endif
   Assert(allvalues());
   std::cout << std::endl;

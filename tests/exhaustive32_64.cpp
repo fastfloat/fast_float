@@ -16,11 +16,10 @@ template <typename T> char *to_string(T d, char *buffer) {
   return buffer + written;
 }
 
-
 bool basic_test_64bit(std::string vals, double val) {
   double result_value;
   auto result = fast_float::from_chars(vals.data(), vals.data() + vals.size(),
-                                      result_value);
+                                       result_value);
   if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
     std::cerr << " I could not parse " << vals << std::endl;
     return false;
@@ -31,21 +30,20 @@ bool basic_test_64bit(std::string vals, double val) {
       std::cerr << "not nan" << result_value << std::endl;
       return false;
     }
-  } else if(copysign(1,result_value) != copysign(1,val)) {
-    std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
-              << std::endl;
+  } else if (copysign(1, result_value) != copysign(1, val)) {
+    std::cerr << "I got " << std::hexfloat << result_value
+              << " but I was expecting " << val << std::endl;
     return false;
   } else if (result_value != val) {
     std::cerr << vals << std::endl;
-    std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << val
-              << std::endl;
+    std::cerr << "I got " << std::hexfloat << result_value
+              << " but I was expecting " << val << std::endl;
     std::cerr << std::dec;
     std::cerr << "string: " << vals << std::endl;
     return false;
   }
   return true;
 }
-
 
 void all_32bit_values() {
   char buffer[64];
@@ -61,8 +59,8 @@ void all_32bit_values() {
 
     {
       const char *string_end = to_string(v, buffer);
-      std::string s(buffer, size_t(string_end-buffer));
-      if(!basic_test_64bit(s,v)) {
+      std::string s(buffer, size_t(string_end - buffer));
+      if (!basic_test_64bit(s, v)) {
         return;
       }
     }

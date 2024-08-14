@@ -9,45 +9,53 @@
 #include <utility>
 #include <vector>
 
-
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
 // Anything at all that is related to cygwin, msys and so forth will
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
 #include <locale>
 // workaround for CYGWIN
-double cygwin_strtod_l(const char* start, char** end) {
-    double d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    if(ss.fail()) { *end = nullptr; }
-    if(ss.eof()) { ss.clear(); }
-    auto nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+double cygwin_strtod_l(const char *start, char **end) {
+  double d;
+  std::stringstream ss;
+  ss.imbue(std::locale::classic());
+  ss << start;
+  ss >> d;
+  if (ss.fail()) {
+    *end = nullptr;
+  }
+  if (ss.eof()) {
+    ss.clear();
+  }
+  auto nread = ss.tellg();
+  *end = const_cast<char *>(start) + nread;
+  return d;
 }
-float cygwin_strtof_l(const char* start, char** end) {
-    float d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    if(ss.fail()) { *end = nullptr; }
-    if(ss.eof()) { ss.clear(); }
-    auto nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+float cygwin_strtof_l(const char *start, char **end) {
+  float d;
+  std::stringstream ss;
+  ss.imbue(std::locale::classic());
+  ss << start;
+  ss >> d;
+  if (ss.fail()) {
+    *end = nullptr;
+  }
+  if (ss.eof()) {
+    ss.clear();
+  }
+  auto nread = ss.tellg();
+  *end = const_cast<char *>(start) + nread;
+  return d;
 }
 #endif
-
 
 std::pair<double, bool> strtod_from_string(const char *st) {
   double d;
   char *pr;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-    d = cygwin_strtod_l(st, &pr);
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
+  d = cygwin_strtod_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtod_l(st, &pr, c_locale);
@@ -65,7 +73,8 @@ std::pair<double, bool> strtod_from_string(const char *st) {
 std::pair<float, bool> strtof_from_string(char *st) {
   float d;
   char *pr;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(sun) || defined(__sun)
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
   d = cygwin_strtof_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
@@ -103,9 +112,11 @@ bool tester() {
       std::pair<double, bool> expected_double =
           strtod_from_string(to_be_parsed.c_str());
       double result_value;
-      auto result =
-          fast_float::from_chars(to_be_parsed.data(), to_be_parsed.data() + to_be_parsed.size(), result_value);
-      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
+      auto result = fast_float::from_chars(
+          to_be_parsed.data(), to_be_parsed.data() + to_be_parsed.size(),
+          result_value);
+      if (result.ec != std::errc() &&
+          result.ec != std::errc::result_out_of_range) {
         std::cout << to_be_parsed << std::endl;
         std::cerr << " I could not parse " << std::endl;
         return false;

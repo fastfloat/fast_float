@@ -7,51 +7,61 @@
 #include <system_error>
 #include <utility>
 
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
 // Anything at all that is related to cygwin, msys and so forth will
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
 #include <locale>
 #include <sstream>
 // workaround for CYGWIN
-double cygwin_strtod_l(const char* start, char** end) {
-    double d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    if(ss.fail()) { *end = nullptr; }
-    if(ss.eof()) { ss.clear(); }
-    auto nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+double cygwin_strtod_l(const char *start, char **end) {
+  double d;
+  std::stringstream ss;
+  ss.imbue(std::locale::classic());
+  ss << start;
+  ss >> d;
+  if (ss.fail()) {
+    *end = nullptr;
+  }
+  if (ss.eof()) {
+    ss.clear();
+  }
+  auto nread = ss.tellg();
+  *end = const_cast<char *>(start) + nread;
+  return d;
 }
-float cygwin_strtof_l(const char* start, char** end) {
-    float d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    if(ss.fail()) { *end = nullptr; }
-    if(ss.eof()) { ss.clear(); }
-    auto nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+float cygwin_strtof_l(const char *start, char **end) {
+  float d;
+  std::stringstream ss;
+  ss.imbue(std::locale::classic());
+  ss << start;
+  ss >> d;
+  if (ss.fail()) {
+    *end = nullptr;
+  }
+  if (ss.eof()) {
+    ss.clear();
+  }
+  auto nread = ss.tellg();
+  *end = const_cast<char *>(start) + nread;
+  return d;
 }
 #endif
 
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed) {};
+  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed){};
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
     // Inspired from
     // https://github.com/lemire/testingRNG/blob/master/source/wyhash.h
     wyhash64_x_ += UINT64_C(0x60bee2bee120fc15);
-     fast_float::value128 tmp =  fast_float::full_multiplication(wyhash64_x_,  UINT64_C(0xa3b195354a39b70d));
+    fast_float::value128 tmp = fast_float::full_multiplication(
+        wyhash64_x_, UINT64_C(0xa3b195354a39b70d));
     uint64_t m1 = (tmp.high) ^ tmp.low;
-    tmp = fast_float::full_multiplication(m1,  UINT64_C(0x1b03738712fad5c9));
+    tmp = fast_float::full_multiplication(m1, UINT64_C(0x1b03738712fad5c9));
     uint64_t m2 = (tmp.high) ^ tmp.low;
     return m2;
   }
@@ -68,7 +78,7 @@ public:
     }*/
     uint64_t s = uint64_t(max - min + 1);
     uint64_t x = next();
-    fast_float::value128 m =  fast_float::full_multiplication(x, s);
+    fast_float::value128 m = fast_float::full_multiplication(x, s);
     uint64_t l = m.low;
     if (l < s) {
       uint64_t t = -s % s;
@@ -92,8 +102,9 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
     buffer[pos++] = '-';
   }
   int number_of_digits = rand.next_ranged_int(1, 100);
-  if(number_of_digits == 100) {
-    // With low probability, we want to allow very long strings just to stress the system.
+  if (number_of_digits == 100) {
+    // With low probability, we want to allow very long strings just to stress
+    // the system.
     number_of_digits = rand.next_ranged_int(1, 2000);
   }
   int location_of_decimal_separator = rand.next_ranged_int(1, number_of_digits);
@@ -103,7 +114,8 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
     }
     buffer[pos] = char(rand.next_digit() + '0');
     // We can have a leading zero only if location_of_decimal_separator = 1.
-    while(i == 0 && 1 != size_t(location_of_decimal_separator) && buffer[pos] == '0') {
+    while (i == 0 && 1 != size_t(location_of_decimal_separator) &&
+           buffer[pos] == '0') {
       buffer[pos] = char(rand.next_digit() + '0');
     }
     pos++;
@@ -133,8 +145,9 @@ size_t build_random_string(RandomEngine &rand, char *buffer) {
 std::pair<double, bool> strtod_from_string(char *st) {
   double d;
   char *pr;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-    d = cygwin_strtod_l(st, &pr);
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
+  d = cygwin_strtod_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtod_l(st, &pr, c_locale);
@@ -152,8 +165,9 @@ std::pair<double, bool> strtod_from_string(char *st) {
 std::pair<float, bool> strtof_from_string(char *st) {
   float d;
   char *pr;
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
-    d = cygwin_strtof_l(st, &pr);
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
+  d = cygwin_strtof_l(st, &pr);
 #elif defined(_WIN32)
   static _locale_t c_locale = _create_locale(LC_ALL, "C");
   d = _strtof_l(st, &pr, c_locale);
@@ -176,14 +190,18 @@ bool tester(uint64_t seed, size_t volume) {
   char buffer[4096]; // large buffer (can't overflow)
   RandomEngine rand(seed);
   for (size_t i = 0; i < volume; i++) {
-    if((i%100000) == 0) { std::cout << "."; std::cout.flush(); }
+    if ((i % 100000) == 0) {
+      std::cout << ".";
+      std::cout.flush();
+    }
     size_t length = build_random_string(rand, buffer);
     std::pair<double, bool> expected_double = strtod_from_string(buffer);
     if (expected_double.second) {
       double result_value;
       auto result =
           fast_float::from_chars(buffer, buffer + length, result_value);
-      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
+      if (result.ec != std::errc() &&
+          result.ec != std::errc::result_out_of_range) {
         printf("parsing %.*s\n", int(length), buffer);
         std::cerr << " I could not parse " << std::endl;
         return false;
@@ -206,7 +224,8 @@ bool tester(uint64_t seed, size_t volume) {
       float result_value;
       auto result =
           fast_float::from_chars(buffer, buffer + length, result_value);
-      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
+      if (result.ec != std::errc() &&
+          result.ec != std::errc::result_out_of_range) {
         printf("parsing %.*s\n", int(length), buffer);
         std::cerr << " I could not parse " << std::endl;
         return false;
@@ -230,7 +249,8 @@ bool tester(uint64_t seed, size_t volume) {
 
 int main() {
 
-#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)  || defined(sun) || defined(__sun)
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
+    defined(sun) || defined(__sun)
   std::cout << "Warning: msys/cygwin or solaris detected." << std::endl;
   return EXIT_SUCCESS;
 #else

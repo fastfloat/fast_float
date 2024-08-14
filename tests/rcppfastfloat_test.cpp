@@ -75,7 +75,7 @@ bool eddelbuettel() {
       {true, 0.1},
       {true, 10},
       {true, 10},
-      };
+  };
   for (size_t i = 0; i < inputs.size(); i++) {
     const std::string &input = inputs[i];
     std::pair<bool, double> expected = expected_results[i];
@@ -121,7 +121,8 @@ bool eddelbuettel() {
       if (std::isnan(result) && std::isnan(expected.second)) {
         continue;
       }
-      std::cout << "results do not match. Expected "<<  expected.second << std::endl;
+      std::cout << "results do not match. Expected " << expected.second
+                << std::endl;
       return false;
     }
   }

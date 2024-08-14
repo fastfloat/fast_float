@@ -1,2 +1,2 @@
 #include "test.h"
-void foo() { }
+void foo() {}

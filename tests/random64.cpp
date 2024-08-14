@@ -14,7 +14,6 @@ template <typename T> char *to_string(T d, char *buffer) {
   return buffer + written;
 }
 
-
 static fast_float::value128 g_lehmer64_state;
 
 /**
@@ -35,7 +34,8 @@ static inline void lehmer64_seed(uint64_t seed) {
 }
 
 static inline uint64_t lehmer64() {
-  fast_float::value128 v = fast_float::full_multiplication(g_lehmer64_state.low,UINT64_C(0xda942042e4dd58b5));
+  fast_float::value128 v = fast_float::full_multiplication(
+      g_lehmer64_state.low, UINT64_C(0xda942042e4dd58b5));
   v.high += g_lehmer64_state.high * UINT64_C(0xda942042e4dd58b5);
   g_lehmer64_state = v;
   return v.high;
@@ -59,10 +59,12 @@ void random_values(size_t N) {
       const char *string_end = to_string(v, buffer);
       double result_value;
       auto result = fast_float::from_chars(buffer, string_end, result_value);
-      // Starting with version 4.0 for fast_float, we return result_out_of_range if the
-      // value is either too small (too close to zero) or too large (effectively infinity).
-      // So std::errc::result_out_of_range is normal for well-formed input strings.
-      if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
+      // Starting with version 4.0 for fast_float, we return result_out_of_range
+      // if the value is either too small (too close to zero) or too large
+      // (effectively infinity). So std::errc::result_out_of_range is normal for
+      // well-formed input strings.
+      if (result.ec != std::errc() &&
+          result.ec != std::errc::result_out_of_range) {
         std::cerr << "parsing error ? " << buffer << std::endl;
         errors++;
         if (errors > 10) {
@@ -78,10 +80,10 @@ void random_values(size_t N) {
             abort();
           }
         }
-      } else if(copysign(1,result_value) != copysign(1,v)) {
+      } else if (copysign(1, result_value) != copysign(1, v)) {
         std::cerr << buffer << std::endl;
-        std::cerr << "I got " << std::hexfloat << result_value << " but I was expecting " << v
-              << std::endl;
+        std::cerr << "I got " << std::hexfloat << result_value
+                  << " but I was expecting " << v << std::endl;
         abort();
       } else if (result_value != v) {
         std::cerr << "no match ? " << buffer << std::endl;
@@ -100,7 +102,8 @@ void random_values(size_t N) {
 
 int main() {
   errors = 0;
-  size_t N = size_t(1) << (sizeof(size_t) * 4); // shift: 32 for 64bit, 16 for 32bit
+  size_t N =
+      size_t(1) << (sizeof(size_t) * 4); // shift: 32 for 64bit, 16 for 32bit
   random_values(N);
   if (errors == 0) {
     std::cout << std::endl;
