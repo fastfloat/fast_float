@@ -76,6 +76,15 @@ const char *round_name(int d) {
 #define FASTFLOAT_STR(x) #x
 #define SHOW_DEFINE(x) printf("%s='%s'\n", #x, FASTFLOAT_STR(x))
 
+TEST_CASE("issue261") {
+  std::string_view str = "5.47382e-48";
+  float value = 100.0f;
+  auto res = fast_float::from_chars(str.data(), str.data() + str.size(), value, fast_float::general);
+  CHECK_MESSAGE(res.ec == std::errc::result_out_of_range, "value is out of range (interpretation of the standard)");
+  std::cout << "value = " << fHexAndDec(value) << std::endl;
+  CHECK_MESSAGE(value == 100.0f, "value should be unchanged");
+  CHECK_MESSAGE(res.ptr == str.data() + str.size(), "should point to end of matching pattern");
+}
 TEST_CASE("system_info") {
   std::cout << "system info:" << std::endl;
 #ifdef FASTFLOAT_CONSTEXPR_TESTS
@@ -399,6 +408,8 @@ TEST_CASE("full_multiplication") {
   test_full_multiplication(bit << 63, bit << 2, 0u, 2u);
   test_full_multiplication(bit << 63, bit << 63, 0u, bit << 62);
 }
+
+
 
 TEST_CASE("issue8") {
   const char *s =

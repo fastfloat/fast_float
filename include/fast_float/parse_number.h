@@ -199,7 +199,7 @@ from_chars(UC const *first, UC const *last, T &value,
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
-
+printf("from_chars_advanced\n");
   static_assert(is_supported_float_type<T>(),
                 "only some floating-point types are supported");
   static_assert(is_supported_char_type<UC>(),
@@ -275,11 +275,12 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
   if (am.power2 < 0) {
     am = digit_comp<T>(pns, am);
   }
-  to_float(pns.negative, am, value);
   // Test for over/underflow.
   if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
       am.power2 == binary_format<T>::infinite_power()) {
     answer.ec = std::errc::result_out_of_range;
+  } else {
+    to_float(pns.negative, am, value);
   }
   return answer;
 }
