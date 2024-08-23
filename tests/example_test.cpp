@@ -77,6 +77,28 @@ consteval double parse(std::string_view input) {
 constexpr double constexptest() { return parse("3.1415 input"); }
 #endif
 
+bool small() {
+	double result = -1;
+	std::string str = "3e-1000";
+	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  if(r.ec != std::errc::result_out_of_range) { return false; }
+  if(r.ptr != str.data() + 7) { return false; }
+  if(result != 0) { return false; }
+  printf("small values go to zero\n");
+	return true;
+}
+
+bool large() {
+	double result = -1;
+	std::string str = "3e1000";
+	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  if(r.ec != std::errc::result_out_of_range) { return false; }
+  if(r.ptr != str.data() + 6) { return false; }
+  if(result != std::numeric_limits<double>::infinity()) { return false; }
+  printf("large values go to infinity\n");
+	return true;
+}
+
 int main() {
   const std::string input = "3.1416 xyz ";
   double result;
@@ -87,6 +109,14 @@ int main() {
     return EXIT_FAILURE;
   }
   std::cout << "parsed the number " << result << std::endl;
+  if (!small()) {
+    printf("Bug\n");
+    return EXIT_FAILURE;
+  }
+  if (!large()) {
+    printf("Bug\n");
+    return EXIT_FAILURE;
+  }
 
   if (!many()) {
     printf("Bug\n");

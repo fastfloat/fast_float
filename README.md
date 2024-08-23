@@ -144,6 +144,39 @@ print the number 22250738585072012 three times:
   std::cout << "parsed the number "<< i << std::endl;
 ```
 
+## Behavior of result_out_of_range
+
+When parsing floating-point values, the numbers can sometimes be too small (e.g., `1e-1000`) or
+too large (e.g., `1e1000`). In such cases, it is customary to parse small values to zero and large
+values to infinity. That is the behaviour followed by the fast_float library.
+
+Specifically, we follow Jonathan Wakely's interpretation of the standard:
+
+> In any case, the resulting value is one of at most two floating-point values closest to the value of the string matching the pattern. On overflow, value is set to plus or minus `std::numeric_limits<T>::max()` of the appropriate type. On underflow, value is set to a value with magnitude no greater than `std::numeric_limits<T>::min()`.
+
+It is also the approach taken by the [Microsoft C++ library](https://github.com/microsoft/STL/blob/62205ab155d093e71dd9588a78f02c5396c3c14b/tests/std/tests/P0067R5_charconv/test.cpp#L943-L946).
+
+Hence, we have the following examples:
+
+```cpp
+	double result = -1;
+	std::string str = "3e-1000";
+	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  // r.ec == std::errc::result_out_of_range
+  // r.ptr == str.data() + 7
+  // result == 0
+```
+
+
+```cpp
+	double result = -1;
+	std::string str = "3e1000";
+	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  // r.ec == std::errc::result_out_of_range
+  // r.ptr == str.data() + 6
+  // result == std::numeric_limits<double>::infinity()
+```
+
 ## C++20: compile-time evaluation (constexpr)
 
 In C++20, you may use `fast_float::from_chars` to parse strings
