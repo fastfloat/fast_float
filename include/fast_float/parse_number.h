@@ -182,7 +182,6 @@ template <> struct from_chars_caller<std::float64_t> {
   }
 };
 #endif
-
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
@@ -199,12 +198,10 @@ from_chars(UC const *first, UC const *last, T &value,
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
-
   static_assert(is_supported_float_type<T>(),
                 "only some floating-point types are supported");
   static_assert(is_supported_char_type<UC>(),
                 "only char, wchar_t, char16_t and char32_t are supported");
-
   from_chars_result_t<UC> answer;
 
   answer.ec = std::errc(); // be optimistic

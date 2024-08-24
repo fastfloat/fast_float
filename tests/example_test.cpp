@@ -78,29 +78,41 @@ constexpr double constexptest() { return parse("3.1415 input"); }
 #endif
 
 bool small() {
-	double result = -1;
-	std::string str = "3e-1000";
-	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
-  if(r.ec != std::errc::result_out_of_range) { return false; }
-  if(r.ptr != str.data() + 7) { return false; }
-  if(result != 0) { return false; }
+  double result = -1;
+  std::string str = "3e-1000";
+  auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  if (r.ec != std::errc::result_out_of_range) {
+    return false;
+  }
+  if (r.ptr != str.data() + 7) {
+    return false;
+  }
+  if (result != 0) {
+    return false;
+  }
   printf("small values go to zero\n");
-	return true;
+  return true;
 }
 
 bool large() {
-	double result = -1;
-	std::string str = "3e1000";
-	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
-  if(r.ec != std::errc::result_out_of_range) { return false; }
-  if(r.ptr != str.data() + 6) { return false; }
-  if(result != std::numeric_limits<double>::infinity()) { return false; }
+  double result = -1;
+  std::string str = "3e1000";
+  auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  if (r.ec != std::errc::result_out_of_range) {
+    return false;
+  }
+  if (r.ptr != str.data() + 6) {
+    return false;
+  }
+  if (result != std::numeric_limits<double>::infinity()) {
+    return false;
+  }
   printf("large values go to infinity\n");
-	return true;
+  return true;
 }
 
 int main() {
-  const std::string input = "3.1416 xyz ";
+  std::string input = "3.1416 xyz ";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);
@@ -109,6 +121,19 @@ int main() {
     return EXIT_FAILURE;
   }
   std::cout << "parsed the number " << result << std::endl;
+#ifdef __STDCPP_FLOAT16_T__
+  // Parse as 16-bit float
+  std::float16_t parsed_16{};
+  input = "10000e-1452";
+  auto fast_float_r16 =
+      fast_float::from_chars(input.data(), input.data() + input.size(), parsed_16);
+  if (fast_float_r16.ec != std::errc() &&
+              fast_float_r16.ec != std::errc::result_out_of_range) {
+    std::cerr << "16-bit fast_float parsing failure for: " + input + "\n";
+    return false;
+  }
+  std::cout << "parsed the 16-bit value " << float(parsed_16) << std::endl;
+#endif
   if (!small()) {
     printf("Bug\n");
     return EXIT_FAILURE;
