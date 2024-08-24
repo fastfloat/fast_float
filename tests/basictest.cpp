@@ -275,6 +275,16 @@ bool check_file(std::string file_name) {
       std::string str;
       while (std::getline(newfile, str)) {
         if (str.size() > 0) {
+#ifdef __STDCPP_FLOAT16_T__
+          // Read 16-bit hex
+          uint16_t float16;
+          auto r16 =
+              std::from_chars(str.data(), str.data() + str.size(), float16, 16);
+          if (r16.ec != std::errc()) {
+            std::cerr << "16-bit parsing failure\n";
+            return false;
+          }
+#endif
           // Read 32-bit hex
           uint32_t float32;
           auto r32 = std::from_chars(str.data() + 5, str.data() + str.size(),
@@ -294,6 +304,17 @@ bool check_file(std::string file_name) {
           // The string to parse:
           char const *number_string = str.data() + 31;
           char const *end_of_string = str.data() + str.size();
+#ifdef __STDCPP_FLOAT16_T__
+          // Parse as 16-bit float
+          std::float16_t parsed_16{};
+          // auto fast_float_r16 =
+          fast_float::from_chars(number_string, end_of_string, parsed_16);
+          // if (fast_float_r16.ec != std::errc() &&
+          //   fast_float_r16.ec != std::errc::result_out_of_range) {
+          // std::cerr << "16-bit fast_float parsing failure for: " + str +
+          // "\n"; return false;
+          // }
+#endif
           // Parse as 32-bit float
           float parsed_32;
           auto fast_float_r32 =
@@ -313,11 +334,29 @@ bool check_file(std::string file_name) {
             return false;
           }
           // Convert the floats to unsigned ints.
+#ifdef __STDCPP_FLOAT16_T__
+          uint16_t float16_parsed;
+#endif
           uint32_t float32_parsed;
           uint64_t float64_parsed;
+#ifdef __STDCPP_FLOAT16_T__
+          ::memcpy(&float16_parsed, &parsed_16, sizeof(parsed_16));
+
+#endif
           ::memcpy(&float32_parsed, &parsed_32, sizeof(parsed_32));
           ::memcpy(&float64_parsed, &parsed_64, sizeof(parsed_64));
           // Compare with expected results
+#ifdef __STDCPP_FLOAT16_T__
+          if (float16_parsed != float16) {
+            std::cout << "bad 16 " << str << std::endl;
+            std::cout << "parsed as " << iHexAndDec(parsed_16) << std::endl;
+            std::cout << "as  raw uint16_t, parsed = " << float16_parsed
+                      << ", expected = " << float16 << std::endl;
+            std::cout << "fesetround: " << round_name(d) << std::endl;
+            fesetround(FE_TONEAREST);
+            return false;
+          }
+#endif
           if (float32_parsed != float32) {
             std::cout << "bad 32 " << str << std::endl;
             std::cout << "parsed as " << iHexAndDec(parsed_32) << std::endl;
