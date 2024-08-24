@@ -307,13 +307,13 @@ bool check_file(std::string file_name) {
 #ifdef __STDCPP_FLOAT16_T__
           // Parse as 16-bit float
           std::float16_t parsed_16{};
-          // auto fast_float_r16 =
-          fast_float::from_chars(number_string, end_of_string, parsed_16);
-          // if (fast_float_r16.ec != std::errc() &&
-          //   fast_float_r16.ec != std::errc::result_out_of_range) {
-          // std::cerr << "16-bit fast_float parsing failure for: " + str +
-          // "\n"; return false;
-          // }
+          auto fast_float_r16 =
+              fast_float::from_chars(number_string, end_of_string, parsed_16);
+          if (fast_float_r16.ec != std::errc() &&
+              fast_float_r16.ec != std::errc::result_out_of_range) {
+            std::cerr << "16-bit fast_float parsing failure for: " + str + "\n";
+            return false;
+          }
 #endif
           // Parse as 32-bit float
           float parsed_32;
