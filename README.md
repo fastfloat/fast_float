@@ -162,9 +162,9 @@ It is also the approach taken by the [Microsoft C++ library](https://github.com/
 Hence, we have the following examples:
 
 ```cpp
-	double result = -1;
-	std::string str = "3e-1000";
-	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  double result = -1;
+  std::string str = "3e-1000";
+  auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
   // r.ec == std::errc::result_out_of_range
   // r.ptr == str.data() + 7
   // result == 0
@@ -172,9 +172,9 @@ Hence, we have the following examples:
 
 
 ```cpp
-	double result = -1;
-	std::string str = "3e1000";
-	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  double result = -1;
+  std::string str = "3e1000";
+  auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
   // r.ec == std::errc::result_out_of_range
   // r.ptr == str.data() + 6
   // result == std::numeric_limits<double>::infinity()
