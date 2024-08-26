@@ -180,6 +180,15 @@ Hence, we have the following examples:
   // result == std::numeric_limits<double>::infinity()
 ```
 
+Users who wish for the value to be left unmodified given `std::errc::result_out_of_range` may do so by adding two lines of code:
+
+```cpp
+  double old_result = result; // make copy
+  auto r = fast_float::from_chars(start, end, result);
+  if(r.ec == std::errc::result_out_of_range) { result = old_result; }
+```
+
+
 ## C++20: compile-time evaluation (constexpr)
 
 In C++20, you may use `fast_float::from_chars` to parse strings
