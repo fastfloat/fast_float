@@ -155,7 +155,7 @@ values to infinity. That is the behaviour of the C language (e.g., `stdtod`). Th
 
 Specifically, we follow Jonathan Wakely's interpretation of the standard:
 
-> In any case, the resulting value is one of at most two floating-point values closest to the value of the string matching the pattern. On overflow, value is set to plus or minus `std::numeric_limits<T>::max()` of the appropriate type. On underflow, value is set to a value with magnitude no greater than `std::numeric_limits<T>::min()`.
+> In any case, the resulting value is one of at most two floating-point values closest to the value of the string matching the pattern.
 
 It is also the approach taken by the [Microsoft C++ library](https://github.com/microsoft/STL/blob/62205ab155d093e71dd9588a78f02c5396c3c14b/tests/std/tests/P0067R5_charconv/test.cpp#L943-L946).
 
