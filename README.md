@@ -415,6 +415,16 @@ target_link_libraries(myprogram PUBLIC fast_float)
 
 You should change the `GIT_TAG` line so that you recover the version you wish to use.
 
+You may also use [CPM](https://github.com/cpm-cmake/CPM.cmake), like so:
+
+```
+CPMAddPackage(
+    NAME fast_float
+    GITHUB_REPOSITORY "fastfloat/fast_float"
+    GIT_TAG v6.1.4)
+```
+
+
 ## Using as single header
 
 The script `script/amalgamate.py` may be used to generate a single header
@@ -426,6 +436,12 @@ the command line help.
 You may directly download automatically generated single-header files:
 
 https://github.com/fastfloat/fast_float/releases/download/v6.1.4/fast_float.h
+
+## Packages
+
+- The fast_float library is part of the [Conan package manager](https://conan.io/center/recipes/fast_float).
+- It is part of the [brew package manager](https://formulae.brew.sh/formula/fast_float).
+- Some Linux distribution like Fedora include fast_float (e.g., as `fast_float-devel`).
 
 ## RFC 7159
 
