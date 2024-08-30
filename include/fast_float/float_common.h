@@ -442,11 +442,15 @@ template <typename U> struct binary_format_lookup_tables<double, U> {
                           constant_55555 * 5 * 5 * 5 * 5)};
 };
 
+#if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
+
 template <typename U>
 constexpr double binary_format_lookup_tables<double, U>::powers_of_ten[];
 
 template <typename U>
 constexpr uint64_t binary_format_lookup_tables<double, U>::max_mantissa[];
+
+#endif
 
 template <typename U> struct binary_format_lookup_tables<float, U> {
   static constexpr float powers_of_ten[] = {1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f,
@@ -469,11 +473,15 @@ template <typename U> struct binary_format_lookup_tables<float, U> {
       0x1000000 / (constant_55555 * constant_55555 * 5)};
 };
 
+#if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
+
 template <typename U>
 constexpr float binary_format_lookup_tables<float, U>::powers_of_ten[];
 
 template <typename U>
 constexpr uint64_t binary_format_lookup_tables<float, U>::max_mantissa[];
+
+#endif
 
 template <>
 inline constexpr int binary_format<double>::min_exponent_fast_path() {
@@ -677,7 +685,11 @@ template <typename = void> struct space_lut {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 };
 
+#if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
+
 template <typename T> constexpr bool space_lut<T>::value[];
+
+#endif
 
 inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
 #endif
@@ -759,11 +771,15 @@ template <typename = void> struct int_luts {
       3379220508056640625,     4738381338321616896};
 };
 
+#if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
+
 template <typename T> constexpr uint8_t int_luts<T>::chdigit[];
 
 template <typename T> constexpr size_t int_luts<T>::maxdigits_u64[];
 
 template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
+
+#endif
 
 template <typename UC>
 fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
