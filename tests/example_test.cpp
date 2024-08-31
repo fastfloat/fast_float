@@ -78,25 +78,37 @@ constexpr double constexptest() { return parse("3.1415 input"); }
 #endif
 
 bool small() {
-	double result = -1;
-	std::string str = "3e-1000";
-	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
-  if(r.ec != std::errc::result_out_of_range) { return false; }
-  if(r.ptr != str.data() + 7) { return false; }
-  if(result != 0) { return false; }
+  double result = -1;
+  std::string str = "3e-1000";
+  auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  if (r.ec != std::errc::result_out_of_range) {
+    return false;
+  }
+  if (r.ptr != str.data() + 7) {
+    return false;
+  }
+  if (result != 0) {
+    return false;
+  }
   printf("small values go to zero\n");
-	return true;
+  return true;
 }
 
 bool large() {
-	double result = -1;
-	std::string str = "3e1000";
-	auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
-  if(r.ec != std::errc::result_out_of_range) { return false; }
-  if(r.ptr != str.data() + 6) { return false; }
-  if(result != std::numeric_limits<double>::infinity()) { return false; }
+  double result = -1;
+  std::string str = "3e1000";
+  auto r = fast_float::from_chars(str.data(), str.data() + str.size(), result);
+  if (r.ec != std::errc::result_out_of_range) {
+    return false;
+  }
+  if (r.ptr != str.data() + 6) {
+    return false;
+  }
+  if (result != std::numeric_limits<double>::infinity()) {
+    return false;
+  }
   printf("large values go to infinity\n");
-	return true;
+  return true;
 }
 
 int main() {
