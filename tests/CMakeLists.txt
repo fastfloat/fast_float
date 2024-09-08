@@ -11,6 +11,8 @@ if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/onqtam/doctest.git
     GIT_TAG v2.4.11)
+else ()
+  find_package(doctest REQUIRED)
 endif()
 if (FASTFLOAT_SUPPLEMENTAL_TESTS)
   FetchContent_Declare(supplemental_test_files
@@ -59,6 +61,8 @@ function(fast_float_add_cpp_test TEST_NAME)
     target_link_libraries(${TEST_NAME} PUBLIC fast_float supplemental-data)
     if (NOT SYSTEM_DOCTEST)
       target_link_libraries(${TEST_NAME} PUBLIC doctest)
+    else ()
+      target_link_libraries(${TEST_NAME} PUBLIC doctest::doctest)
     endif()
 endfunction(fast_float_add_cpp_test)
 
