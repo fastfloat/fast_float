@@ -122,6 +122,7 @@ int main() {
   }
   std::cout << "parsed the number " << result << std::endl;
 #ifdef __STDCPP_FLOAT16_T__
+  printf("16-bit float\n");
   // Parse as 16-bit float
   std::float16_t parsed_16{};
   input = "10000e-1452";
