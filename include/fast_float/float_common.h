@@ -212,6 +212,89 @@ fastfloat_really_inline constexpr bool is_supported_float_type() {
       ;
 }
 
+union float_union {
+    float f;
+    uint32_t bits;
+};
+
+union double_union {
+    double f;
+    uint64_t bits;
+};
+
+template <typename T, typename U>
+constexpr T bit_cast(const U &u);
+
+template<>
+fastfloat_really_inline constexpr float bit_cast(const uint32_t &u) {
+  float_union fu;
+  fu.bits = u;
+  return fu.f;
+}
+
+template<>
+fastfloat_really_inline constexpr double bit_cast(const uint64_t &u) {
+  double_union fu;
+  fu.bits = u;
+  return fu.f;
+}
+
+template<>
+fastfloat_really_inline constexpr uint32_t bit_cast(const float &u) {
+  float_union fu;
+  fu.f = u;
+  return fu.bits;
+}
+
+template<>
+fastfloat_really_inline constexpr uint64_t bit_cast(const double &u) {
+  double_union fu;
+  fu.f = u;
+  return fu.bits;
+}
+
+#ifdef __STDCPP_FLOAT16_T__
+union float16_union {
+    std::float16_t f;
+    uint16_t bits;
+};
+
+template<>
+fastfloat_really_inline constexpr uint16_t bit_cast(const std::float16_t &u) {
+  float16_union fu;
+  fu.f = u;
+  return fu.bits;
+}
+
+template<>
+fastfloat_really_inline constexpr std::float16_t bit_cast(const uint16_t &u) {
+  float16_union fu;
+  fu.bits = u;
+  return fu.f;
+}
+#endif // __STDCPP_FLOAT16_T__
+#ifdef __STDCPP_BFLOAT16_T__
+union bfloat16_union {
+    std::bfloat16_t f;
+    uint16_t bits;
+};
+
+template<>
+fastfloat_really_inline constexpr uint16_t bit_cast(const std::bfloat16_t &u) {
+  bfloat16_union fu;
+  fu.f = u;
+  return fu.bits;
+}
+
+template<>
+fastfloat_really_inline constexpr std::bfloat16_t bit_cast(const uint16_t &u) {
+  bfloat16_union fu;
+  fu.bits = u;
+  return fu.f;
+}
+#endif // __STDCPP_BFLOAT16_T__
+
+
 template <typename UC>
 fastfloat_really_inline constexpr bool is_supported_char_type() {
   return std::is_same<UC, char>::value || std::is_same<UC, wchar_t>::value ||
@@ -384,7 +467,7 @@ template <typename T, typename U = void> struct binary_format_lookup_tables;
 
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   using equiv_uint =
-      typename std::conditional<sizeof(T) == 4, uint32_t, uint64_t>::type;
+      typename std::conditional<sizeof(T) == 2, uint16_t, typename std::conditional<sizeof(T) == 4, uint32_t, uint64_t>::type>::type;
 
   static inline constexpr int mantissa_explicit_bits();
   static inline constexpr int minimum_exponent();
@@ -566,10 +649,9 @@ inline constexpr uint64_t binary_format<double>::max_mantissa_fast_path() {
 
 // credit: Jakub Jelínek
 #ifdef __STDCPP_FLOAT16_T__
-
 template <typename U> struct binary_format_lookup_tables<std::float16_t, U> {
-  static constexpr std::float16_t powers_of_ten[] = {};
-  static constexpr uint64_t max_mantissa[] = {};
+  static constexpr std::float16_t powers_of_ten[] = {1};// todo: fix this
+  static constexpr uint64_t max_mantissa[] = {1};// todo: fix this
 };
 
 template <typename U>
@@ -581,6 +663,30 @@ constexpr uint64_t
     binary_format_lookup_tables<std::float16_t, U>::max_mantissa[];
 
 template <>
+inline constexpr std::float16_t
+binary_format<std::float16_t>::exact_power_of_ten(int64_t power) {
+  return powers_of_ten[power];
+}
+
+template <>
+inline constexpr binary_format<std::float16_t>::equiv_uint
+binary_format<std::float16_t>::exponent_mask() {
+  return 0x7C00;
+}
+
+template <>
+inline constexpr binary_format<std::float16_t>::equiv_uint
+binary_format<std::float16_t>::mantissa_mask() {
+  return 0x03FF;
+}
+
+template <>
+inline constexpr binary_format<std::float16_t>::equiv_uint
+binary_format<std::float16_t>::hidden_bit_mask() {
+  return 0x0400;
+}
+
+template <>
 inline constexpr int binary_format<std::float16_t>::max_exponent_fast_path() {
   return 0;
 }
@@ -589,6 +695,12 @@ template <>
 inline constexpr uint64_t
 binary_format<std::float16_t>::max_mantissa_fast_path() {
   return 0;
+}
+
+template <>
+inline constexpr uint64_t
+binary_format<std::float16_t>::max_mantissa_fast_path(int64_t power) {
+  return max_mantissa[power];
 }
 
 template <>
@@ -640,11 +752,10 @@ template <> constexpr size_t binary_format<std::float16_t>::max_digits() {
 
 // credit: Jakub Jelínek
 #ifdef __STDCPP_BFLOAT16_T__
-
 template <typename U> struct binary_format_lookup_tables<std::bfloat16_t, U> {
-  static constexpr std::bfloat16_t powers_of_ten[] = {};
+  static constexpr std::bfloat16_t powers_of_ten[] = {1};// todo: fix this
 
-  static constexpr uint64_t max_mantissa[] = {};
+  static constexpr uint64_t max_mantissa[] = {1};// todo: fix this
 };
 
 template <typename U>
@@ -656,14 +767,44 @@ constexpr uint64_t
     binary_format_lookup_tables<std::bfloat16_t, U>::max_mantissa[];
 
 template <>
+inline constexpr std::bfloat16_t
+binary_format<std::bfloat16_t>::exact_power_of_ten(int64_t power) {
+  return (void)powers_of_ten[0], powers_of_ten[power];
+}
+
+template <>
 inline constexpr int binary_format<std::bfloat16_t>::max_exponent_fast_path() {
   return 0;
+}
+
+template <>
+inline constexpr binary_format<std::bfloat16_t>::equiv_uint
+binary_format<std::bfloat16_t>::exponent_mask() {
+  return 0x7F80;
+}
+
+template <>
+inline constexpr binary_format<std::bfloat16_t>::equiv_uint
+binary_format<std::bfloat16_t>::mantissa_mask() {
+  return 0x007F;
+}
+
+template <>
+inline constexpr binary_format<std::bfloat16_t>::equiv_uint
+binary_format<std::bfloat16_t>::hidden_bit_mask() {
+  return 0x0080;
 }
 
 template <>
 inline constexpr uint64_t
 binary_format<std::bfloat16_t>::max_mantissa_fast_path() {
   return 0;
+}
+
+template <>
+inline constexpr uint64_t
+binary_format<std::bfloat16_t>::max_mantissa_fast_path(int64_t power) {
+  return max_mantissa[power];
 }
 
 template <>
@@ -818,6 +959,32 @@ to_float(bool negative, adjusted_mantissa am, T &value) {
   ::memcpy(&value, &word, sizeof(T));
 #endif
 }
+#ifdef __STDCPP_FLOAT16_T__
+template<>
+fastfloat_really_inline void
+to_float<std::float16_t>(bool negative, adjusted_mantissa am,
+          std::float16_t &value)
+{
+  constexpr int mantissa_bits
+    = binary_format<std::float16_t>::mantissa_explicit_bits();
+  value = bit_cast<std::float16_t> (uint16_t(am.mantissa
+    | (uint16_t(am.power2) << mantissa_bits)
+    | (negative ? 0x8000 : 0)));
+}
+#endif // __STDCPP_FLOAT16_T__
+#ifdef __STDCPP_BFLOAT16_T__
+template<>
+fastfloat_really_inline void
+to_float<std::bfloat16_t>(bool negative, adjusted_mantissa am,
+            std::bfloat16_t &value)
+{
+  constexpr int mantissa_bits
+    = binary_format<std::bfloat16_t>::mantissa_explicit_bits();
+  value = bit_cast<std::bfloat16_t>(uint16_t(am.mantissa
+    | (uint16_t(am.power2) << mantissa_bits)
+    | (negative ? 0x8000 : 0)));
+}
+#endif // __STDCPP_BFLOAT16_T__
 
 #ifdef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
 template <typename = void> struct space_lut {
@@ -937,6 +1104,21 @@ fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
 fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
   return int_luts<>::min_safe_u64[base - 2];
 }
+
+
+
+static_assert(std::is_same<binary_format<double>::equiv_uint, uint64_t>::value,
+              "equiv_uint should be uint64_t for double");
+static_assert(std::is_same<binary_format<float>::equiv_uint, uint32_t>::value,
+              "equiv_uint should be uint32_t for float");
+#ifdef __STDCPP_FLOAT16_T__
+static_assert(std::is_same<binary_format<std::float16_t>::equiv_uint, uint16_t>::value,
+              "equiv_uint should be uint16_t for std::float16_t");
+#endif // __STDCPP_FLOAT16_T__
+#ifdef __STDCPP_BFLOAT16_T__
+static_assert(std::is_same<binary_format<std::bfloat16_t>::equiv_uint, uint16_t>::value,
+              "equiv_uint should be uint16_t for std::bfloat16_t");
+#endif // __STDCPP_BFLOAT16_T__
 
 } // namespace fast_float
 
