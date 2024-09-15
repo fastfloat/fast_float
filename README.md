@@ -334,13 +334,14 @@ int main() {
 
 The fast_float library is part of:
 
-- GCC (as of version 12): the `from_chars` function in GCC relies on fast_float.
+- GCC (as of version 12): the `from_chars` function in GCC relies on fast_float,
 - [Chromium](https://github.com/Chromium/Chromium), the engine behind Google Chrome and Microsoft Edge,
-- [WebKit](https://github.com/WebKit/WebKit), the engine behind Safari (Apple's web browser)
-- [DuckDB](https://duckdb.org)
-- [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times
-- [Google Jsonnet](https://github.com/google/jsonnet)
-- [ClickHouse](https://github.com/ClickHouse/ClickHouse)
+- [WebKit](https://github.com/WebKit/WebKit), the engine behind Safari (Apple's web browser),
+- [DuckDB](https://duckdb.org),
+- [Redis](https://github.com/redis/redis),
+- [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied the number parsing speed by two or three times,
+- [Google Jsonnet](https://github.com/google/jsonnet),
+- [ClickHouse](https://github.com/ClickHouse/ClickHouse).
 
 
 The fastfloat algorithm is part of the [LLVM standard libraries](https://github.com/llvm/llvm-project/commit/87c016078ad72c46505461e4ff8bfa04819fe7ba). There is a [derived implementation part of AdaCore](https://github.com/AdaCore/VSS).
