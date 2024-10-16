@@ -405,8 +405,8 @@ Or you may want to retrieve the dependency automatically if you have a sufficien
 ```cmake
 FetchContent_Declare(
   fast_float
-  GIT_REPOSITORY https://github.com/lemire/fast_float.git
-  GIT_TAG tags/v1.1.2
+  GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
+  GIT_TAG tags/v6.1.6
   GIT_SHALLOW TRUE)
 
 FetchContent_MakeAvailable(fast_float)
@@ -422,7 +422,7 @@ You may also use [CPM](https://github.com/cpm-cmake/CPM.cmake), like so:
 CPMAddPackage(
     NAME fast_float
     GITHUB_REPOSITORY "fastfloat/fast_float"
-    GIT_TAG v6.1.4)
+    GIT_TAG v6.1.6)
 ```
 
 
