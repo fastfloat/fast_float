@@ -27,7 +27,10 @@ for filename in ['LICENSE-MIT', 'LICENSE-APACHE', 'LICENSE-BOOST']:
 
   text = ''
   for line in lines:
-    text += '//    ' + line.strip() + '\n'
+    line = line.strip()
+    if len(line):
+      line = '    ' + line
+    text += '//' + line + '\n'
   processed_files[filename] = text
 
 # code
