@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
+#include "doctest/doctest.h"
 
 #include "fast_float/fast_float.h"
 #include <cmath>

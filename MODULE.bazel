@@ -1,0 +1,9 @@
+"""fast_float number parsing library: 4x faster than strtod"""
+
+module(
+    name = "fast_float",
+    version = "6.1.6",
+    compatibility_level = 6,
+)
+
+bazel_dep(name = "doctest", version = "2.4.11", dev_dependency = True)

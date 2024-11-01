@@ -2,6 +2,7 @@ build/*
 Testing/*
 .cache/
 compile_commands.json
+bazel-*
 
 # Visual studio
 .vs/

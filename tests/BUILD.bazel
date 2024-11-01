@@ -1,0 +1,98 @@
+cc_test(
+    name = "basictest",
+    srcs = ["basictest.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "example_test",
+    srcs = ["example_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "example_comma_test",
+    srcs = ["example_comma_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "fast_int",
+    srcs = ["fast_int.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "fixedwidthtest",
+    srcs = ["fixedwidthtest.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "fortran",
+    srcs = ["fortran.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "json_fmt",
+    srcs = ["json_fmt.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "long_test",
+    srcs = ["long_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "powersoffive_hardround",
+    srcs = ["powersoffive_hardround.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "rcppfastfloat_test",
+    srcs = ["rcppfastfloat_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
+    name = "string_test",
+    srcs = ["string_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
