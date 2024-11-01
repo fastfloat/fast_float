@@ -4,7 +4,10 @@
 #include <cstring>
 #include "fast_float/fast_float.h"
 #include <cstdint>
+
+#if __cplusplus >= 202300L
 #include <stdfloat>
+#endif
 
 int main() {
   // Write some testcases for the parsing of floating point numbers in the
