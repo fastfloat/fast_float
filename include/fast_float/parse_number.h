@@ -25,18 +25,15 @@ from_chars_result_t<UC> FASTFLOAT_CONSTEXPR14 parse_infnan(UC const *first,
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
-  bool minusSign = false;
-  if (*first ==
-      UC('-')) { // assume first < last, so dereference without checks;
-                 // C++17 20.19.3.(7.1) explicitly forbids '+' here
-    minusSign = true;
-    ++first;
-  }
+  bool const minusSign = (*first == UC('-')); // assume first < last, so dereference without checks;
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if (*first == UC('+')) {
+  if ((*first == UC('-')) || (*first == UC('+'))) {
+#else
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if (*first == UC('-')) {
+#endif
     ++first;
   }
-#endif
   if (last - first >= 3) {
     if (fastfloat_strncasecmp(first, str_const_nan<UC>(), 3)) {
       answer.ptr = (first += 3);
