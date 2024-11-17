@@ -41,7 +41,10 @@ bool eddelbuettel() {
                                      "-.1",
                                      "+.1",
                                      "1e+1",
-                                     "+1e1"};
+                                     "+1e1",
+                                     "-+0",
+                                     "-+inf",
+                                     "-+nan"};
   std::vector<std::pair<bool, double>> expected_results = {
       {true, std::numeric_limits<double>::infinity()},
       {true, 3.16227766016838},
@@ -75,6 +78,9 @@ bool eddelbuettel() {
       {true, 0.1},
       {true, 10},
       {true, 10},
+      {false, -1},
+      {false, -1},
+      {false, -1},
   };
   for (size_t i = 0; i < inputs.size(); i++) {
     const std::string &input = inputs[i];
