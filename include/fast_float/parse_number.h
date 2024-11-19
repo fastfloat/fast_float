@@ -25,18 +25,16 @@ from_chars_result_t<UC> FASTFLOAT_CONSTEXPR14 parse_infnan(UC const *first,
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
-  bool minusSign = false;
-  if (*first ==
-      UC('-')) { // assume first < last, so dereference without checks;
-                 // C++17 20.19.3.(7.1) explicitly forbids '+' here
-    minusSign = true;
-    ++first;
-  }
+  // assume first < last, so dereference without checks;
+  bool const minusSign = (*first == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if (*first == UC('+')) {
+  if ((*first == UC('-')) || (*first == UC('+'))) {
+#else
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if (*first == UC('-')) {
+#endif
     ++first;
   }
-#endif
   if (last - first >= 3) {
     if (fastfloat_strncasecmp(first, str_const_nan<UC>(), 3)) {
       answer.ptr = (first += 3);
@@ -93,7 +91,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // However, it is expected to be much faster than the fegetround()
   // function call.
   //
-  // The volatile keywoard prevents the compiler from computing the function
+  // The volatile keyword prevents the compiler from computing the function
   // at compile-time.
   // There might be other ways to prevent compile-time optimizations (e.g.,
   // asm). The value does not need to be std::numeric_limits<float>::min(), any

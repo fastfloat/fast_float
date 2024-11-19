@@ -476,7 +476,7 @@ parse_int_string(UC const *p, UC const *pend, T &value, int base) {
 
   UC const *const first = p;
 
-  bool negative = (*p == UC('-'));
+  bool const negative = (*p == UC('-'));
   if (!std::is_signed<T>::value && negative) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
