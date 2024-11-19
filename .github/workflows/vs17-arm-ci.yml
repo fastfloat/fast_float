@@ -10,8 +10,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {gen: Visual Studio 17 2022, arch: ARM, cfg: Release}
-          - {gen: Visual Studio 17 2022, arch: ARM, cfg: Debug}
           - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Release}
           - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Debug}
     steps:
