@@ -25,7 +25,8 @@ from_chars_result_t<UC> FASTFLOAT_CONSTEXPR14 parse_infnan(UC const *first,
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
-  bool const minusSign = (*first == UC('-')); // assume first < last, so dereference without checks;
+  // assume first < last, so dereference without checks;
+  bool const minusSign = (*first == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
   if ((*first == UC('-')) || (*first == UC('+'))) {
 #else
