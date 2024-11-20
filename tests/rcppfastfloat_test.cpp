@@ -9,90 +9,62 @@
 #include <string>
 #include <vector>
 
+struct test_data {
+  std::string input;
+  bool expected_success;
+  double expected_result;
+};
+
 bool eddelbuettel() {
-  std::vector<std::string> inputs = {"infinity",
-                                     " \r\n\t\f\v3.16227766016838 \r\n\t\f\v",
-                                     " \r\n\t\f\v3 \r\n\t\f\v",
-                                     "  1970-01-01",
-                                     "-NaN",
-                                     "-inf",
-                                     " \r\n\t\f\v2.82842712474619 \r\n\t\f\v",
-                                     "nan",
-                                     " \r\n\t\f\v2.44948974278318 \r\n\t\f\v",
-                                     "Inf",
-                                     " \r\n\t\f\v2 \r\n\t\f\v",
-                                     "-infinity",
-                                     " \r\n\t\f\v0 \r\n\t\f\v",
-                                     " \r\n\t\f\v1.73205080756888 \r\n\t\f\v",
-                                     " \r\n\t\f\v1 \r\n\t\f\v",
-                                     " \r\n\t\f\v1.4142135623731 \r\n\t\f\v",
-                                     " \r\n\t\f\v2.23606797749979 \r\n\t\f\v",
-                                     "1970-01-02  ",
-                                     " \r\n\t\f\v2.64575131106459 \r\n\t\f\v",
-                                     "inf",
-                                     "-nan",
-                                     "NaN",
-                                     "",
-                                     "-Inf",
-                                     "+2.2",
-                                     "1d+4",
-                                     "1d-1",
-                                     "0.",
-                                     "-.1",
-                                     "+.1",
-                                     "1e+1",
-                                     "+1e1",
-                                     "-+0",
-                                     "-+inf",
-                                     "-+nan"};
-  std::vector<std::pair<bool, double>> expected_results = {
-      {true, std::numeric_limits<double>::infinity()},
-      {true, 3.16227766016838},
-      {true, 3},
-      {false, -1},
-      {true, std::numeric_limits<double>::quiet_NaN()},
-      {true, -std::numeric_limits<double>::infinity()},
-      {true, 2.82842712474619},
-      {true, std::numeric_limits<double>::quiet_NaN()},
-      {true, 2.44948974278318},
-      {true, std::numeric_limits<double>::infinity()},
-      {true, 2},
-      {true, -std::numeric_limits<double>::infinity()},
-      {true, 0},
-      {true, 1.73205080756888},
-      {true, 1},
-      {true, 1.4142135623731},
-      {true, 2.23606797749979},
-      {false, -1},
-      {true, 2.64575131106459},
-      {true, std::numeric_limits<double>::infinity()},
-      {true, std::numeric_limits<double>::quiet_NaN()},
-      {true, std::numeric_limits<double>::quiet_NaN()},
-      {false, -1},
-      {true, -std::numeric_limits<double>::infinity()},
-      {true, 2.2},
-      {false, -1},
-      {false, -1},
-      {true, 0},
-      {true, -0.1},
-      {true, 0.1},
-      {true, 10},
-      {true, 10},
-      {false, -1},
-      {false, -1},
-      {false, -1},
+  std::vector<test_data> const test_datas = {
+      {"infinity", true, std::numeric_limits<double>::infinity()},
+      {" \r\n\t\f\v3.16227766016838 \r\n\t\f\v", true, 3.16227766016838},
+      {" \r\n\t\f\v3 \r\n\t\f\v", true, 3.0},
+      {"  1970-01-01", false, 0.0},
+      {"-NaN", true, std::numeric_limits<double>::quiet_NaN()},
+      {"-inf", true, -std::numeric_limits<double>::infinity()},
+      {" \r\n\t\f\v2.82842712474619 \r\n\t\f\v", true, 2.82842712474619},
+      {"nan", true, std::numeric_limits<double>::quiet_NaN()},
+      {" \r\n\t\f\v2.44948974278318 \r\n\t\f\v", true, 2.44948974278318},
+      {"Inf", true, std::numeric_limits<double>::infinity()},
+      {" \r\n\t\f\v2 \r\n\t\f\v", true, 2.0},
+      {"-infinity", true, -std::numeric_limits<double>::infinity()},
+      {" \r\n\t\f\v0 \r\n\t\f\v", true, 0.0},
+      {" \r\n\t\f\v1.73205080756888 \r\n\t\f\v", true, 1.73205080756888},
+      {" \r\n\t\f\v1 \r\n\t\f\v", true, 1.0},
+      {" \r\n\t\f\v1.4142135623731 \r\n\t\f\v", true, 1.4142135623731},
+      {" \r\n\t\f\v2.23606797749979 \r\n\t\f\v", true, 2.23606797749979},
+      {"1970-01-02  ", false, 0.0},
+      {" \r\n\t\f\v2.64575131106459 \r\n\t\f\v", true, 2.64575131106459},
+      {"inf", true, std::numeric_limits<double>::infinity()},
+      {"-nan", true, std::numeric_limits<double>::quiet_NaN()},
+      {"NaN", true, std::numeric_limits<double>::quiet_NaN()},
+      {"", false, 0.0},
+      {"-Inf", true, -std::numeric_limits<double>::infinity()},
+      {"+2.2", true, 2.2},
+      {"1d+4", false, 0.0},
+      {"1d-1", false, 0.0},
+      {"0.", true, 0.0},
+      {"-.1", true, -0.1},
+      {"+.1", true, 0.1},
+      {"1e+1", true, 10.0},
+      {"+1e1", true, 10.0},
+      {"-+0", false, 0.0},
+      {"-+inf", false, 0.0},
+      {"-+nan", false, 0.0},
   };
-  for (size_t i = 0; i < inputs.size(); i++) {
-    const std::string &input = inputs[i];
-    std::pair<bool, double> expected = expected_results[i];
+  for (size_t i = 0; i < test_datas.size(); i++) {
+    auto const &input = test_datas[i].input;
+    auto const expected_success = test_datas[i].expected_success;
+    auto const expected_result = test_datas[i].expected_result;
     double result;
     // answer contains a error code and a pointer to the end of the
     // parsed region (on success).
-    auto answer = fast_float::from_chars(input.data(),
-                                         input.data() + input.size(), result);
+    auto const answer = fast_float::from_chars(
+        input.data(), input.data() + input.size(), result);
     if (answer.ec != std::errc()) {
       std::cout << "could not parse" << std::endl;
-      if (expected.first) {
+      if (expected_success) {
         return false;
       }
       continue;
@@ -110,24 +82,19 @@ bool eddelbuettel() {
     }
     if (non_space_trailing_content) {
       std::cout << "found trailing content " << std::endl;
-    }
-
-    if (non_space_trailing_content) {
-      if (!expected.first) {
+      if (!expected_success) {
         continue;
       } else {
         return false;
       }
     }
     std::cout << "parsed " << result << std::endl;
-    if (!expected.first) {
+    if (!expected_success) {
       return false;
     }
-    if (result != expected.second) {
-      if (std::isnan(result) && std::isnan(expected.second)) {
-        continue;
-      }
-      std::cout << "results do not match. Expected " << expected.second
+    if (result != expected_result &&
+        !(std::isnan(result) && std::isnan(expected_result))) {
+      std::cout << "results do not match. Expected " << expected_result
                 << std::endl;
       return false;
     }
