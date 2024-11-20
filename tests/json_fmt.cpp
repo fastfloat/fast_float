@@ -158,9 +158,11 @@ int main() {
   if (main_readme2() != EXIT_SUCCESS) {
     return EXIT_FAILURE;
   }
+#ifndef __FAST_MATH__
   if (main_readme3() != EXIT_SUCCESS) {
     return EXIT_FAILURE;
   }
+#endif
 
   return EXIT_SUCCESS;
 }
