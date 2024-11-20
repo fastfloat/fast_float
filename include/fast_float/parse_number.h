@@ -27,14 +27,10 @@ from_chars_result_t<UC>
   answer.ec = std::errc(); // be optimistic
   // assume first < last, so dereference without checks;
   bool const minusSign = (*first == UC('-'));
-#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*first == UC('-')) || (*first == UC('+'))) {
-#else
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*first == UC('-')) ||
       (uint64_t(fmt & chars_format::allow_leading_plus) &&
        (*first == UC('+')))) {
-#endif
     ++first;
   }
   if (last - first >= 3) {
@@ -294,18 +290,14 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   static_assert(is_supported_char_type<UC>(),
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  chars_format const fmt = options.format;
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
 
   from_chars_result_t<UC> answer;
-#ifndef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
   if (uint64_t(fmt & chars_format::skip_white_space)) {
-#endif
     while ((first != last) && fast_float::is_space(uint8_t(*first))) {
       first++;
     }
-#ifndef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
   }
-#endif
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
@@ -349,19 +341,15 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   static_assert(is_supported_char_type<UC>(),
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  chars_format const fmt = options.format;
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
   int const base = options.base;
 
   from_chars_result_t<UC> answer;
-#ifndef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
   if (uint64_t(fmt & chars_format::skip_white_space)) {
-#endif
     while ((first != last) && fast_float::is_space(uint8_t(*first))) {
       first++;
     }
-#ifndef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
   }
-#endif
   if (first == last || base < 2 || base > 36) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
