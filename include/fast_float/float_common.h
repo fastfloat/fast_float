@@ -34,6 +34,8 @@ enum class chars_format : uint64_t {
   json_or_infnan = uint64_t(detail::basic_json_fmt) | fixed | scientific,
   fortran = uint64_t(detail::basic_fortran_fmt) | fixed | scientific,
   general = fixed | scientific,
+  allow_leading_plus = 1 << 7,
+  skip_white_space = 1 << 8,
 };
 
 template <typename UC> struct from_chars_result_t {
@@ -44,13 +46,15 @@ using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'))
-      : format(fmt), decimal_point(dot) {}
+                                     UC dot = UC('.'), int b = 10)
+      : format(fmt), decimal_point(dot), base(b) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
   UC decimal_point;
+  /** The base used for integers */
+  int base;
 };
 using parse_options = parse_options_t<char>;
 
@@ -674,7 +678,6 @@ to_float(bool negative, adjusted_mantissa am, T &value) {
 #endif
 }
 
-#ifdef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
 template <typename = void> struct space_lut {
   static constexpr bool value[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -697,7 +700,6 @@ template <typename T> constexpr bool space_lut<T>::value[];
 #endif
 
 inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
-#endif
 
 template <typename UC> static constexpr uint64_t int_cmp_zeros() {
   static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4),
