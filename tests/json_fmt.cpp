@@ -2,16 +2,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
-// test that this option is ignored
-#define FASTFLOAT_ALLOWS_LEADING_PLUS
-
 #include "fast_float/fast_float.h"
 
 int main_readme() {
   const std::string input = "+.1"; // not valid
   double result;
-  fast_float::parse_options options{fast_float::chars_format::json};
+  fast_float::parse_options options{
+      fast_float::chars_format::json |
+      fast_float::chars_format::allow_leading_plus}; // should be ignored
   auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if (answer.ec == std::errc()) {
@@ -24,7 +22,9 @@ int main_readme() {
 int main_readme2() {
   const std::string input = "inf"; // not valid in JSON
   double result;
-  fast_float::parse_options options{fast_float::chars_format::json};
+  fast_float::parse_options options{
+      fast_float::chars_format::json |
+      fast_float::chars_format::allow_leading_plus}; // should be ignored
   auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if (answer.ec == std::errc()) {
@@ -38,7 +38,9 @@ int main_readme3() {
   const std::string input =
       "inf"; // not valid in JSON but we allow it with json_or_infnan
   double result;
-  fast_float::parse_options options{fast_float::chars_format::json_or_infnan};
+  fast_float::parse_options options{
+      fast_float::chars_format::json_or_infnan |
+      fast_float::chars_format::allow_leading_plus}; // should be ignored
   auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if (answer.ec != std::errc() || (!std::isinf(result))) {
@@ -129,7 +131,9 @@ int main() {
     const auto &expected_reason = reject[i].reason;
     auto answer = fast_float::parse_number_string(
         f.data(), f.data() + f.size(),
-        fast_float::parse_options(fast_float::chars_format::json));
+        fast_float::parse_options(
+            fast_float::chars_format::json |
+            fast_float::chars_format::allow_leading_plus)); // should be ignored
     if (answer.valid) {
       std::cerr << "json parse accepted invalid json " << f << std::endl;
       return EXIT_FAILURE;

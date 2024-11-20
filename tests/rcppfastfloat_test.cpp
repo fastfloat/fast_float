@@ -2,8 +2,6 @@
  * See https://github.com/eddelbuettel/rcppfastfloat/issues/4
  */
 
-#define FASTFLOAT_ALLOWS_LEADING_PLUS 1
-#define FASTFLOAT_SKIP_WHITE_SPACE 1 // important !
 #include "fast_float/fast_float.h"
 #include <iostream>
 #include <string>
@@ -61,7 +59,10 @@ bool eddelbuettel() {
     // answer contains a error code and a pointer to the end of the
     // parsed region (on success).
     auto const answer = fast_float::from_chars(
-        input.data(), input.data() + input.size(), result);
+        input.data(), input.data() + input.size(), result,
+        fast_float::chars_format::general |
+            fast_float::chars_format::allow_leading_plus |
+            fast_float::chars_format::skip_white_space);
     if (answer.ec != std::errc()) {
       std::cout << "could not parse" << std::endl;
       if (expected_success) {
