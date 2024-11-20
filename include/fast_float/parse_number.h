@@ -292,6 +292,8 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
   static_assert(is_supported_char_type<UC>(),
                 "only char, wchar_t, char16_t and char32_t are supported");
 
+  chars_format const fmt = options.format;
+
   from_chars_result_t<UC> answer;
 #ifdef FASTFLOAT_SKIP_WHITE_SPACE // disabled by default
   while ((first != last) && fast_float::is_space(uint8_t(*first))) {
@@ -306,7 +308,7 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
   parsed_number_string_t<UC> pns =
       parse_number_string<UC>(first, last, options);
   if (!pns.valid) {
-    if (options.format & chars_format::no_infnan) {
+    if (int(fmt & chars_format::no_infnan)) {
       answer.ec = std::errc::invalid_argument;
       answer.ptr = first;
       return answer;

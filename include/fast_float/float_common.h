@@ -16,20 +16,24 @@
 
 namespace fast_float {
 
-#define FASTFLOAT_JSONFMT (1 << 5)
-#define FASTFLOAT_FORTRANFMT (1 << 6)
+enum class chars_format;
 
-enum chars_format {
+namespace detail {
+constexpr chars_format basic_json_fmt = chars_format(1 << 5);
+constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
+} // namespace detail
+
+enum class chars_format {
   scientific = 1 << 0,
   fixed = 1 << 2,
   hex = 1 << 3,
   no_infnan = 1 << 4,
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
-  json = FASTFLOAT_JSONFMT | fixed | scientific | no_infnan,
+  json = int(detail::basic_json_fmt) | fixed | scientific | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
-  json_or_infnan = FASTFLOAT_JSONFMT | fixed | scientific,
-  fortran = FASTFLOAT_FORTRANFMT | fixed | scientific,
-  general = fixed | scientific
+  json_or_infnan = int(detail::basic_json_fmt) | fixed | scientific,
+  fortran = int(detail::basic_fortran_fmt) | fixed | scientific,
+  general = fixed | scientific,
 };
 
 template <typename UC> struct from_chars_result_t {
@@ -795,6 +799,44 @@ fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
 // the value below which it has definitely overflowed.
 fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
   return int_luts<>::min_safe_u64[base - 2];
+}
+
+constexpr chars_format operator~(chars_format rhs) noexcept {
+  using int_type = std::underlying_type<chars_format>::type;
+  return static_cast<chars_format>(~static_cast<int_type>(rhs));
+}
+
+constexpr chars_format operator&(chars_format lhs, chars_format rhs) noexcept {
+  using int_type = std::underlying_type<chars_format>::type;
+  return static_cast<chars_format>(static_cast<int_type>(lhs) &
+                                   static_cast<int_type>(rhs));
+}
+
+constexpr chars_format operator|(chars_format lhs, chars_format rhs) noexcept {
+  using int_type = std::underlying_type<chars_format>::type;
+  return static_cast<chars_format>(static_cast<int_type>(lhs) |
+                                   static_cast<int_type>(rhs));
+}
+
+constexpr chars_format operator^(chars_format lhs, chars_format rhs) noexcept {
+  using int_type = std::underlying_type<chars_format>::type;
+  return static_cast<chars_format>(static_cast<int_type>(lhs) ^
+                                   static_cast<int_type>(rhs));
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 chars_format &
+operator&=(chars_format &lhs, chars_format rhs) noexcept {
+  return lhs = (lhs & rhs);
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 chars_format &
+operator|=(chars_format &lhs, chars_format rhs) noexcept {
+  return lhs = (lhs | rhs);
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 chars_format &
+operator^=(chars_format &lhs, chars_format rhs) noexcept {
+  return lhs = (lhs ^ rhs);
 }
 
 } // namespace fast_float
