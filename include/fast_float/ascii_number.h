@@ -292,7 +292,7 @@ parse_number_string(UC const *p, UC const *pend,
   answer.negative = (*p == UC('-'));
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
   if ((*p == UC('-')) ||
-      (!int(fmt & detail::basic_json_fmt) && *p == UC('+'))) {
+      (!uint64_t(fmt & detail::basic_json_fmt) && *p == UC('+'))) {
 #else
   if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
 #endif
@@ -301,7 +301,7 @@ parse_number_string(UC const *p, UC const *pend,
       return report_parse_error<UC>(
           p, parse_error::missing_integer_or_dot_after_sign);
     }
-    if (int(fmt & detail::basic_json_fmt)) {
+    if (uint64_t(fmt & detail::basic_json_fmt)) {
       if (!is_integer(*p)) { // a sign must be followed by an integer
         return report_parse_error<UC>(p,
                                       parse_error::missing_integer_after_sign);
@@ -330,7 +330,7 @@ parse_number_string(UC const *p, UC const *pend,
   UC const *const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<const UC>(start_digits, size_t(digit_count));
-  if (int(fmt & detail::basic_json_fmt)) {
+  if (uint64_t(fmt & detail::basic_json_fmt)) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0) {
       return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
@@ -359,7 +359,7 @@ parse_number_string(UC const *p, UC const *pend,
     answer.fraction = span<const UC>(before, size_t(p - before));
     digit_count -= exponent;
   }
-  if (int(fmt & detail::basic_json_fmt)) {
+  if (uint64_t(fmt & detail::basic_json_fmt)) {
     // at least 1 digit in fractional part
     if (has_decimal_point && exponent == 0) {
       return report_parse_error<UC>(p,
@@ -370,9 +370,9 @@ parse_number_string(UC const *p, UC const *pend,
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   int64_t exp_number = 0; // explicit exponential part
-  if ((int(fmt & chars_format::scientific) && (p != pend) &&
+  if ((uint64_t(fmt & chars_format::scientific) && (p != pend) &&
        ((UC('e') == *p) || (UC('E') == *p))) ||
-      (int(fmt & detail::basic_fortran_fmt) && (p != pend) &&
+      (uint64_t(fmt & detail::basic_fortran_fmt) && (p != pend) &&
        ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
         (UC('D') == *p)))) {
     UC const *location_of_e = p;
@@ -390,7 +390,7 @@ parse_number_string(UC const *p, UC const *pend,
       ++p;
     }
     if ((p == pend) || !is_integer(*p)) {
-      if (!int(fmt & chars_format::fixed)) {
+      if (!uint64_t(fmt & chars_format::fixed)) {
         // The exponential part is invalid for scientific notation, so it must
         // be a trailing token for fixed notation. However, fixed notation is
         // disabled, so report a scientific notation error.
@@ -413,8 +413,8 @@ parse_number_string(UC const *p, UC const *pend,
     }
   } else {
     // If it scientific and not fixed, we have to bail out.
-    if (int(fmt & chars_format::scientific) &&
-        !int(fmt & chars_format::fixed)) {
+    if (uint64_t(fmt & chars_format::scientific) &&
+        !uint64_t(fmt & chars_format::fixed)) {
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
   }
