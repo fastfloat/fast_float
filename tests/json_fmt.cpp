@@ -158,6 +158,9 @@ int main() {
   if (main_readme2() != EXIT_SUCCESS) {
     return EXIT_FAILURE;
   }
+  if (main_readme3() != EXIT_SUCCESS) {
+    return EXIT_FAILURE;
+  }
 
   return EXIT_SUCCESS;
 }
