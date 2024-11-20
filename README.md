@@ -444,9 +444,9 @@ https://github.com/fastfloat/fast_float/releases/download/v6.1.6/fast_float.h
 - It is part of the [brew package manager](https://formulae.brew.sh/formula/fast_float).
 - Some Linux distribution like Fedora include fast_float (e.g., as `fast_float-devel`).
 
-## RFC 7159
+## RFC 8259
 
-If you need support for RFC 7159 (JSON standard), you may want to consider using the [fast_double_parser](https://github.com/lemire/fast_double_parser/) library instead.
+If you need support for RFC 8259 (JSON standard), you may want to consider using the [fast_double_parser](https://github.com/lemire/fast_double_parser/) library instead.
 
 ## Credit
 
