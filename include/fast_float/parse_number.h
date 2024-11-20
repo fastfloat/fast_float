@@ -294,7 +294,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 
   from_chars_result_t<UC> answer;
   if (uint64_t(fmt & chars_format::skip_white_space)) {
-    while ((first != last) && fast_float::is_space(uint8_t(*first))) {
+    while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }
@@ -346,7 +346,7 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
 
   from_chars_result_t<UC> answer;
   if (uint64_t(fmt & chars_format::skip_white_space)) {
-    while ((first != last) && fast_float::is_space(uint8_t(*first))) {
+    while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }

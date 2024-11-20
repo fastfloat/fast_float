@@ -699,7 +699,9 @@ template <typename T> constexpr bool space_lut<T>::value[];
 
 #endif
 
-inline constexpr bool is_space(uint8_t c) { return space_lut<>::value[c]; }
+template <typename UC> constexpr bool is_space(UC c) {
+  return c < 256 && space_lut<>::value[uint8_t(c)];
+}
 
 template <typename UC> static constexpr uint64_t int_cmp_zeros() {
   static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4),

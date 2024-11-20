@@ -75,7 +75,7 @@ bool eddelbuettel() {
       // check that there is no content left
       for (const char *leftover = answer.ptr;
            leftover != input.data() + input.size(); leftover++) {
-        if (!fast_float::is_space(uint8_t(*leftover))) {
+        if (!fast_float::is_space(*leftover)) {
           non_space_trailing_content = true;
           break;
         }
