@@ -283,19 +283,18 @@ template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
                     parse_options_t<UC> options) noexcept {
-  chars_format const fmt = options.format;
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
   UC const decimal_point = options.decimal_point;
 
   parsed_number_string_t<UC> answer;
   answer.valid = false;
   answer.too_many_digits = false;
+  // assume p < pend, so dereference without checks;
   answer.negative = (*p == UC('-'));
-#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*p == UC('-')) ||
-      (!uint64_t(fmt & detail::basic_json_fmt) && *p == UC('+'))) {
-#else
-  if (*p == UC('-')) { // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-#endif
+      (uint64_t(fmt & chars_format::allow_leading_plus) &&
+       !uint64_t(fmt & detail::basic_json_fmt) && *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -473,7 +472,11 @@ parse_number_string(UC const *p, UC const *pend,
 
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
-parse_int_string(UC const *p, UC const *pend, T &value, int base) {
+parse_int_string(UC const *p, UC const *pend, T &value,
+                 parse_options_t<UC> options) {
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
+  int const base = options.base;
+
   from_chars_result_t<UC> answer;
 
   UC const *const first = p;
@@ -484,11 +487,8 @@ parse_int_string(UC const *p, UC const *pend, T &value, int base) {
     answer.ptr = first;
     return answer;
   }
-#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS // disabled by default
-  if ((*p == UC('-')) || (*p == UC('+'))) {
-#else
-  if (*p == UC('-')) {
-#endif
+  if ((*p == UC('-')) ||
+      (uint64_t(fmt & chars_format::allow_leading_plus) && (*p == UC('+')))) {
     ++p;
   }
 

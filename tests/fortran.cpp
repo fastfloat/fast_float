@@ -4,15 +4,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
-#define FASTFLOAT_ALLOWS_LEADING_PLUS
-
 #include "fast_float/fast_float.h"
 
 int main_readme() {
   const std::string input = "1d+4";
   double result;
-  fast_float::parse_options options{fast_float::chars_format::fortran};
+  fast_float::parse_options options{
+      fast_float::chars_format::fortran |
+      fast_float::chars_format::allow_leading_plus};
   auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if ((answer.ec != std::errc()) || ((result != 10000))) {
@@ -32,7 +31,9 @@ int main() {
                                       "1d-1", "1d-2", "1d-3", "1d-4"};
   const std::vector<std::string> fmt3{"+1+4", "+1+3", "+1+2", "+1+1", "+1+0",
                                       "+1-1", "+1-2", "+1-3", "+1-4"};
-  const fast_float::parse_options options{fast_float::chars_format::fortran};
+  const fast_float::parse_options options{
+      fast_float::chars_format::fortran |
+      fast_float::chars_format::allow_leading_plus};
 
   for (auto const &f : fmt1) {
     auto d{std::distance(&fmt1[0], &f)};
