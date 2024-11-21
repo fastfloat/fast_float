@@ -484,7 +484,7 @@ if desired as described in the command line help.
 
 You may directly download automatically generated single-header files:
 
-<https://github.com/fastfloat/fast_float/releases/download/v6.1.6/fast_float.h>
+<https://github.com/fastfloat/fast_float/releases/download/v7.0.0/fast_float.h>
 
 ## Packages
 
