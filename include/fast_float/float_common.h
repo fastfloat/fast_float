@@ -14,6 +14,22 @@
 #endif
 #include "constexpr_feature_detect.h"
 
+#define FASTFLOAT_VERSION_MAJOR 7
+#define FASTFLOAT_VERSION_MINOR 0
+#define FASTFLOAT_VERSION_PATCH 0
+
+#define FASTFLOAT_STRINGIZE_IMPL(x) #x
+#define FASTFLOAT_STRINGIZE(x) FASTFLOAT_STRINGIZE_IMPL(x)
+
+#define FASTFLOAT_VERSION_STR                                                  \
+  FASTFLOAT_STRINGIZE(FASTFLOAT_VERSION_MAJOR)                                 \
+  "." FASTFLOAT_STRINGIZE(FASTFLOAT_VERSION_MINOR) "." FASTFLOAT_STRINGIZE(    \
+      FASTFLOAT_VERSION_PATCH)
+
+#define FASTFLOAT_VERSION                                                      \
+  (FASTFLOAT_VERSION_MAJOR * 10000 + FASTFLOAT_VERSION_MINOR * 100 +           \
+   FASTFLOAT_VERSION_PATCH)
+
 namespace fast_float {
 
 enum class chars_format : uint64_t;
