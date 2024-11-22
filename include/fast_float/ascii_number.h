@@ -137,11 +137,18 @@ parse_eight_digits_unrolled(UC const *chars) noexcept {
   return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
 }
 
-// credit @aqrit
+// credit @realtimechris
 fastfloat_really_inline constexpr bool
 is_made_of_eight_digits_fast(uint64_t val) noexcept {
-  return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
-            0x8080808080808080));
+  constexpr uint64_t byte_mask = ~uint64_t(0) / 255ull;
+  constexpr uint64_t msb_mask = byte_mask * 128ull;
+  constexpr uint64_t sub_mask =
+      byte_mask * (127ull - 10ull) - 0x3030303030303030ull;
+#if !defined(__clang__)
+  return !bool((val + sub_mask | val) & msb_mask);
+#else
+  return ((val + sub_mask | val) & msb_mask) == 0;
+#endif
 }
 
 #ifdef FASTFLOAT_HAS_SIMD
