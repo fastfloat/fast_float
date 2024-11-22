@@ -96,6 +96,19 @@ for line in fileinput.input(cmakefile, inplace=1, backup='.bak'):
 print("modified "+cmakefile+", a backup was made")
 
 
+
+versionfilerel = os.sep + "include" + os.sep + "fast_float" + os.sep + "float_common.h"
+versionfile = maindir + versionfilerel
+
+for line in fileinput.input(versionfile, inplace=1, backup='.bak'):
+    line = re.sub(r'#define FASTFLOAT_VERSION_MAJOR \d+','#define FASTFLOAT_VERSION_MAJOR '+newmajorversionstring, line.rstrip())
+    line = re.sub(r'#define FASTFLOAT_VERSION_MINOR \d+','#define FASTFLOAT_VERSION_MAJOR '+mewminorversionstring, line.rstrip())
+    line = re.sub(r'#define FASTFLOAT_VERSION_PATCH \d+','#define FASTFLOAT_VERSION_MAJOR '+newrevversionstring, line.rstrip())
+    print(line)
+
+print(versionfile + " modified")
+
+
 readmefile = maindir + os.sep + "README.md"
 
 
