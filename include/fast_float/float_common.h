@@ -218,22 +218,26 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 }
 
 template <typename T>
-fastfloat_really_inline constexpr bool is_supported_float_type() {
-  return std::is_same<T, float>::value || std::is_same<T, double>::value
+struct is_supported_float_type
+    : std::integral_constant<bool, std::is_same<T, float>::value ||
+                                       std::is_same<T, double>::value
 #if __STDCPP_FLOAT32_T__
-         || std::is_same<T, std::float32_t>::value
+                                       || std::is_same<T, std::float32_t>::value
 #endif
 #if __STDCPP_FLOAT64_T__
-         || std::is_same<T, std::float64_t>::value
+                                       || std::is_same<T, std::float64_t>::value
 #endif
-      ;
-}
+                             > {
+};
+
+template <typename T> struct is_supported_integer_type : std::is_integral<T> {};
 
 template <typename UC>
-fastfloat_really_inline constexpr bool is_supported_char_type() {
-  return std::is_same<UC, char>::value || std::is_same<UC, wchar_t>::value ||
-         std::is_same<UC, char16_t>::value || std::is_same<UC, char32_t>::value;
-}
+struct is_supported_char_type
+    : std::integral_constant<bool, std::is_same<UC, char>::value ||
+                                       std::is_same<UC, wchar_t>::value ||
+                                       std::is_same<UC, char16_t>::value ||
+                                       std::is_same<UC, char32_t>::value> {};
 
 // Compares two ASCII strings in a case insensitive manner.
 template <typename UC>

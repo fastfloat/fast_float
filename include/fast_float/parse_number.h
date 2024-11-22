@@ -196,9 +196,9 @@ template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
 
-  static_assert(is_supported_float_type<T>(),
+  static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
-  static_assert(is_supported_char_type<UC>(),
+  static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   from_chars_result_t<UC> answer;
@@ -285,9 +285,9 @@ FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
                           parse_options_t<UC> options) noexcept {
 
-  static_assert(is_supported_float_type<T>(),
+  static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
-  static_assert(is_supported_char_type<UC>(),
+  static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
@@ -323,8 +323,9 @@ template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value, int base) noexcept {
 
-  static_assert(std::is_integral<T>::value, "only integer types are supported");
-  static_assert(is_supported_char_type<UC>(),
+  static_assert(is_supported_integer_type<T>::value,
+                "only integer types are supported");
+  static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   parse_options_t<UC> options;
@@ -337,8 +338,9 @@ FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_int_advanced(UC const *first, UC const *last, T &value,
                         parse_options_t<UC> options) noexcept {
 
-  static_assert(std::is_integral<T>::value, "only integer types are supported");
-  static_assert(is_supported_char_type<UC>(),
+  static_assert(is_supported_integer_type<T>::value,
+                "only integer types are supported");
+  static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
@@ -359,7 +361,11 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   return parse_int_string(first, last, value, options);
 }
 
-template <bool> struct from_chars_advanced_caller {
+template <size_t TypeIx> struct from_chars_advanced_caller {
+  static_assert(TypeIx > 0, "unsupported type");
+};
+
+template <> struct from_chars_advanced_caller<1> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
@@ -368,7 +374,7 @@ template <bool> struct from_chars_advanced_caller {
   }
 };
 
-template <> struct from_chars_advanced_caller<false> {
+template <> struct from_chars_advanced_caller<2> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
@@ -381,8 +387,10 @@ template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
                     parse_options_t<UC> options) noexcept {
-  return from_chars_advanced_caller<is_supported_float_type<T>()>::call(
-      first, last, value, options);
+  return from_chars_advanced_caller<
+      size_t(is_supported_float_type<T>::value) +
+      2 * size_t(is_supported_integer_type<T>::value)>::call(first, last, value,
+                                                             options);
 }
 
 } // namespace fast_float
