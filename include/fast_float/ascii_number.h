@@ -118,11 +118,10 @@ uint64_t simd_read8_to_u64(UC const *) {
 // credit  @aqrit
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_eight_digits_unrolled(uint64_t val) {
-  const uint64_t mask = 0x000000FF000000FF;
-  const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
-  const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
-  val -= 0x3030303030303030;
-  val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+  constexpr uint64_t mask = 0x000000FF000000FF;
+  constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  constexpr uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  val = (val * 10) + (val >> 8);                // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
   return uint32_t(val);
 }
@@ -137,18 +136,13 @@ parse_eight_digits_unrolled(UC const *chars) noexcept {
   return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
 }
 
-// credit @realtimechris
+// credit  @realtimechris
 fastfloat_really_inline constexpr bool
 is_made_of_eight_digits_fast(uint64_t val) noexcept {
   constexpr uint64_t byte_mask = ~uint64_t(0) / 255ull;
   constexpr uint64_t msb_mask = byte_mask * 128ull;
-  constexpr uint64_t sub_mask =
-      byte_mask * (127ull - 10ull) - 0x3030303030303030ull;
-#if !defined(__clang__)
-  return !bool((val + sub_mask | val) & msb_mask);
-#else
-  return ((val + sub_mask | val) & msb_mask) == 0;
-#endif
+  constexpr uint64_t threshold_byte_mask = byte_mask * (127ull - 10ull);
+  return !((val + threshold_byte_mask | val) & msb_mask);
 }
 
 #ifdef FASTFLOAT_HAS_SIMD
@@ -229,13 +223,15 @@ loop_parse_if_eight_digits(const UC *&p, const UC *const pend, uint64_t &i) {
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_eight_digits(const char *&p, const char *const pend,
                            uint64_t &i) {
-  // optimizes better than parse_if_eight_digits_unrolled() for UC = char.
-  while ((std::distance(p, pend) >= 8) &&
-         is_made_of_eight_digits_fast(read8_to_u64(p))) {
-    i = i * 100000000 +
-        parse_eight_digits_unrolled(read8_to_u64(
-            p)); // in rare cases, this will overflow, but that's ok
-    p += 8;
+  if (pend - p >= 8) {
+    uint64_t val{read8_to_u64(p) - 0x3030303030303030};
+    if (is_made_of_eight_digits_fast(val)) {
+      do {
+        i = i * 100000000 + parse_eight_digits_unrolled(val);
+        p += 8;
+        val = read8_to_u64(p) - 0x3030303030303030;
+      } while ((pend - p) >= 8 && is_made_of_eight_digits_fast(val));
+    }
   }
 }
 
