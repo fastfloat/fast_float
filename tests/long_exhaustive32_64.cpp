@@ -24,7 +24,7 @@ void all_32bit_values() {
     double v = v32;
 
     {
-      const char *string_end = to_string(v, buffer);
+      char const *string_end = to_string(v, buffer);
       double result_value;
       auto result = fast_float::from_chars(buffer, string_end, result_value);
       // Starting with version 4.0 for fast_float, we return result_out_of_range

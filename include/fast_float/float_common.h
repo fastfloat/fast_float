@@ -259,9 +259,9 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 
 // a pointer and a length to a contiguous block of memory
 template <typename T> struct span {
-  const T *ptr;
+  T const *ptr;
   size_t length;
-  constexpr span(const T *_ptr, size_t _length) : ptr(_ptr), length(_length) {}
+  constexpr span(T const *_ptr, size_t _length) : ptr(_ptr), length(_length) {}
   constexpr span() : ptr(nullptr), length(0) {}
 
   constexpr size_t len() const noexcept { return length; }
@@ -391,10 +391,10 @@ struct adjusted_mantissa {
   uint64_t mantissa{0};
   int32_t power2{0}; // a negative value indicates an invalid result
   adjusted_mantissa() = default;
-  constexpr bool operator==(const adjusted_mantissa &o) const {
+  constexpr bool operator==(adjusted_mantissa const &o) const {
     return mantissa == o.mantissa && power2 == o.power2;
   }
-  constexpr bool operator!=(const adjusted_mantissa &o) const {
+  constexpr bool operator!=(adjusted_mantissa const &o) const {
     return mantissa != o.mantissa || power2 != o.power2;
   }
 };
@@ -738,9 +738,8 @@ template <typename UC> static constexpr uint64_t int_cmp_zeros() {
 template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
-template <typename UC> static constexpr UC const *str_const_nan() {
-  return nullptr;
-}
+
+template <typename UC> constexpr UC const *str_const_nan();
 template <> constexpr char const *str_const_nan<char>() { return "nan"; }
 template <> constexpr wchar_t const *str_const_nan<wchar_t>() { return L"nan"; }
 template <> constexpr char16_t const *str_const_nan<char16_t>() {
@@ -749,9 +748,8 @@ template <> constexpr char16_t const *str_const_nan<char16_t>() {
 template <> constexpr char32_t const *str_const_nan<char32_t>() {
   return U"nan";
 }
-template <typename UC> static constexpr UC const *str_const_inf() {
-  return nullptr;
-}
+
+template <typename UC> constexpr UC const *str_const_inf();
 template <> constexpr char const *str_const_inf<char>() { return "infinity"; }
 template <> constexpr wchar_t const *str_const_inf<wchar_t>() {
   return L"infinity";

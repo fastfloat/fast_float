@@ -17,7 +17,7 @@
 #include <locale>
 #include <sstream>
 // workaround for CYGWIN
-double cygwin_strtod_l(const char *start, char **end) {
+double cygwin_strtod_l(char const *start, char **end) {
   double d;
   std::stringstream ss;
   ss.imbue(std::locale::classic());
@@ -33,7 +33,7 @@ double cygwin_strtod_l(const char *start, char **end) {
   *end = const_cast<char *>(start) + nread;
   return d;
 }
-float cygwin_strtof_l(const char *start, char **end) {
+float cygwin_strtof_l(char const *start, char **end) {
   float d;
   std::stringstream ss;
   ss.imbue(std::locale::classic());
@@ -93,8 +93,8 @@ template <typename T> bool test() {
                                         std::errc(),
                                         std::errc(),
                                         std::errc()};
-  const char *begin = input.data();
-  const char *end = input.data() + input.size();
+  char const *begin = input.data();
+  char const *end = input.data() + input.size();
   for (size_t i = 0; i < answers.size(); i++) {
     T result_value;
     while ((begin < end) && (std::isspace(*begin))) {
@@ -120,9 +120,9 @@ template <typename T> bool test() {
   return true;
 }
 
-template <typename T> void strtod_from_string(const std::string &st, T &d);
+template <typename T> void strtod_from_string(std::string const &st, T &d);
 
-template <> void strtod_from_string(const std::string &st, double &d) {
+template <> void strtod_from_string(std::string const &st, double &d) {
   char *pr = (char *)st.c_str();
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
     defined(sun) || defined(__sun)
@@ -139,7 +139,7 @@ template <> void strtod_from_string(const std::string &st, double &d) {
   }
 }
 
-template <> void strtod_from_string(const std::string &st, float &d) {
+template <> void strtod_from_string(std::string const &st, float &d) {
   char *pr = (char *)st.c_str();
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
     defined(sun) || defined(__sun)
@@ -160,7 +160,7 @@ template <typename T> bool partow_test() {
   // credit:
   // https://github.com/ArashPartow/strtk/blob/master/strtk_tokenizer_cmp.cpp#L568
   // MIT license
-  const std::string strint_list[] = {
+  std::string const strint_list[] = {
       "9007199254740993",
       "9007199254740994",
       "9007199254740995",
@@ -1085,7 +1085,7 @@ template <typename T> bool partow_test() {
       "1234567890",
       "-1234567890",
   };
-  for (const std::string &st : strint_list) {
+  for (std::string const &st : strint_list) {
     T expected_value;
     strtod_from_string(st, expected_value);
     T result_value;

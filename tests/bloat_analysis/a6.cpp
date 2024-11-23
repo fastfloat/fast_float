@@ -1,6 +1,6 @@
 #include "fast_float/fast_float.h"
 
-double get6(const char *input) {
+double get6(char const *input) {
   double result_value;
   auto result =
       fast_float::from_chars(input, input + strlen(input), result_value);

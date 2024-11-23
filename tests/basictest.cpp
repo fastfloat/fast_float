@@ -58,7 +58,7 @@
 #define fHexAndDec(v)                                                          \
   std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
 
-const char *round_name(int d) {
+char const *round_name(int d) {
   switch (d) {
   case FE_UPWARD:
     return "FE_UPWARD";
@@ -124,7 +124,7 @@ TEST_CASE("rounds_to_nearest") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
-  static volatile float fmin = std::numeric_limits<float>::min();
+  static float volatile fmin = std::numeric_limits<float>::min();
   fesetround(FE_UPWARD);
   std::cout << "FE_UPWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
             << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
@@ -156,7 +156,7 @@ TEST_CASE("parse_zero") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
-  const char *zero = "0";
+  char const *zero = "0";
   uint64_t float64_parsed;
   double f = 0;
   ::memcpy(&float64_parsed, &f, sizeof(f));
@@ -203,7 +203,7 @@ TEST_CASE("parse_negative_zero") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
-  const char *negative_zero = "-0";
+  char const *negative_zero = "-0";
   uint64_t float64_parsed;
   double f = -0.;
   ::memcpy(&float64_parsed, &f, sizeof(f));
@@ -292,8 +292,8 @@ bool check_file(std::string file_name) {
             return false;
           }
           // The string to parse:
-          const char *number_string = str.data() + 31;
-          const char *end_of_string = str.data() + str.size();
+          char const *number_string = str.data() + 31;
+          char const *end_of_string = str.data() + str.size();
           // Parse as 32-bit float
           float parsed_32;
           auto fast_float_r32 =
@@ -354,7 +354,7 @@ bool check_file(std::string file_name) {
 
 TEST_CASE("supplemental") {
   std::string path = SUPPLEMENTAL_TEST_DATA_DIR;
-  for (const auto &entry : std::filesystem::directory_iterator(path)) {
+  for (auto const &entry : std::filesystem::directory_iterator(path)) {
     CHECK(check_file(entry.path().string()));
   }
 }
@@ -362,7 +362,7 @@ TEST_CASE("supplemental") {
 #endif
 
 TEST_CASE("leading_zeroes") {
-  constexpr const uint64_t bit = 1;
+  constexpr uint64_t const bit = 1;
   CHECK(fast_float::leading_zeroes(bit << 0) == 63);
   CHECK(fast_float::leading_zeroes(bit << 1) == 62);
   CHECK(fast_float::leading_zeroes(bit << 2) == 61);
@@ -389,7 +389,7 @@ void test_full_multiplication(uint64_t lhs, uint64_t rhs, uint64_t expected_lo,
 }
 
 TEST_CASE("full_multiplication") {
-  constexpr const uint64_t bit = 1;
+  constexpr uint64_t const bit = 1;
   //                       lhs        rhs        lo         hi
   test_full_multiplication(bit << 0, bit << 0, 1u, 0u);
   test_full_multiplication(bit << 0, bit << 63, bit << 63, 0u);
@@ -401,7 +401,7 @@ TEST_CASE("full_multiplication") {
 }
 
 TEST_CASE("issue8") {
-  const char *s =
+  char const *s =
       "3."
       "141592653589793238462643383279502884197169399375105820974944592307816406"
       "286208998628034825342117067982148086513282306647093844609550582231725359"
@@ -428,7 +428,7 @@ TEST_CASE("issue8") {
 }
 
 TEST_CASE("check_behavior") {
-  const std::string input = "abc";
+  std::string const input = "abc";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);
@@ -442,7 +442,7 @@ TEST_CASE("decimal_point_parsing") {
   double result;
   fast_float::parse_options options{};
   {
-    const std::string input = "1,25";
+    std::string const input = "1,25";
     auto answer = fast_float::from_chars_advanced(
         input.data(), input.data() + input.size(), result, options);
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
@@ -459,7 +459,7 @@ TEST_CASE("decimal_point_parsing") {
     CHECK_EQ(result, 1.25);
   }
   {
-    const std::string input = "1.25";
+    std::string const input = "1.25";
     auto answer = fast_float::from_chars_advanced(
         input.data(), input.data() + input.size(), result, options);
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
@@ -478,7 +478,7 @@ TEST_CASE("decimal_point_parsing") {
 }
 
 TEST_CASE("issue19") {
-  const std::string input = "234532.3426362,7869234.9823,324562.645";
+  std::string const input = "234532.3426362,7869234.9823,324562.645";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);
@@ -512,7 +512,7 @@ TEST_CASE("issue19") {
 }
 
 TEST_CASE("issue19") {
-  const std::string input = "3.14e";
+  std::string const input = "3.14e";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);
@@ -545,7 +545,7 @@ TEST_CASE("scientific_only") {
 }
 
 TEST_CASE("test_fixed_only") {
-  const std::string input = "3.14e10";
+  std::string const input = "3.14e10";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result,
@@ -558,7 +558,7 @@ TEST_CASE("test_fixed_only") {
                     << (answer.ptr - input.data()) << " characters");
 }
 
-static const double testing_power_of_ten[] = {
+static double const testing_power_of_ten[] = {
     1e-323, 1e-322, 1e-321, 1e-320, 1e-319, 1e-318, 1e-317, 1e-316, 1e-315,
     1e-314, 1e-313, 1e-312, 1e-311, 1e-310, 1e-309, 1e-308,
 
@@ -719,7 +719,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
   if constexpr (diag == Diag::runtime) {                                       \
     CHECK_EQ(__VA_ARGS__);                                                     \
   } else {                                                                     \
-    if ([](const auto &lhs, const auto &rhs) {                                 \
+    if ([](auto const &lhs, auto const &rhs) {                                 \
           return lhs != rhs;                                                   \
         }(__VA_ARGS__)) {                                                      \
       ComptimeDiag::error_not_equal();                                         \
@@ -731,7 +731,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
     if (fast_float::cpp20_and_in_constexpr()) {
       using equiv_int = std::make_signed_t<
           typename fast_float::binary_format<double>::equiv_uint>;
-      const auto i = std::bit_cast<equiv_int>(y);
+      auto const i = std::bit_cast<equiv_int>(y);
       if (i < 0) {
         return -x;
       }

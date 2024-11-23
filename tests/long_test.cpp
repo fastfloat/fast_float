@@ -19,8 +19,8 @@ template <typename T> bool test() {
                       "2.71828182845904523536028747135266249775724709369995";
   std::vector<T> answers = {T(0.15625), T(3.141592653589793),
                             T(2.718281828459045)};
-  const char *begin = input.data();
-  const char *end = input.data() + input.size();
+  char const *begin = input.data();
+  char const *end = input.data() + input.size();
   for (size_t i = 0; i < answers.size(); i++) {
     T result_value;
     while ((begin < end) && (std::isspace(*begin))) {

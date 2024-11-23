@@ -16,22 +16,22 @@ floating-point numbers with a C++17-like syntax (the library itself only
 requires C++11):
 
 ```C++
-from_chars_result from_chars(const char* first, const char* last, float& value, ...);
-from_chars_result from_chars(const char* first, const char* last, double& value, ...);
+from_chars_result from_chars(char const *first, char const *last, float &value, ...);
+from_chars_result from_chars(char const *first, char const *last, double &value, ...);
 ```
 
 You can also parse integer types:
 
 ```C++
-from_chars_result from_chars(const char* first, const char* last, int& value, ...);
-from_chars_result from_chars(const char* first, const char* last, unsigned& value, ...);
+from_chars_result from_chars(char const *first, char const *last, int &value, ...);
+from_chars_result from_chars(char const *first, char const *last, unsigned &value, ...);
 ```
 
 The return type (`from_chars_result`) is defined as the struct:
 
 ```C++
 struct from_chars_result {
-  const char* ptr;
+  char const *ptr;
   std::errc ec;
 };
 ```
@@ -60,7 +60,7 @@ Example:
 #include <iostream>
 
 int main() {
-  const std::string input = "3.1416 xyz ";
+  std::string input = "3.1416 xyz ";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
   if (answer.ec != std::errc()) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
@@ -72,7 +72,7 @@ int main() {
 You can parse delimited numbers:
 
 ```C++
-  const std::string input = "234532.3426362,7869234.9823,324562.645";
+  std::string input = "234532.3426362,7869234.9823,324562.645";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
   if (answer.ec != std::errc()) {
@@ -143,26 +143,26 @@ following code will print the number 22250738585072012 three times:
 
 int main() {
   uint64_t i;
-  const char str[] = "22250738585072012";
-  auto answer = fast_float::from_chars(str, str + strlen(str), i);
+  std::string str = "22250738585072012";
+  auto answer = fast_float::from_chars(str.data(), str.data() + str.size(), i);
   if (answer.ec != std::errc()) {
     std::cerr << "parsing failure\n";
     return EXIT_FAILURE;
   }
   std::cout << "parsed the number "<< i << std::endl;
 
-  const char binstr[] = "1001111000011001110110111001001010110100111000110001100";
+  std::string binstr = "1001111000011001110110111001001010110100111000110001100";
 
-  answer = fast_float::from_chars(binstr, binstr + strlen(binstr), i, 2);
+  answer = fast_float::from_chars(binstr.data(), binstr.data() + binstr.size(), i, 2);
   if (answer.ec != std::errc()) {
     std::cerr << "parsing failure\n";
     return EXIT_FAILURE;
   }
   std::cout << "parsed the number "<< i << std::endl;
 
-  const char hexstr[] = "4f0cedc95a718c";
+  std::string hexstr = "4f0cedc95a718c";
 
-  answer = fast_float::from_chars(hexstr, hexstr + strlen(hexstr), i, 16);
+  answer = fast_float::from_chars(hexstr.data(), hexstr.data() + hexstr.size(), i, 16);
   if (answer.ec != std::errc()) {
     std::cerr << "parsing failure\n";
     return EXIT_FAILURE;
@@ -259,7 +259,7 @@ following example:
 #include <iostream>
 
 int main() {
-  const std::u16string input = u"3.1416 xyz ";
+  std::u16string input = u"3.1416 xyz ";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
   if (answer.ec != std::errc()) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
@@ -282,7 +282,7 @@ separator (e.g., the comma). You may use it as follows.
 #include <iostream>
 
 int main() {
-  const std::string input = "3,1416 xyz ";
+  std::string input = "3,1416 xyz ";
   double result;
   fast_float::parse_options options{fast_float::chars_format::general, ','};
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
@@ -299,9 +299,9 @@ int main() {
 #include <iostream>
 
 int main() {
-  const std::string input = "1d+4";
+  std::string input = "1d+4";
   double result;
-  fast_float::parse_options options{ fast_float::chars_format::fortran };
+  fast_float::parse_options options{fast_float::chars_format::fortran};
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
   if ((answer.ec != std::errc()) || ((result != 10000))) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
   std::cout << "parsed the number " << result << std::endl;
@@ -316,9 +316,9 @@ int main() {
 #include <iostream>
 
 int main() {
-  const std::string input = "+.1"; // not valid
+  std::string input = "+.1"; // not valid
   double result;
-  fast_float::parse_options options{ fast_float::chars_format::json };
+  fast_float::parse_options options{fast_float::chars_format::json};
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
   if (answer.ec == std::errc()) { std::cerr << "should have failed\n"; return EXIT_FAILURE; }
   return EXIT_SUCCESS;
@@ -332,9 +332,9 @@ By default the JSON format does not allow `inf`:
 #include <iostream>
 
 int main() {
-  const std::string input = "inf"; // not valid in JSON
+  std::string input = "inf"; // not valid in JSON
   double result;
-  fast_float::parse_options options{ fast_float::chars_format::json };
+  fast_float::parse_options options{fast_float::chars_format::json};
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
   if (answer.ec == std::errc()) { std::cerr << "should have failed\n"; return EXIT_FAILURE; }
   return EXIT_SUCCESS;
@@ -348,9 +348,9 @@ You can allow it with a non-standard `json_or_infnan` variant:
 #include <iostream>
 
 int main() {
-  const std::string input = "inf"; // not valid in JSON but we allow it with json_or_infnan
+  std::string input = "inf"; // not valid in JSON but we allow it with json_or_infnan
   double result;
-  fast_float::parse_options options{ fast_float::chars_format::json_or_infnan };
+  fast_float::parse_options options{fast_float::chars_format::json_or_infnan};
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
   if (answer.ec != std::errc() || (!std::isinf(result))) { std::cerr << "should have parsed infinity\n"; return EXIT_FAILURE; }
   return EXIT_SUCCESS;

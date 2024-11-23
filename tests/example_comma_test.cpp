@@ -5,7 +5,7 @@
 #include <system_error>
 
 int main() {
-  const std::string input = "3,1416 xyz ";
+  std::string const input = "3,1416 xyz ";
   double result;
   fast_float::parse_options options{fast_float::chars_format::general, ','};
   auto answer = fast_float::from_chars_advanced(

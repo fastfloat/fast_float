@@ -5,7 +5,7 @@
 #include "fast_float/fast_float.h"
 
 int main_readme() {
-  const std::string input = "+.1"; // not valid
+  std::string const input = "+.1"; // not valid
   double result;
   fast_float::parse_options options{
       fast_float::chars_format::json |
@@ -20,7 +20,7 @@ int main_readme() {
 }
 
 int main_readme2() {
-  const std::string input = "inf"; // not valid in JSON
+  std::string const input = "inf"; // not valid in JSON
   double result;
   fast_float::parse_options options{
       fast_float::chars_format::json |
@@ -35,7 +35,7 @@ int main_readme2() {
 }
 
 int main_readme3() {
-  const std::string input =
+  std::string const input =
       "inf"; // not valid in JSON but we allow it with json_or_infnan
   double result;
   fast_float::parse_options options{
@@ -69,7 +69,7 @@ struct RejectedValue {
 };
 
 int main() {
-  const std::vector<AcceptedValue> accept{
+  std::vector<AcceptedValue> const accept{
       {"-0.2", {-0.2, ""}},
       {"0.02", {0.02, ""}},
       {"0.002", {0.002, ""}},
@@ -78,7 +78,7 @@ int main() {
       {"1e", {1., "e"}},
       {"1e+", {1., "e+"}},
       {"inf", {std::numeric_limits<double>::infinity(), ""}}};
-  const std::vector<RejectedValue> reject{
+  std::vector<RejectedValue> const reject{
       {"-.2", {fast_float::parse_error::missing_integer_after_sign, 1}},
       {"00.02", {fast_float::parse_error::leading_zeros_in_integer_part, 0}},
       {"0.e+1", {fast_float::parse_error::no_digits_in_fractional_part, 2}},
@@ -92,8 +92,8 @@ int main() {
       {"nan(snan)", {fast_float::parse_error::no_digits_in_integer_part, 0}}};
 
   for (std::size_t i = 0; i < accept.size(); ++i) {
-    const auto &s = accept[i].input;
-    const auto &expected = accept[i].expected;
+    auto const &s = accept[i].input;
+    auto const &expected = accept[i].expected;
     double result;
     auto answer =
         fast_float::from_chars(s.data(), s.data() + s.size(), result,
@@ -116,7 +116,7 @@ int main() {
   }
 
   for (std::size_t i = 0; i < reject.size(); ++i) {
-    const auto &s = reject[i].input;
+    auto const &s = reject[i].input;
     double result;
     auto answer = fast_float::from_chars(s.data(), s.data() + s.size(), result,
                                          fast_float::chars_format::json);
@@ -127,8 +127,8 @@ int main() {
   }
 
   for (std::size_t i = 0; i < reject.size(); ++i) {
-    const auto &f = reject[i].input;
-    const auto &expected_reason = reject[i].reason;
+    auto const &f = reject[i].input;
+    auto const &expected_reason = reject[i].reason;
     auto answer = fast_float::parse_number_string(
         f.data(), f.data() + f.size(),
         fast_float::parse_options(

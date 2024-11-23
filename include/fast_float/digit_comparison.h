@@ -143,8 +143,8 @@ template <typename callback>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
 round_nearest_tie_even(adjusted_mantissa &am, int32_t shift,
                        callback cb) noexcept {
-  const uint64_t mask = (shift == 64) ? UINT64_MAX : (uint64_t(1) << shift) - 1;
-  const uint64_t halfway = (shift == 0) ? 0 : uint64_t(1) << (shift - 1);
+  uint64_t const mask = (shift == 64) ? UINT64_MAX : (uint64_t(1) << shift) - 1;
+  uint64_t const halfway = (shift == 0) ? 0 : uint64_t(1) << (shift - 1);
   uint64_t truncated_bits = am.mantissa & mask;
   bool is_above = truncated_bits > halfway;
   bool is_halfway = truncated_bits == halfway;
@@ -215,13 +215,13 @@ is_truncated(UC const *first, UC const *last) noexcept {
 }
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-is_truncated(span<const UC> s) noexcept {
+is_truncated(span<UC const> s) noexcept {
   return is_truncated(s.ptr, s.ptr + s.len());
 }
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-parse_eight_digits(const UC *&p, limb &value, size_t &counter,
+parse_eight_digits(UC const *&p, limb &value, size_t &counter,
                    size_t &count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;

@@ -58,7 +58,7 @@ void all_32bit_values() {
     double v = v32;
 
     {
-      const char *string_end = to_string(v, buffer);
+      char const *string_end = to_string(v, buffer);
       std::string s(buffer, size_t(string_end - buffer));
       if (!basic_test_64bit(s, v)) {
         return;
