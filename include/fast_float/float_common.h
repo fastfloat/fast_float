@@ -738,9 +738,8 @@ template <typename UC> static constexpr uint64_t int_cmp_zeros() {
 template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
-template <typename UC> static constexpr UC const *str_const_nan() {
-  return nullptr;
-}
+
+template <typename UC> constexpr UC const *str_const_nan();
 template <> constexpr char const *str_const_nan<char>() { return "nan"; }
 template <> constexpr wchar_t const *str_const_nan<wchar_t>() { return L"nan"; }
 template <> constexpr char16_t const *str_const_nan<char16_t>() {
@@ -749,9 +748,8 @@ template <> constexpr char16_t const *str_const_nan<char16_t>() {
 template <> constexpr char32_t const *str_const_nan<char32_t>() {
   return U"nan";
 }
-template <typename UC> static constexpr UC const *str_const_inf() {
-  return nullptr;
-}
+
+template <typename UC> constexpr UC const *str_const_inf();
 template <> constexpr char const *str_const_inf<char>() { return "infinity"; }
 template <> constexpr wchar_t const *str_const_inf<wchar_t>() {
   return L"infinity";
