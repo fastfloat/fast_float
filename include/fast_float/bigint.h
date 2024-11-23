@@ -43,8 +43,8 @@ template <uint16_t size> struct stackvec {
   uint16_t length{0};
 
   stackvec() = default;
-  stackvec(const stackvec &) = delete;
-  stackvec &operator=(const stackvec &) = delete;
+  stackvec(stackvec const &) = delete;
+  stackvec &operator=(stackvec const &) = delete;
   stackvec(stackvec &&) = delete;
   stackvec &operator=(stackvec &&other) = delete;
 
@@ -423,8 +423,8 @@ struct bigint : pow5_tables<> {
   stackvec<bigint_limbs> vec;
 
   FASTFLOAT_CONSTEXPR20 bigint() : vec() {}
-  bigint(const bigint &) = delete;
-  bigint &operator=(const bigint &) = delete;
+  bigint(bigint const &) = delete;
+  bigint &operator=(bigint const &) = delete;
   bigint(bigint &&) = delete;
   bigint &operator=(bigint &&other) = delete;
 
@@ -473,7 +473,7 @@ struct bigint : pow5_tables<> {
   // positive, this is larger, otherwise they are equal.
   // the limbs are stored in little-endian order, so we
   // must compare the limbs in ever order.
-  FASTFLOAT_CONSTEXPR20 int compare(const bigint &other) const noexcept {
+  FASTFLOAT_CONSTEXPR20 int compare(bigint const &other) const noexcept {
     if (vec.len() > other.vec.len()) {
       return 1;
     } else if (vec.len() < other.vec.len()) {
@@ -527,7 +527,7 @@ struct bigint : pow5_tables<> {
     } else if (!vec.is_empty()) {
       // move limbs
       limb *dst = vec.data + n;
-      const limb *src = vec.data;
+      limb const *src = vec.data;
       std::copy_backward(src, src + vec.len(), dst + vec.len());
       // fill in empty limbs
       limb *first = vec.data;

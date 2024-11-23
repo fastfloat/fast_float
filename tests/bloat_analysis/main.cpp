@@ -1,15 +1,15 @@
 
 
-double get1(const char *input);
-double get2(const char *input);
-double get3(const char *input);
-double get4(const char *input);
-double get5(const char *input);
-double get6(const char *input);
-double get7(const char *input);
-double get8(const char *input);
-double get9(const char *input);
-double get10(const char *input);
+double get1(char const *input);
+double get2(char const *input);
+double get3(char const *input);
+double get4(char const *input);
+double get5(char const *input);
+double get6(char const *input);
+double get7(char const *input);
+double get8(char const *input);
+double get9(char const *input);
+double get10(char const *input);
 
 int main(int arg, char **argv) {
   double x = get1(argv[0]) + get2(argv[0]) + get3(argv[0]) + get4(argv[0]) +

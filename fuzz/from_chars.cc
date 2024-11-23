@@ -19,7 +19,7 @@ fast_float::chars_format arbitrary_format(FuzzedDataProvider &fdp) {
   return chars_format::general;
 }
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+extern "C" int LLVMFuzzerTestOneInput(uint8_t const *data, size_t size) {
   FuzzedDataProvider fdp(data, size);
   fast_float::chars_format format = arbitrary_format(fdp);
   double result_d = 0.0;

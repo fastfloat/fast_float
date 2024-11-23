@@ -46,12 +46,12 @@ ignores all zeroes in front of valid number after converted from base
 
 int main() {
   // int basic test
-  const std::vector<int> int_basic_test_expected{0, 10, -40, 1001, 9};
-  const std::vector<std::string_view> int_basic_test{"0", "10 ", "-40",
+  std::vector<int> const int_basic_test_expected{0, 10, -40, 1001, 9};
+  std::vector<std::string_view> const int_basic_test{"0", "10 ", "-40",
                                                      "1001 with text", "9.999"};
 
   for (std::size_t i = 0; i < int_basic_test.size(); ++i) {
-    const auto f = int_basic_test[i];
+    auto const f = int_basic_test[i];
     int result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
 
@@ -75,12 +75,12 @@ int main() {
   }
 
   // unsigned basic test
-  const std::vector<unsigned> unsigned_basic_test_expected{0, 10, 1001, 9};
-  const std::vector<std::string_view> unsigned_basic_test{
+  std::vector<unsigned> const unsigned_basic_test_expected{0, 10, 1001, 9};
+  std::vector<std::string_view> const unsigned_basic_test{
       "0", "10 ", "1001 with text", "9.999"};
 
   for (std::size_t i = 0; i < unsigned_basic_test.size(); ++i) {
-    const auto &f = unsigned_basic_test[i];
+    auto const &f = unsigned_basic_test[i];
     unsigned result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc()) {
@@ -96,11 +96,11 @@ int main() {
   }
 
   // int invalid error test
-  const std::vector<std::string_view> int_invalid_argument_test{
+  std::vector<std::string_view> const int_invalid_argument_test{
       "text", "text with 1002", "+50", " 50"};
 
   for (std::size_t i = 0; i < int_invalid_argument_test.size(); ++i) {
-    const auto &f = int_invalid_argument_test[i];
+    auto const &f = int_invalid_argument_test[i];
     int result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::invalid_argument) {
@@ -111,11 +111,11 @@ int main() {
   }
 
   // unsigned invalid error test
-  const std::vector<std::string_view> unsigned_invalid_argument_test{
+  std::vector<std::string_view> const unsigned_invalid_argument_test{
       "text", "text with 1002", "+50", " 50", "-50"};
 
   for (std::size_t i = 0; i < unsigned_invalid_argument_test.size(); ++i) {
-    const auto &f = unsigned_invalid_argument_test[i];
+    auto const &f = unsigned_invalid_argument_test[i];
     unsigned result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::invalid_argument) {
@@ -126,11 +126,11 @@ int main() {
   }
 
   // int out of range error test #1 (8 bit)
-  const std::vector<std::string_view> int_out_of_range_test_1{
+  std::vector<std::string_view> const int_out_of_range_test_1{
       "2000000000000000000000", "128", "-129"};
 
   for (std::size_t i = 0; i < int_out_of_range_test_1.size(); ++i) {
-    const auto &f = int_out_of_range_test_1[i];
+    auto const &f = int_out_of_range_test_1[i];
     int8_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -141,11 +141,11 @@ int main() {
   }
 
   // int out of range error test #2 (16 bit)
-  const std::vector<std::string_view> int_out_of_range_test_2{
+  std::vector<std::string_view> const int_out_of_range_test_2{
       "2000000000000000000000", "32768", "-32769"};
 
   for (std::size_t i = 0; i < int_out_of_range_test_2.size(); ++i) {
-    const auto &f = int_out_of_range_test_2[i];
+    auto const &f = int_out_of_range_test_2[i];
     int16_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -156,11 +156,11 @@ int main() {
   }
 
   // int out of range error test #3 (32 bit)
-  const std::vector<std::string_view> int_out_of_range_test_3{
+  std::vector<std::string_view> const int_out_of_range_test_3{
       "2000000000000000000000", "2147483648", "-2147483649"};
 
   for (std::size_t i = 0; i < int_out_of_range_test_3.size(); ++i) {
-    const auto &f = int_out_of_range_test_3[i];
+    auto const &f = int_out_of_range_test_3[i];
     int32_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -171,11 +171,11 @@ int main() {
   }
 
   // int out of range error test #4 (64 bit)
-  const std::vector<std::string_view> int_out_of_range_test_4{
+  std::vector<std::string_view> const int_out_of_range_test_4{
       "2000000000000000000000", "9223372036854775808", "-9223372036854775809"};
 
   for (std::size_t i = 0; i < int_out_of_range_test_4.size(); ++i) {
-    const auto &f = int_out_of_range_test_4[i];
+    auto const &f = int_out_of_range_test_4[i];
     int64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -186,11 +186,11 @@ int main() {
   }
 
   // unsigned out of range error test #1 (8 bit)
-  const std::vector<std::string_view> unsigned_out_of_range_test_1{
+  std::vector<std::string_view> const unsigned_out_of_range_test_1{
       "2000000000000000000000", "256"};
 
   for (std::size_t i = 0; i < unsigned_out_of_range_test_1.size(); ++i) {
-    const auto &f = unsigned_out_of_range_test_1[i];
+    auto const &f = unsigned_out_of_range_test_1[i];
     uint8_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -201,11 +201,11 @@ int main() {
   }
 
   // unsigned out of range error test #2 (16 bit)
-  const std::vector<std::string_view> unsigned_out_of_range_test_2{
+  std::vector<std::string_view> const unsigned_out_of_range_test_2{
       "2000000000000000000000", "65536"};
 
   for (std::size_t i = 0; i < unsigned_out_of_range_test_2.size(); ++i) {
-    const auto &f = unsigned_out_of_range_test_2[i];
+    auto const &f = unsigned_out_of_range_test_2[i];
     uint16_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -216,11 +216,11 @@ int main() {
   }
 
   // unsigned out of range error test #3 (32 bit)
-  const std::vector<std::string_view> unsigned_out_of_range_test_3{
+  std::vector<std::string_view> const unsigned_out_of_range_test_3{
       "2000000000000000000000", "4294967296"};
 
   for (std::size_t i = 0; i < unsigned_out_of_range_test_3.size(); ++i) {
-    const auto &f = unsigned_out_of_range_test_3[i];
+    auto const &f = unsigned_out_of_range_test_3[i];
     uint32_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -231,11 +231,11 @@ int main() {
   }
 
   // unsigned out of range error test #4 (64 bit)
-  const std::vector<std::string_view> unsigned_out_of_range_test_4{
+  std::vector<std::string_view> const unsigned_out_of_range_test_4{
       "2000000000000000000000", "18446744073709551616"};
 
   for (std::size_t i = 0; i < unsigned_out_of_range_test_4.size(); ++i) {
-    const auto &f = unsigned_out_of_range_test_4[i];
+    auto const &f = unsigned_out_of_range_test_4[i];
     uint64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc::result_out_of_range) {
@@ -246,10 +246,10 @@ int main() {
   }
 
   // int pointer test #1 (only numbers)
-  const std::vector<std::string_view> int_pointer_test_1{"0", "010", "-40"};
+  std::vector<std::string_view> const int_pointer_test_1{"0", "010", "-40"};
 
   for (std::size_t i = 0; i < int_pointer_test_1.size(); ++i) {
-    const auto &f = int_pointer_test_1[i];
+    auto const &f = int_pointer_test_1[i];
     int result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
     if (answer.ec != std::errc()) {
@@ -264,9 +264,9 @@ int main() {
   }
 
   // int pointer test #2 (string behind numbers)
-  const std::string_view int_pointer_test_2 = "1001 with text";
+  std::string_view const int_pointer_test_2 = "1001 with text";
 
-  const auto &f2 = int_pointer_test_2;
+  auto const &f2 = int_pointer_test_2;
   int result2;
   auto answer2 =
       fast_float::from_chars(f2.data(), f2.data() + f2.size(), result2);
@@ -277,9 +277,9 @@ int main() {
   }
 
   // int pointer test #3 (string with newline behind numbers)
-  const std::string_view int_pointer_test_3 = "1001 with text\n";
+  std::string_view const int_pointer_test_3 = "1001 with text\n";
 
-  const auto &f3 = int_pointer_test_3;
+  auto const &f3 = int_pointer_test_3;
   int result3;
   auto answer3 =
       fast_float::from_chars(f3.data(), f3.data() + f3.size(), result3);
@@ -290,9 +290,9 @@ int main() {
   }
 
   // int pointer test #4 (float)
-  const std::string_view int_pointer_test_4 = "9.999";
+  std::string_view const int_pointer_test_4 = "9.999";
 
-  const auto &f4 = int_pointer_test_4;
+  auto const &f4 = int_pointer_test_4;
   int result4;
   auto answer4 =
       fast_float::from_chars(f4.data(), f4.data() + f4.size(), result4);
@@ -303,9 +303,9 @@ int main() {
   }
 
   // int pointer test #5 (invalid int)
-  const std::string_view int_pointer_test_5 = "+50";
+  std::string_view const int_pointer_test_5 = "+50";
 
-  const auto &f5 = int_pointer_test_5;
+  auto const &f5 = int_pointer_test_5;
   int result5;
   auto answer5 =
       fast_float::from_chars(f5.data(), f5.data() + f5.size(), result5);
@@ -316,9 +316,9 @@ int main() {
   }
 
   // unsigned pointer test #2 (string behind numbers)
-  const std::string_view unsigned_pointer_test_1 = "1001 with text";
+  std::string_view const unsigned_pointer_test_1 = "1001 with text";
 
-  const auto &f6 = unsigned_pointer_test_1;
+  auto const &f6 = unsigned_pointer_test_1;
   unsigned result6;
   auto answer6 =
       fast_float::from_chars(f6.data(), f6.data() + f6.size(), result6);
@@ -329,9 +329,9 @@ int main() {
   }
 
   // unsigned pointer test #2 (invalid unsigned)
-  const std::string_view unsigned_pointer_test_2 = "-50";
+  std::string_view const unsigned_pointer_test_2 = "-50";
 
-  const auto &f7 = unsigned_pointer_test_2;
+  auto const &f7 = unsigned_pointer_test_2;
   unsigned result7;
   auto answer7 =
       fast_float::from_chars(f7.data(), f7.data() + f7.size(), result7);
@@ -342,12 +342,12 @@ int main() {
   }
 
   // int base 2 test
-  const std::vector<int> int_base_2_test_expected{0, 1, 4, 2, -1};
-  const std::vector<std::string_view> int_base_2_test{"0", "1", "100", "010",
+  std::vector<int> const int_base_2_test_expected{0, 1, 4, 2, -1};
+  std::vector<std::string_view> const int_base_2_test{"0", "1", "100", "010",
                                                       "-1"};
 
   for (std::size_t i = 0; i < int_base_2_test.size(); ++i) {
-    const auto f = int_base_2_test[i];
+    auto const f = int_base_2_test[i];
     int result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 2);
@@ -363,12 +363,12 @@ int main() {
   }
 
   // unsigned base 2 test
-  const std::vector<unsigned> unsigned_base_2_test_expected{0, 1, 4, 2};
-  const std::vector<std::string_view> unsigned_base_2_test{"0", "1", "100",
+  std::vector<unsigned> const unsigned_base_2_test_expected{0, 1, 4, 2};
+  std::vector<std::string_view> const unsigned_base_2_test{"0", "1", "100",
                                                            "010"};
 
   for (std::size_t i = 0; i < unsigned_base_2_test.size(); ++i) {
-    const auto &f = unsigned_base_2_test[i];
+    auto const &f = unsigned_base_2_test[i];
     unsigned result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 2);
@@ -384,11 +384,11 @@ int main() {
   }
 
   // int invalid error base 2 test
-  const std::vector<std::string_view> int_invalid_argument_base_2_test{"2", "A",
+  std::vector<std::string_view> const int_invalid_argument_base_2_test{"2", "A",
                                                                        "-2"};
 
   for (std::size_t i = 0; i < int_invalid_argument_base_2_test.size(); ++i) {
-    const auto &f = int_invalid_argument_base_2_test[i];
+    auto const &f = int_invalid_argument_base_2_test[i];
     int result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 2);
@@ -400,12 +400,12 @@ int main() {
   }
 
   // unsigned invalid error base 2 test
-  const std::vector<std::string_view> unsigned_invalid_argument_base_2_test{
+  std::vector<std::string_view> const unsigned_invalid_argument_base_2_test{
       "2", "A", "-1", "-2"};
 
   for (std::size_t i = 0; i < unsigned_invalid_argument_base_2_test.size();
        ++i) {
-    const auto &f = unsigned_invalid_argument_base_2_test[i];
+    auto const &f = unsigned_invalid_argument_base_2_test[i];
     unsigned result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 2);
@@ -417,12 +417,12 @@ int main() {
   }
 
   // octal test
-  const std::vector<int> base_octal_test_expected{0, 1, 7, 8, 9};
-  const std::vector<std::string_view> base_octal_test{"0", "1", "07", "010",
+  std::vector<int> const base_octal_test_expected{0, 1, 7, 8, 9};
+  std::vector<std::string_view> const base_octal_test{"0", "1", "07", "010",
                                                       "0011"};
 
   for (std::size_t i = 0; i < base_octal_test.size(); ++i) {
-    const auto &f = base_octal_test[i];
+    auto const &f = base_octal_test[i];
     int result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 8);
@@ -438,12 +438,12 @@ int main() {
   }
 
   // hex test
-  const std::vector<int> base_hex_test_expected{0, 1, 15, 31, 0, 16};
-  const std::vector<std::string_view> base_hex_test{"0",   "1",    "F",
+  std::vector<int> const base_hex_test_expected{0, 1, 15, 31, 0, 16};
+  std::vector<std::string_view> const base_hex_test{"0",   "1",    "F",
                                                     "01f", "0x11", "10X11"};
 
   for (std::size_t i = 0; i < base_hex_test.size(); ++i) {
-    const auto &f = base_hex_test[i];
+    auto const &f = base_hex_test[i];
     int result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 16);
@@ -459,11 +459,11 @@ int main() {
   }
 
   // invalid base test #1 (-1)
-  const std::vector<std::string_view> invalid_base_test_1{"0", "1", "-1", "F",
+  std::vector<std::string_view> const invalid_base_test_1{"0", "1", "-1", "F",
                                                           "10Z"};
 
   for (std::size_t i = 0; i < invalid_base_test_1.size(); ++i) {
-    const auto &f = invalid_base_test_1[i];
+    auto const &f = invalid_base_test_1[i];
     int result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, -1);
@@ -475,11 +475,11 @@ int main() {
   }
 
   // invalid base test #2 (37)
-  const std::vector<std::string_view> invalid_base_test_2{"0", "1", "F", "Z",
+  std::vector<std::string_view> const invalid_base_test_2{"0", "1", "F", "Z",
                                                           "10Z"};
 
   for (std::size_t i = 0; i < invalid_base_test_2.size(); ++i) {
-    const auto &f = invalid_base_test_2[i];
+    auto const &f = invalid_base_test_2[i];
     int result;
     auto answer =
         fast_float::from_chars(f.data(), f.data() + f.size(), result, 37);
@@ -491,7 +491,7 @@ int main() {
   }
 
   // int out of range error base test (64 bit)
-  const std::vector<std::string_view> int_out_of_range_base_test{
+  std::vector<std::string_view> const int_out_of_range_base_test{
       "1000000000000000000000000000000000000000000000000000000000000000",
       "-1000000000000000000000000000000000000000000000000000000000000001",
       "2021110011022210012102010021220101220222",
@@ -564,7 +564,7 @@ int main() {
       "-1Y2P0IJ32E8E9"};
 
   for (std::size_t i = 0; i < int_out_of_range_base_test.size(); ++i) {
-    const auto &f = int_out_of_range_base_test[i];
+    auto const &f = int_out_of_range_base_test[i];
     int64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
                                          int(2 + (i / 2)));
@@ -576,7 +576,7 @@ int main() {
   }
 
   // unsigned out of range error base test (64 bit)
-  const std::vector<std::string_view> unsigned_out_of_range_base_test{
+  std::vector<std::string_view> const unsigned_out_of_range_base_test{
       "10000000000000000000000000000000000000000000000000000000000000000",
       "11112220022122120101211020120210210211221",
       "100000000000000000000000000000000",
@@ -614,7 +614,7 @@ int main() {
       "3W5E11264SGSG"};
   int base_unsigned = 2;
   for (std::size_t i = 0; i < unsigned_out_of_range_base_test.size(); ++i) {
-    const auto &f = unsigned_out_of_range_base_test[i];
+    auto const &f = unsigned_out_of_range_base_test[i];
     uint64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
                                          base_unsigned);
@@ -627,7 +627,7 @@ int main() {
   }
 
   // just within range base test (64 bit)
-  const std::vector<std::string_view> int_within_range_base_test{
+  std::vector<std::string_view> const int_within_range_base_test{
       "111111111111111111111111111111111111111111111111111111111111111",
       "-1000000000000000000000000000000000000000000000000000000000000000",
       "2021110011022210012102010021220101220221",
@@ -700,7 +700,7 @@ int main() {
       "-1Y2P0IJ32E8E8"};
 
   for (std::size_t i = 0; i < int_within_range_base_test.size(); ++i) {
-    const auto &f = int_within_range_base_test[i];
+    auto const &f = int_within_range_base_test[i];
     int64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
                                          int(2 + (i / 2)));
@@ -712,7 +712,7 @@ int main() {
   }
 
   // unsigned within range base test (64 bit)
-  const std::vector<std::string_view> unsigned_within_range_base_test{
+  std::vector<std::string_view> const unsigned_within_range_base_test{
       "1111111111111111111111111111111111111111111111111111111111111111",
       "11112220022122120101211020120210210211220",
       "33333333333333333333333333333333",
@@ -750,7 +750,7 @@ int main() {
       "3W5E11264SGSF"};
   int base_unsigned2 = 2;
   for (std::size_t i = 0; i < unsigned_within_range_base_test.size(); ++i) {
-    const auto &f = unsigned_within_range_base_test[i];
+    auto const &f = unsigned_within_range_base_test[i];
     uint64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
                                          base_unsigned2);
@@ -764,7 +764,7 @@ int main() {
   }
 
   // int leading zeros test
-  const std::vector<std::string_view> int_leading_zeros_test{
+  std::vector<std::string_view> const int_leading_zeros_test{
       "000000000000000000000000000000000000000000000000000000000000000000000011"
       "11110111",
       "000000000000000000000000000000000000000000000000001101121",
@@ -803,7 +803,7 @@ int main() {
       "00000000000000000000S7"};
 
   for (std::size_t i = 0; i < int_leading_zeros_test.size(); ++i) {
-    const auto &f = int_leading_zeros_test[i];
+    auto const &f = int_leading_zeros_test[i];
     int result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
                                          int(i + 2));

@@ -20,7 +20,7 @@ namespace fast_float {
 template <int bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(int64_t q, uint64_t w) {
-  const int index = 2 * int(q - powers::smallest_power_of_five);
+  int const index = 2 * int(q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact
   // because The line value128 firstproduct = full_multiplication(w,
   // power_of_five_128[index]); gives the exact answer.

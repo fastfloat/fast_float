@@ -7,7 +7,7 @@
 #include "fast_float/fast_float.h"
 
 int main_readme() {
-  const std::string input = "1d+4";
+  std::string const input = "1d+4";
   double result;
   fast_float::parse_options options{
       fast_float::chars_format::fortran |
@@ -23,15 +23,15 @@ int main_readme() {
 }
 
 int main() {
-  const std::vector<double> expected{10000, 1000, 100,  10,   1,
+  std::vector<double> const expected{10000, 1000, 100,  10,   1,
                                      .1,    .01,  .001, .0001};
-  const std::vector<std::string> fmt1{"1+4", "1+3", "1+2", "1+1", "1+0",
+  std::vector<std::string> const fmt1{"1+4", "1+3", "1+2", "1+1", "1+0",
                                       "1-1", "1-2", "1-3", "1-4"};
-  const std::vector<std::string> fmt2{"1d+4", "1d+3", "1d+2", "1d+1", "1d+0",
+  std::vector<std::string> const fmt2{"1d+4", "1d+3", "1d+2", "1d+1", "1d+0",
                                       "1d-1", "1d-2", "1d-3", "1d-4"};
-  const std::vector<std::string> fmt3{"+1+4", "+1+3", "+1+2", "+1+1", "+1+0",
+  std::vector<std::string> const fmt3{"+1+4", "+1+3", "+1+2", "+1+1", "+1+0",
                                       "+1-1", "+1-2", "+1-3", "+1-4"};
-  const fast_float::parse_options options{
+  fast_float::parse_options const options{
       fast_float::chars_format::fortran |
       fast_float::chars_format::allow_leading_plus};
 

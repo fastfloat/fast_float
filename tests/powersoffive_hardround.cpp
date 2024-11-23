@@ -16,7 +16,7 @@
 // gcc.
 #include <locale>
 // workaround for CYGWIN
-double cygwin_strtod_l(const char *start, char **end) {
+double cygwin_strtod_l(char const *start, char **end) {
   double d;
   std::stringstream ss;
   ss.imbue(std::locale::classic());
@@ -32,7 +32,7 @@ double cygwin_strtod_l(const char *start, char **end) {
   *end = const_cast<char *>(start) + nread;
   return d;
 }
-float cygwin_strtof_l(const char *start, char **end) {
+float cygwin_strtof_l(char const *start, char **end) {
   float d;
   std::stringstream ss;
   ss.imbue(std::locale::classic());
@@ -50,7 +50,7 @@ float cygwin_strtof_l(const char *start, char **end) {
 }
 #endif
 
-std::pair<double, bool> strtod_from_string(const char *st) {
+std::pair<double, bool> strtod_from_string(char const *st) {
   double d;
   char *pr;
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \

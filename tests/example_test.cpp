@@ -5,7 +5,7 @@
 #include <system_error>
 
 bool many() {
-  const std::string input = "234532.3426362,7869234.9823,324562.645";
+  std::string const input = "234532.3426362,7869234.9823,324562.645";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);
@@ -41,10 +41,10 @@ bool many() {
 }
 
 void many_loop() {
-  const std::string input = "234532.3426362,7869234.9823,324562.645";
+  std::string const input = "234532.3426362,7869234.9823,324562.645";
   double result;
-  const char *pointer = input.data();
-  const char *end_pointer = input.data() + input.size();
+  char const *pointer = input.data();
+  char const *end_pointer = input.data() + input.size();
 
   while (pointer < end_pointer) {
     auto answer = fast_float::from_chars(pointer, end_pointer, result);
@@ -112,7 +112,7 @@ bool large() {
 }
 
 int main() {
-  const std::string input = "3.1416 xyz ";
+  std::string const input = "3.1416 xyz ";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);

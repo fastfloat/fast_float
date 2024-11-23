@@ -73,7 +73,7 @@ bool eddelbuettel() {
     bool non_space_trailing_content = false;
     if (answer.ptr != input.data() + input.size()) {
       // check that there is no content left
-      for (const char *leftover = answer.ptr;
+      for (char const *leftover = answer.ptr;
            leftover != input.data() + input.size(); leftover++) {
         if (!fast_float::is_space(*leftover)) {
           non_space_trailing_content = true;
