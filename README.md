@@ -149,7 +149,7 @@ int main() {
     std::cerr << "parsing failure\n";
     return EXIT_FAILURE;
   }
-  std::cout << "parsed the number "<< i << std::endl;
+  std::cout << "parsed the number " << i << std::endl;
 
   std::string binstr = "1001111000011001110110111001001010110100111000110001100";
 
@@ -158,7 +158,7 @@ int main() {
     std::cerr << "parsing failure\n";
     return EXIT_FAILURE;
   }
-  std::cout << "parsed the number "<< i << std::endl;
+  std::cout << "parsed the number " << i << std::endl;
 
   std::string hexstr = "4f0cedc95a718c";
 
@@ -167,7 +167,7 @@ int main() {
     std::cerr << "parsing failure\n";
     return EXIT_FAILURE;
   }
-  std::cout << "parsed the number "<< i << std::endl;
+  std::cout << "parsed the number " << i << std::endl;
   return EXIT_SUCCESS;
 }
 ```

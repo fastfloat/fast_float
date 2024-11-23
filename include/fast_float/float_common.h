@@ -237,7 +237,12 @@ struct is_supported_char_type
     : std::integral_constant<bool, std::is_same<UC, char>::value ||
                                        std::is_same<UC, wchar_t>::value ||
                                        std::is_same<UC, char16_t>::value ||
-                                       std::is_same<UC, char32_t>::value> {};
+                                       std::is_same<UC, char32_t>::value
+#ifdef __cpp_char8_t
+                                       || std::is_same<UC, char8_t>::value
+#endif
+                             > {
+};
 
 // Compares two ASCII strings in a case insensitive manner.
 template <typename UC>
@@ -748,6 +753,11 @@ template <> constexpr char16_t const *str_const_nan<char16_t>() {
 template <> constexpr char32_t const *str_const_nan<char32_t>() {
   return U"nan";
 }
+#ifdef __cpp_char8_t
+template <> constexpr char8_t const *str_const_nan<char8_t>() {
+  return u8"nan";
+}
+#endif
 
 template <typename UC> constexpr UC const *str_const_inf();
 template <> constexpr char const *str_const_inf<char>() { return "infinity"; }
@@ -760,6 +770,11 @@ template <> constexpr char16_t const *str_const_inf<char16_t>() {
 template <> constexpr char32_t const *str_const_inf<char32_t>() {
   return U"infinity";
 }
+#ifdef __cpp_char8_t
+template <> constexpr char8_t const *str_const_inf<char8_t>() {
+  return u8"infinity";
+}
+#endif
 
 template <typename = void> struct int_luts {
   static constexpr uint8_t chdigit[] = {
