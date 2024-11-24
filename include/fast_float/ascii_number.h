@@ -32,7 +32,7 @@ template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
 // able to optimize it well.
 template <typename UC>
 fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
-  return !(c > UC('9') || c < UC('0'));
+  return static_cast<uint8_t>(c - '0') < 10;
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
@@ -232,6 +232,39 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
   }
 }
 
+// credit @realtimechris
+fastfloat_really_inline constexpr bool
+parse_if_eight_digits_unrolled(const char *&string, size_t &value) {
+  constexpr size_t byte_mask = ~size_t(0) / 255ull;
+  constexpr size_t msb_mask = byte_mask * 128ull;
+  constexpr size_t threshold_byte_mask = byte_mask * (127ull - 9ull);
+  constexpr size_t mask = 0x000000FF000000FFull;
+  constexpr size_t mul1 = 0x000F424000000064ull;
+  constexpr size_t mul2 = 0x0000271000000001ull;
+  size_t value_new = read8_to_u64(string) - 0x3030303030303030;
+  if (!(((value_new + threshold_byte_mask) | value_new) & msb_mask)) {
+    value_new = (value_new * 10) + (value_new >> 8);
+    value =
+        value * 100000000 +
+        ((((value_new & mask) * mul1) + (((value_new >> 16) & mask) * mul2)) >>
+         32);
+    string += 8;
+    return true;
+  }
+  return false;
+}
+
+fastfloat_really_inline constexpr void
+loop_parse_if_digits(const char *&p, const char *const pend,
+                     size_t &i) noexcept {
+  while (pend - p >= 8 && parse_if_eight_digits_unrolled(p, i)) {
+  }
+  while (p < pend && is_integer(*p)) {
+    i = i * 10 + static_cast<uint8_t>(*p - '0');
+    ++p;
+  }
+}
+
 enum class parse_error {
   no_error,
   // [JSON-only] The minus sign must be followed by an integer.
@@ -347,13 +380,7 @@ parse_number_string(UC const *p, UC const *pend,
     UC const *before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    loop_parse_if_eight_digits(p, pend, i);
-
-    while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - UC('0'));
-      ++p;
-      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
-    }
+    loop_parse_if_digits(p, pend, i);
     exponent = before - p;
     answer.fraction = span<UC const>(before, size_t(p - before));
     digit_count -= exponent;
