@@ -98,6 +98,15 @@ cc_test(
 )
 
 cc_test(
+    name = "supported_chars_test",
+    srcs = ["supported_chars_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
     name = "string_test",
     srcs = ["string_test.cpp"],
     deps = [
