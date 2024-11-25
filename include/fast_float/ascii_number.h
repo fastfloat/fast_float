@@ -32,7 +32,7 @@ template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
 // able to optimize it well.
 template <typename UC>
 fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
-  return static_cast<uint8_t>(c - '0') < 10;
+  return static_cast<uint8_t>(c - UC('0')) < 10;
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
