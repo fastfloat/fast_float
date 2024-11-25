@@ -68,7 +68,7 @@ endfunction(fast_float_add_cpp_test)
 
 fast_float_add_cpp_test(rcppfastfloat_test)
 fast_float_add_cpp_test(wide_char_test)
-fast_float_add_cpp_test(unicode_test)
+fast_float_add_cpp_test(supported_chars_test)
 fast_float_add_cpp_test(example_test)
 fast_float_add_cpp_test(example_comma_test)
 fast_float_add_cpp_test(basictest)

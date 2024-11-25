@@ -98,8 +98,8 @@ cc_test(
 )
 
 cc_test(
-    name = "unicode_test",
-    srcs = ["unicode_test.cpp"],
+    name = "supported_chars_test",
+    srcs = ["supported_chars_test.cpp"],
     deps = [
         "//:fast_float",
         "@doctest//doctest",

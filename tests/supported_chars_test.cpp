@@ -31,6 +31,13 @@ int main() {
     return EXIT_FAILURE;
   }
 
+#ifdef __cpp_char8_t
+  if (!test<char8_t>("4.2", 4.2)) {
+    std::cout << "test failure for char8_t" << std::endl;
+    return EXIT_FAILURE;
+  }
+#endif
+
   if (!test<char16_t>("4.2", 4.2)) {
     std::cout << "test failure for char16_t" << std::endl;
     return EXIT_FAILURE;
