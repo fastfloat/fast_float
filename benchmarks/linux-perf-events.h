@@ -42,7 +42,8 @@ public:
     uint32_t i = 0;
     for (auto config : config_vec) {
       attribs.config = config;
-      int _fd = static_cast<int>(syscall(__NR_perf_event_open, &attribs, pid, cpu, group, flags));
+      int _fd = static_cast<int>(
+          syscall(__NR_perf_event_open, &attribs, pid, cpu, group, flags));
       if (_fd == -1) {
         report_error("perf_event_open");
       }
@@ -56,7 +57,11 @@ public:
     temp_result_vec.resize(num_events * 2 + 1);
   }
 
-  ~LinuxEvents() { if (fd != -1) { close(fd); } }
+  ~LinuxEvents() {
+    if (fd != -1) {
+      close(fd);
+    }
+  }
 
   inline void start() {
     if (fd != -1) {
@@ -85,19 +90,15 @@ public:
       results[i / 2] = temp_result_vec[i];
     }
     for (uint32_t i = 2; i < temp_result_vec.size(); i += 2) {
-      if(ids[i/2-1] != temp_result_vec[i]) {
+      if (ids[i / 2 - 1] != temp_result_vec[i]) {
         report_error("event mismatch");
       }
     }
   }
 
-  bool is_working() {
-    return working;
-  }
+  bool is_working() { return working; }
 
 private:
-  void report_error(const std::string &) {
-    working = false;
-  }
+  void report_error(const std::string &) { working = false; }
 };
 #endif

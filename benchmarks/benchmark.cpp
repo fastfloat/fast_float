@@ -1,4 +1,4 @@
-#if defined(__linux__) || (__APPLE__ &&  __aarch64__)
+#if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
 #include "event_counter.h"
 #endif
@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 #include <locale.h>
-
 
 template <typename CharT>
 double findmax_fastfloat64(std::vector<std::basic_string<CharT>> &s) {
@@ -55,8 +54,9 @@ event_collector collector{};
 
 #ifdef USING_COUNTERS
 template <class T, class CharT>
-std::vector<event_count> time_it_ns(std::vector<std::basic_string<CharT>> &lines,
-                                     T const &function, size_t repeat) {
+std::vector<event_count>
+time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
+           size_t repeat) {
   std::vector<event_count> aggregate;
   bool printed_bug = false;
   for (size_t i = 0; i < repeat; i++) {
@@ -71,7 +71,8 @@ std::vector<event_count> time_it_ns(std::vector<std::basic_string<CharT>> &lines
   return aggregate;
 }
 
-void pretty_print(double volume, size_t number_of_floats, std::string name, std::vector<event_count> events) {
+void pretty_print(double volume, size_t number_of_floats, std::string name,
+                  std::vector<event_count> events) {
   double volumeMB = volume / (1024. * 1024.);
   double average_ns{0};
   double min_ns{DBL_MAX};
@@ -83,7 +84,7 @@ void pretty_print(double volume, size_t number_of_floats, std::string name, std:
   double branches_avg{0};
   double branch_misses_min{0};
   double branch_misses_avg{0};
-  for(event_count e : events) {
+  for (event_count e : events) {
     double ns = e.elapsed_ns();
     average_ns += ns;
     min_ns = min_ns < ns ? min_ns : ns;
@@ -94,7 +95,8 @@ void pretty_print(double volume, size_t number_of_floats, std::string name, std:
 
     double instructions = e.instructions();
     instructions_avg += instructions;
-    instructions_min = instructions_min < instructions ? instructions_min : instructions;
+    instructions_min =
+        instructions_min < instructions ? instructions_min : instructions;
 
     double branches = e.branches();
     branches_avg += branches;
@@ -102,43 +104,37 @@ void pretty_print(double volume, size_t number_of_floats, std::string name, std:
 
     double branch_misses = e.missed_branches();
     branch_misses_avg += branch_misses;
-    branch_misses_min = branch_misses_min < branch_misses ? branch_misses_min : branch_misses;
+    branch_misses_min =
+        branch_misses_min < branch_misses ? branch_misses_min : branch_misses;
   }
   cycles_avg /= events.size();
   instructions_avg /= events.size();
   average_ns /= events.size();
   branches_avg /= events.size();
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
-           volumeMB * 1000000000 / min_ns,
-           (average_ns - min_ns) * 100.0 / average_ns);
-  printf("%8.2f Mfloat/s  ", 
-           number_of_floats * 1000 / min_ns);
-  if(instructions_min > 0) {
-    printf(" %8.2f i/B %8.2f i/f (+/- %.1f %%) ", 
-           instructions_min / volume,
-           instructions_min / number_of_floats, 
+         volumeMB * 1000000000 / min_ns,
+         (average_ns - min_ns) * 100.0 / average_ns);
+  printf("%8.2f Mfloat/s  ", number_of_floats * 1000 / min_ns);
+  if (instructions_min > 0) {
+    printf(" %8.2f i/B %8.2f i/f (+/- %.1f %%) ", instructions_min / volume,
+           instructions_min / number_of_floats,
            (instructions_avg - instructions_min) * 100.0 / instructions_avg);
 
-    printf(" %8.2f c/B %8.2f c/f (+/- %.1f %%) ", 
-           cycles_min / volume,
-           cycles_min / number_of_floats, 
+    printf(" %8.2f c/B %8.2f c/f (+/- %.1f %%) ", cycles_min / volume,
+           cycles_min / number_of_floats,
            (cycles_avg - cycles_min) * 100.0 / cycles_avg);
-    printf(" %8.2f i/c ", 
-           instructions_min /cycles_min);
-    printf(" %8.2f b/f ",
-           branches_avg /number_of_floats);
-    printf(" %8.2f bm/f ",
-           branch_misses_avg /number_of_floats);
-    printf(" %8.2f GHz ", 
-           cycles_min / min_ns);
+    printf(" %8.2f i/c ", instructions_min / cycles_min);
+    printf(" %8.2f b/f ", branches_avg / number_of_floats);
+    printf(" %8.2f bm/f ", branch_misses_avg / number_of_floats);
+    printf(" %8.2f GHz ", cycles_min / min_ns);
   }
   printf("\n");
-
 }
 #else
 template <class T, class CharT>
-std::pair<double, double> time_it_ns(std::vector<std::basic_string<CharT>> &lines,
-                                     T const &function, size_t repeat) {
+std::pair<double, double>
+time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
+           size_t repeat) {
   std::chrono::high_resolution_clock::time_point t1, t2;
   double average = 0;
   double min_value = DBL_MAX;
@@ -160,21 +156,16 @@ std::pair<double, double> time_it_ns(std::vector<std::basic_string<CharT>> &line
   return std::make_pair(min_value, average);
 }
 
-
-
-
-void pretty_print(double volume, size_t number_of_floats, std::string name, std::pair<double,double> result) {
+void pretty_print(double volume, size_t number_of_floats, std::string name,
+                  std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
-           volumeMB * 1000000000 / result.first,
-           (result.second - result.first) * 100.0 / result.second);
-  printf("%8.2f Mfloat/s  ", 
-           number_of_floats * 1000 / result.first);
-  printf(" %8.2f ns/f \n", 
-           double(result.first) /number_of_floats );
+         volumeMB * 1000000000 / result.first,
+         (result.second - result.first) * 100.0 / result.second);
+  printf("%8.2f Mfloat/s  ", number_of_floats * 1000 / result.first);
+  printf(" %8.2f ns/f \n", double(result.first) / number_of_floats);
 }
-#endif 
-
+#endif
 
 // this is okay, all chars are ASCII
 inline std::u16string widen(std::string line) {
@@ -195,21 +186,23 @@ std::vector<std::u16string> widen(const std::vector<std::string> &lines) {
   return u16lines;
 }
 
-
 void process(std::vector<std::string> &lines, size_t volume) {
   size_t repeat = 100;
   double volumeMB = volume / (1024. * 1024.);
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
-  pretty_print(volume, lines.size(), "fastfloat (64)", time_it_ns(lines, findmax_fastfloat64<char>, repeat));
-  pretty_print(volume, lines.size(), "fastfloat (32)", time_it_ns(lines, findmax_fastfloat32<char>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (64)",
+               time_it_ns(lines, findmax_fastfloat64<char>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (32)",
+               time_it_ns(lines, findmax_fastfloat32<char>, repeat));
 
   std::vector<std::u16string> lines16 = widen(lines);
   volume = 2 * volume;
   volumeMB = volume / (1024. * 1024.);
   std::cout << "UTF-16 volume = " << volumeMB << " MB " << std::endl;
-  pretty_print(volume, lines.size(), "fastfloat (64)", time_it_ns(lines16, findmax_fastfloat64<char16_t>, repeat));
-  pretty_print(volume, lines.size(), "fastfloat (32)", time_it_ns(lines16, findmax_fastfloat32<char16_t>, repeat));
-
+  pretty_print(volume, lines.size(), "fastfloat (64)",
+               time_it_ns(lines16, findmax_fastfloat64<char16_t>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (32)",
+               time_it_ns(lines16, findmax_fastfloat32<char16_t>, repeat));
 }
 
 void fileload(std::string filename) {
@@ -233,13 +226,14 @@ void fileload(std::string filename) {
   process(lines, volume);
 }
 
-
 int main(int argc, char **argv) {
-  if(collector.has_events()) {
+  if (collector.has_events()) {
     std::cout << "# Using hardware counters" << std::endl;
   } else {
-#if defined(__linux__) || (__APPLE__ &&  __aarch64__)
-    std::cout << "# Hardware counters not available, try to run in privileged mode (e.g., sudo)." << std::endl;
+#if defined(__linux__) || (__APPLE__ && __aarch64__)
+    std::cout << "# Hardware counters not available, try to run in privileged "
+                 "mode (e.g., sudo)."
+              << std::endl;
 #endif
   }
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");

@@ -101,8 +101,6 @@ inline performance_counters operator-(const performance_counters &a,
                               a.instructions - b.instructions);
 }
 
-
-
 typedef float f32;
 typedef double f64;
 typedef int8_t i8;
@@ -616,9 +614,7 @@ typedef struct {
 
 #define lib_nelems(x) (sizeof(x) / sizeof((x)[0]))
 #define lib_symbol_def(name)                                                   \
-  {                                                                            \
-#name, (void **)&name                                                      \
-  }
+  { #name, (void **)&name }
 
 static const lib_symbol lib_symbols_kperf[] = {
     lib_symbol_def(kpc_pmu_version),
@@ -933,7 +929,7 @@ typedef struct {
 static const event_alias profile_events[] = {
     {"cycles",
      {
-         "FIXED_CYCLES", // Apple A7-A15//CORE_ACTIVE_CYCLE
+         "FIXED_CYCLES",            // Apple A7-A15//CORE_ACTIVE_CYCLE
          "CPU_CLK_UNHALTED.THREAD", // Intel Core 1th-10th
          "CPU_CLK_UNHALTED.CORE",   // Intel Yonah, Merom
      }},
@@ -976,7 +972,6 @@ u64 counters_0[KPC_MAX_COUNTERS] = {0};
 u64 counters_1[KPC_MAX_COUNTERS] = {0};
 const usize ev_count = sizeof(profile_events) / sizeof(profile_events[0]);
 
-
 bool setup_performance_counters() {
   static bool init = false;
   static bool worked = false;
@@ -995,7 +990,7 @@ bool setup_performance_counters() {
   // check permission
   int force_ctrs = 0;
   if (kpc_force_all_ctrs_get(&force_ctrs)) {
-    //printf("Permission denied, xnu/kpc requires root privileges.\n");
+    // printf("Permission denied, xnu/kpc requires root privileges.\n");
     return (worked = false);
   }
   int ret;
@@ -1101,17 +1096,16 @@ inline performance_counters get_counters() {
     }
     return 1;
   }
- /*printf("counters value:\n");
-    for (usize i = 0; i < ev_count; i++) {
-        const event_alias *alias = profile_events + i;
-        usize idx = counter_map[i];
-        u64 val = counters_1[idx] - counters_0[idx];
-        printf("%14s: %llu\n", alias->alias, val);
-    }*/
+  /*printf("counters value:\n");
+     for (usize i = 0; i < ev_count; i++) {
+         const event_alias *alias = profile_events + i;
+         usize idx = counter_map[i];
+         u64 val = counters_1[idx] - counters_0[idx];
+         printf("%14s: %llu\n", alias->alias, val);
+     }*/
   return performance_counters{
       counters_0[counter_map[0]], counters_0[counter_map[2]],
-      counters_0[counter_map[3]],
-      counters_0[counter_map[1]]};
+      counters_0[counter_map[3]], counters_0[counter_map[1]]};
 }
 
 #endif
