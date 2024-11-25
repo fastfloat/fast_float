@@ -11,7 +11,7 @@ jobs:
         run: |
           mkdir build &&
           cd build &&
-          CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON  ..  &&
+          CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON -D FASTFLOAT_BENCHMARKS=ON ..  &&
           cmake --build .   &&
           ctest --output-on-failure
       - name: Use cmake CXX23
