@@ -15,7 +15,7 @@
 #endif
 
 #if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
-#define FASTFLOAT_IF_CONSTEXPR if constexpr 
+#define FASTFLOAT_IF_CONSTEXPR if constexpr
 #else
 #define FASTFLOAT_IF_CONSTEXPR if
 #endif

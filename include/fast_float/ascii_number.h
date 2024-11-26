@@ -224,9 +224,7 @@ bool simd_parse_if_eight_digits_unrolled(UC const *, uint64_t &) {
 template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_eight_digits(UC const *&p, UC const *const pend, uint64_t &i) {
-  FASTFLOAT_IF_CONSTEXPR(!has_simd_opt<UC>()) {
-    return;
-  }
+  FASTFLOAT_IF_CONSTEXPR(!has_simd_opt<UC>()) { return; }
   while (((pend - p) >= 8) &&
          simd_parse_if_eight_digits_unrolled(
              p, i)) { // in rare cases, this will overflow, but that's ok
@@ -249,9 +247,7 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
 template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_digits(UC const *&p, UC const *const pend, uint64_t &i) {
-  FASTFLOAT_IF_CONSTEXPR(!has_simd_opt<UC>()) {
-    return;
-  }
+  FASTFLOAT_IF_CONSTEXPR(!has_simd_opt<UC>()) { return; }
   while (((pend - p) >= 8) &&
          simd_parse_if_eight_digits_unrolled(
              p, i)) { // in rare cases, this will overflow, but that's ok
