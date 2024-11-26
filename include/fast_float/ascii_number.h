@@ -118,9 +118,9 @@ uint64_t simd_read8_to_u64(UC const *) {
 // credit  @aqrit
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_eight_digits_unrolled(uint64_t val) {
-  uint64_t const mask = 0x000000FF000000FF;
-  uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
-  uint64_t const mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  constexpr uint64_t mask = 0x000000FF000000FF;
+  constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  constexpr uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
@@ -142,6 +142,21 @@ fastfloat_really_inline constexpr bool
 is_made_of_eight_digits_fast(uint64_t val) noexcept {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
             0x8080808080808080));
+}
+
+fastfloat_really_inline constexpr bool
+is_made_of_eight_digits_no_sub(uint64_t val) noexcept {
+  return !((((val + 0x7676767676767676) | (val)) & 0x8080808080808080));
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+parse_eight_digits_unrolled_no_sub(uint64_t val) {
+  constexpr uint64_t mask = 0x000000FF000000FF;
+  constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  constexpr uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  val = (val * 10) + (val >> 8);                // val = (val * 2561) >> 8;
+  val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+  return uint32_t(val);
 }
 
 #ifdef FASTFLOAT_HAS_SIMD
@@ -209,10 +224,10 @@ bool simd_parse_if_eight_digits_unrolled(UC const *, uint64_t &) {
 template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_eight_digits(UC const *&p, UC const *const pend, uint64_t &i) {
-  if (!has_simd_opt<UC>()) {
+  FASTFLOAT_IF_CONSTEXPR(!has_simd_opt<UC>()) {
     return;
   }
-  while ((std::distance(p, pend) >= 8) &&
+  while (((pend - p) >= 8) &&
          simd_parse_if_eight_digits_unrolled(
              p, i)) { // in rare cases, this will overflow, but that's ok
     p += 8;
@@ -223,8 +238,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_eight_digits(char const *&p, char const *const pend,
                            uint64_t &i) {
   // optimizes better than parse_if_eight_digits_unrolled() for UC = char.
-  while ((std::distance(p, pend) >= 8) &&
-         is_made_of_eight_digits_fast(read8_to_u64(p))) {
+  while (((pend - p) >= 8) && is_made_of_eight_digits_fast(read8_to_u64(p))) {
     i = i * 100000000 +
         parse_eight_digits_unrolled(read8_to_u64(
             p)); // in rare cases, this will overflow, but that's ok
@@ -232,36 +246,26 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
   }
 }
 
-// credit @realtimechris
-fastfloat_really_inline constexpr bool
-parse_if_eight_digits_unrolled(const char *&string, size_t &value) {
-  constexpr size_t byte_mask = ~size_t(0) / 255ull;
-  constexpr size_t msb_mask = byte_mask * 128ull;
-  constexpr size_t threshold_byte_mask = byte_mask * (127ull - 9ull);
-  constexpr size_t mask = 0x000000FF000000FFull;
-  constexpr size_t mul1 = 0x000F424000000064ull;
-  constexpr size_t mul2 = 0x0000271000000001ull;
-  size_t value_new = read8_to_u64(string) - 0x3030303030303030;
-  if (!(((value_new + threshold_byte_mask) | value_new) & msb_mask)) {
-    value_new = (value_new * 10) + (value_new >> 8);
-    value =
-        value * 100000000 +
-        ((((value_new & mask) * mul1) + (((value_new >> 16) & mask) * mul2)) >>
-         32);
-    string += 8;
-    return true;
+template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+loop_parse_if_digits(UC const *&p, UC const *const pend, uint64_t &i) {
+  FASTFLOAT_IF_CONSTEXPR(!has_simd_opt<UC>()) {
+    return;
   }
-  return false;
+  while (((pend - p) >= 8) &&
+         simd_parse_if_eight_digits_unrolled(
+             p, i)) { // in rare cases, this will overflow, but that's ok
+    p += 8;
+  }
 }
 
-fastfloat_really_inline constexpr void
-loop_parse_if_digits(const char *&p, const char *const pend,
-                     size_t &i) noexcept {
-  while (pend - p >= 8 && parse_if_eight_digits_unrolled(p, i)) {
-  }
-  while (p < pend && is_integer(*p)) {
-    i = i * 10 + static_cast<uint8_t>(*p - '0');
-    ++p;
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+loop_parse_if_digits(char const *&p, char const *const pend, uint64_t &i) {
+  uint64_t val;
+  while ((pend - p) >= 8 && (val = read8_to_u64(p) - 0x3030303030303030,
+                             is_made_of_eight_digits_no_sub(val))) {
+    i = i * 100000000 + parse_eight_digits_unrolled_no_sub(val);
+    p += 8;
   }
 }
 
@@ -381,6 +385,13 @@ parse_number_string(UC const *p, UC const *pend,
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     loop_parse_if_digits(p, pend, i);
+
+    while ((p != pend) && is_integer(*p)) {
+      uint8_t digit = uint8_t(*p - UC('0'));
+      ++p;
+      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+    }
+
     exponent = before - p;
     answer.fraction = span<UC const>(before, size_t(p - before));
     digit_count -= exponent;
@@ -473,7 +484,7 @@ parse_number_string(UC const *p, UC const *pend,
       i = 0;
       p = answer.integer.ptr;
       UC const *int_end = p + answer.integer.len();
-      uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
+      constexpr uint64_t minimal_nineteen_digit_integer{1000000000000000000};
       while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
         i = i * 10 + uint64_t(*p - UC('0'));
         ++p;

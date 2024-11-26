@@ -14,6 +14,12 @@
 #define FASTFLOAT_CONSTEXPR14
 #endif
 
+#if __cplusplus >= 201703L
+#define FASTFLOAT_IF_CONSTEXPR if constexpr 
+#else
+#define FASTFLOAT_IF_CONSTEXPR if
+#endif
+
 #if defined(__cpp_lib_bit_cast) && __cpp_lib_bit_cast >= 201806L
 #define FASTFLOAT_HAS_BIT_CAST 1
 #else
