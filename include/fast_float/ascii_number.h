@@ -29,9 +29,9 @@ template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
 }
 
 template <typename value_type> struct get_equal_sized_uint {
-  using type = std::conditional_t<
+  using type = FASTFLOAT_CONDITIONAL_T(
       sizeof(value_type) == 4, uint32_t,
-      std::conditional_t<sizeof(value_type) == 2, uint16_t, uint8_t>>;
+      FASTFLOAT_CONDITIONAL_T(sizeof(value_type) == 2, uint16_t, uint8_t));
 };
 
 template <typename value_type>
