@@ -713,8 +713,17 @@ inline constexpr uint64_t binary_format<double>::max_mantissa_fast_path() {
 // credit: Jakub Jelínek
 #ifdef __STDCPP_FLOAT16_T__
 template <typename U> struct binary_format_lookup_tables<std::float16_t, U> {
-  static constexpr std::float16_t powers_of_ten[] = {1}; // todo: fix this
-  static constexpr uint64_t max_mantissa[] = {1};        // todo: fix this
+  static constexpr std::float16_t powers_of_ten[] = {1e0f16, 1e1f16, 1e2f16,
+                                                     1e3f16, 1e4f16};
+
+  // Largest integer value v so that (5**index * v) <= 1<<11.
+  // 0x800 == 1<<11
+  static constexpr uint64_t max_mantissa[] = {0x800,
+                                              0x800 / 5,
+                                              0x800 / (5 * 5),
+                                              0x800 / (5 * 5 * 5),
+                                              0x800 / (5 * 5 * 5 * 5),
+                                              0x800 / (constant_55555)};
 };
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
@@ -756,18 +765,21 @@ binary_format<std::float16_t>::hidden_bit_mask() {
 
 template <>
 inline constexpr int binary_format<std::float16_t>::max_exponent_fast_path() {
-  return 0;
+  return 4;
 }
 
 template <>
 inline constexpr uint64_t
 binary_format<std::float16_t>::max_mantissa_fast_path() {
-  return 0;
+  return uint64_t(2) << mantissa_explicit_bits();
 }
 
 template <>
 inline constexpr uint64_t
 binary_format<std::float16_t>::max_mantissa_fast_path(int64_t power) {
+  // caller is responsible to ensure that
+  // power >= 0 && power <= 4
+  //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
 }
@@ -823,8 +835,14 @@ template <> constexpr size_t binary_format<std::float16_t>::max_digits() {
 // credit: Jakub Jelínek
 #ifdef __STDCPP_BFLOAT16_T__
 template <typename U> struct binary_format_lookup_tables<std::bfloat16_t, U> {
-  static constexpr std::bfloat16_t powers_of_ten[] = {1}; // todo: fix this
-  static constexpr uint64_t max_mantissa[] = {1};         // todo: fix this
+  static constexpr std::bfloat16_t powers_of_ten[] = {1e0bf16, 1e1bf16, 1e2bf16,
+                                                      1e3bf16};
+
+  // Largest integer value v so that (5**index * v) <= 1<<8.
+  // 0x100 == 1<<8
+  static constexpr uint64_t max_mantissa[] = {0x100, 0x100 / 5, 0x100 / (5 * 5),
+                                              0x100 / (5 * 5 * 5),
+                                              0x100 / (5 * 5 * 5 * 5)};
 };
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
@@ -848,7 +866,7 @@ binary_format<std::bfloat16_t>::exact_power_of_ten(int64_t power) {
 
 template <>
 inline constexpr int binary_format<std::bfloat16_t>::max_exponent_fast_path() {
-  return 0;
+  return 3;
 }
 
 template <>
@@ -872,12 +890,15 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 template <>
 inline constexpr uint64_t
 binary_format<std::bfloat16_t>::max_mantissa_fast_path() {
-  return 0;
+  return uint64_t(2) << mantissa_explicit_bits();
 }
 
 template <>
 inline constexpr uint64_t
 binary_format<std::bfloat16_t>::max_mantissa_fast_path(int64_t power) {
+  // caller is responsible to ensure that
+  // power >= 0 && power <= 3
+  //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
 }
