@@ -230,6 +230,14 @@ struct is_supported_float_type
                              > {
 };
 
+template <typename T>
+using equiv_uint_t = typename std::conditional<
+    sizeof(T) == 1, uint8_t,
+    typename std::conditional<
+        sizeof(T) == 2, uint16_t,
+        typename std::conditional<sizeof(T) == 4, uint32_t,
+                                  uint64_t>::type>::type>::type;
+
 template <typename T> struct is_supported_integer_type : std::is_integral<T> {};
 
 template <typename UC>
@@ -413,8 +421,7 @@ constexpr uint64_t constant_55555 = 5 * 5 * 5 * 5 * 5;
 template <typename T, typename U = void> struct binary_format_lookup_tables;
 
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
-  using equiv_uint =
-      typename std::conditional<sizeof(T) == 4, uint32_t, uint64_t>::type;
+  using equiv_uint = equiv_uint_t<T>;
 
   static inline constexpr int mantissa_explicit_bits();
   static inline constexpr int minimum_exponent();
@@ -694,11 +701,10 @@ binary_format<double>::hidden_bit_mask() {
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 to_float(bool negative, adjusted_mantissa am, T &value) {
-  using fastfloat_uint = typename binary_format<T>::equiv_uint;
-  fastfloat_uint word = (fastfloat_uint)am.mantissa;
-  word |= fastfloat_uint(am.power2)
-          << binary_format<T>::mantissa_explicit_bits();
-  word |= fastfloat_uint(negative) << binary_format<T>::sign_index();
+  using equiv_uint = equiv_uint_t<T>;
+  equiv_uint word = equiv_uint(am.mantissa);
+  word |= equiv_uint(am.power2) << binary_format<T>::mantissa_explicit_bits();
+  word |= equiv_uint(negative) << binary_format<T>::sign_index();
 #if FASTFLOAT_HAS_BIT_CAST
   value = std::bit_cast<T>(word);
 #else
@@ -840,6 +846,21 @@ fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
 fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
   return int_luts<>::min_safe_u64[base - 2];
 }
+
+static_assert(std::is_same<equiv_uint_t<double>, uint64_t>::value,
+              "equiv_uint should be uint64_t for double");
+static_assert(std::is_same<equiv_uint_t<float>, uint32_t>::value,
+              "equiv_uint should be uint32_t for float");
+
+#ifdef __STDCPP_FLOAT64_T__
+static_assert(std::is_same<equiv_uint_t<std::float64_t>, uint64_t>::value,
+              "equiv_uint should be uint64_t for std::float64_t");
+#endif
+
+#ifdef __STDCPP_FLOAT32_T__
+static_assert(std::is_same<equiv_uint_t<std::float32_t>, uint32_t>::value,
+              "equiv_uint should be uint32_t for std::float32_t");
+#endif
 
 constexpr chars_format operator~(chars_format rhs) noexcept {
   using int_type = std::underlying_type<chars_format>::type;

@@ -62,7 +62,7 @@ scientific_exponent(parsed_number_string_t<UC> &num) noexcept {
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 to_extended(T value) noexcept {
-  using equiv_uint = typename binary_format<T>::equiv_uint;
+  using equiv_uint = equiv_uint_t<T>;
   constexpr equiv_uint exponent_mask = binary_format<T>::exponent_mask();
   constexpr equiv_uint mantissa_mask = binary_format<T>::mantissa_mask();
   constexpr equiv_uint hidden_bit_mask = binary_format<T>::hidden_bit_mask();

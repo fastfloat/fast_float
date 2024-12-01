@@ -729,8 +729,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
   auto copysign = [](double x, double y) -> double {
 #if FASTFLOAT_HAS_BIT_CAST
     if (fast_float::cpp20_and_in_constexpr()) {
-      using equiv_int = std::make_signed_t<
-          typename fast_float::binary_format<double>::equiv_uint>;
+      using equiv_int = std::make_signed_t<fast_float::equiv_uint_t<double>>;
       auto const i = std::bit_cast<equiv_int>(y);
       if (i < 0) {
         return -x;
