@@ -54,6 +54,7 @@ struct ExpectedResult {
   double value;
   std::string junk_chars;
 };
+
 struct AcceptedValue {
   std::string input;
   ExpectedResult expected;
@@ -63,6 +64,7 @@ struct RejectReason {
   fast_float::parse_error error;
   intptr_t location_offset;
 };
+
 struct RejectedValue {
   std::string input;
   RejectReason reason;

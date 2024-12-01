@@ -170,6 +170,7 @@ round_down(adjusted_mantissa &am, int32_t shift) noexcept {
   }
   am.power2 += shift;
 }
+
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 skip_zeros(UC const *&first, UC const *last) noexcept {
@@ -213,6 +214,7 @@ is_truncated(UC const *first, UC const *last) noexcept {
   }
   return false;
 }
+
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
 is_truncated(span<UC const> s) noexcept {
