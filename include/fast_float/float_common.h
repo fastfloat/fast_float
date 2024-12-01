@@ -221,10 +221,10 @@ template <typename T>
 struct is_supported_float_type
     : std::integral_constant<bool, std::is_same<T, float>::value ||
                                        std::is_same<T, double>::value
-#if __STDCPP_FLOAT32_T__
+#ifdef __STDCPP_FLOAT32_T__
                                        || std::is_same<T, std::float32_t>::value
 #endif
-#if __STDCPP_FLOAT64_T__
+#ifdef __STDCPP_FLOAT64_T__
                                        || std::is_same<T, std::float64_t>::value
 #endif
                              > {
