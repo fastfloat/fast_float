@@ -14,6 +14,7 @@
 // gcc.
 #include <locale>
 #include <sstream>
+
 // workaround for CYGWIN
 double cygwin_strtod_l(char const *start, char **end) {
   double d;
@@ -31,6 +32,7 @@ double cygwin_strtod_l(char const *start, char **end) {
   *end = const_cast<char *>(start) + nread;
   return d;
 }
+
 float cygwin_strtof_l(char const *start, char **end) {
   float d;
   std::stringstream ss;
@@ -164,6 +166,7 @@ inline void Assert(bool Assertion) {
   }
 #endif
 }
+
 int main() {
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
     defined(sun) || defined(__sun)

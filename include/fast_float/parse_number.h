@@ -10,6 +10,7 @@
 #include <cstring>
 #include <limits>
 #include <system_error>
+
 namespace fast_float {
 
 namespace detail {
@@ -145,7 +146,7 @@ template <typename T> struct from_chars_caller {
   }
 };
 
-#if __STDCPP_FLOAT32_T__ == 1
+#ifdef __STDCPP_FLOAT32_T__
 template <> struct from_chars_caller<std::float32_t> {
   template <typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
@@ -162,7 +163,7 @@ template <> struct from_chars_caller<std::float32_t> {
 };
 #endif
 
-#if __STDCPP_FLOAT64_T__ == 1
+#ifdef __STDCPP_FLOAT64_T__
 template <> struct from_chars_caller<std::float64_t> {
   template <typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>

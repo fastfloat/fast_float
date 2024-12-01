@@ -1,2 +1,4 @@
 BasedOnStyle: LLVM
 SortIncludes: false
+SeparateDefinitionBlocks: Always
+MaxEmptyLinesToKeep: 1

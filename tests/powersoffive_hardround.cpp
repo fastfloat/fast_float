@@ -15,6 +15,7 @@
 // always use this fallback because we cannot rely on it behaving as normal
 // gcc.
 #include <locale>
+
 // workaround for CYGWIN
 double cygwin_strtod_l(char const *start, char **end) {
   double d;
@@ -32,6 +33,7 @@ double cygwin_strtod_l(char const *start, char **end) {
   *end = const_cast<char *>(start) + nread;
   return d;
 }
+
 float cygwin_strtof_l(char const *start, char **end) {
   float d;
   std::stringstream ss;

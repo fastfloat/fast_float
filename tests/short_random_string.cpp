@@ -14,6 +14,7 @@
 // gcc.
 #include <locale>
 #include <sstream>
+
 // workaround for CYGWIN
 double cygwin_strtod_l(char const *start, char **end) {
   double d;
@@ -31,6 +32,7 @@ double cygwin_strtod_l(char const *start, char **end) {
   *end = const_cast<char *>(start) + nread;
   return d;
 }
+
 float cygwin_strtof_l(char const *start, char **end) {
   float d;
   std::stringstream ss;
@@ -53,6 +55,7 @@ class RandomEngine {
 public:
   RandomEngine() = delete;
   RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed){};
+
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
     // Inspired from
@@ -65,9 +68,13 @@ public:
     uint64_t m2 = (tmp.high) ^ tmp.low;
     return m2;
   }
+
   bool next_bool() { return (next() & 1) == 1; }
+
   int next_int() { return static_cast<int>(next()); }
+
   char next_char() { return static_cast<char>(next()); }
+
   double next_double() { return static_cast<double>(next()); }
 
   int next_ranged_int(int min, int max) { // min and max are included
@@ -90,6 +97,7 @@ public:
     }
     return int(m.high) + min;
   }
+
   int next_digit() { return next_ranged_int(0, 9); }
 
 private:

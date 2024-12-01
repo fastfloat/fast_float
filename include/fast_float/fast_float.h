@@ -54,5 +54,6 @@ FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value, int base = 10) noexcept;
 
 } // namespace fast_float
+
 #include "parse_number.h"
 #endif // FASTFLOAT_FAST_FLOAT_H
