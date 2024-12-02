@@ -159,7 +159,7 @@ TEST_CASE("rounds_to_nearest") {
 #endif
 }
 
-TEST_CASE("parse_zero") {
+TEST_CASE("double.parse_zero") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
@@ -172,41 +172,45 @@ TEST_CASE("parse_zero") {
   fesetround(FE_UPWARD);
   auto r1 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r1.ec == std::errc());
-  std::cout << "FE_UPWARD parsed zero as " << iHexAndDec(f) << std::endl;
+  std::cout << "FE_UPWARD parsed zero as " << fHexAndDec(f) << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 
   fesetround(FE_TOWARDZERO);
   auto r2 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r2.ec == std::errc());
-  std::cout << "FE_TOWARDZERO parsed zero as " << iHexAndDec(f) << std::endl;
+  std::cout << "FE_TOWARDZERO parsed zero as " << fHexAndDec(f) << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 
   fesetround(FE_DOWNWARD);
   auto r3 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r3.ec == std::errc());
-  std::cout << "FE_DOWNWARD parsed zero as " << iHexAndDec(f) << std::endl;
+  std::cout << "FE_DOWNWARD parsed zero as " << fHexAndDec(f) << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 
   fesetround(FE_TONEAREST);
   auto r4 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r4.ec == std::errc());
-  std::cout << "FE_TONEAREST parsed zero as " << iHexAndDec(f) << std::endl;
+  std::cout << "FE_TONEAREST parsed zero as " << fHexAndDec(f) << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 }
 
-TEST_CASE("parse_negative_zero") {
+TEST_CASE("double.parse_negative_zero") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
@@ -219,41 +223,45 @@ TEST_CASE("parse_negative_zero") {
   fesetround(FE_UPWARD);
   auto r1 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r1.ec == std::errc());
-  std::cout << "FE_UPWARD parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_UPWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 
   fesetround(FE_TOWARDZERO);
   auto r2 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r2.ec == std::errc());
-  std::cout << "FE_TOWARDZERO parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_TOWARDZERO parsed negative zero as " << fHexAndDec(f)
             << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 
   fesetround(FE_DOWNWARD);
   auto r3 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r3.ec == std::errc());
-  std::cout << "FE_DOWNWARD parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_DOWNWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 
   fesetround(FE_TONEAREST);
   auto r4 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r4.ec == std::errc());
-  std::cout << "FE_TONEAREST parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_TONEAREST parsed negative zero as " << fHexAndDec(f)
             << std::endl;
   CHECK(f == 0);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 }
 
