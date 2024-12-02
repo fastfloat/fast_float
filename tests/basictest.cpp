@@ -127,32 +127,32 @@ TEST_CASE("system_info") {
   std::cout << std::endl;
 }
 
-TEST_CASE("float.rounds_to_nearest") {
+TEST_CASE("double.rounds_to_nearest") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
-  static float volatile fmin = std::numeric_limits<float>::min();
+  static double volatile fmin = std::numeric_limits<double>::min();
   fesetround(FE_UPWARD);
-  std::cout << "FE_UPWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_UPWARD: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_UPWARD);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_DOWNWARD);
-  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_DOWNWARD: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_DOWNWARD);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_TOWARDZERO);
-  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_TOWARDZERO: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_TOWARDZERO);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_TONEAREST);
-  std::cout << "FE_TONEAREST: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_TONEAREST: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_TONEAREST);
 #if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
   CHECK(fast_float::detail::rounds_to_nearest() == true);
@@ -263,6 +263,144 @@ TEST_CASE("double.parse_negative_zero") {
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
+}
+
+TEST_CASE("float.rounds_to_nearest") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  static float volatile fmin = std::numeric_limits<float>::min();
+  fesetround(FE_UPWARD);
+  std::cout << "FE_UPWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_UPWARD);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_DOWNWARD);
+  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_DOWNWARD);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_TOWARDZERO);
+  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_TOWARDZERO);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_TONEAREST);
+  std::cout << "FE_TONEAREST: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_TONEAREST);
+#if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
+  CHECK(fast_float::detail::rounds_to_nearest() == true);
+#endif
+}
+
+TEST_CASE("float.parse_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  char const *zero = "0";
+  uint32_t float32_parsed;
+  float f = 0;
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+}
+
+TEST_CASE("float.parse_negative_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  char const *negative_zero = "-0";
+  uint32_t float32_parsed;
+  float f = -0.;
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
 }
 
 #if FASTFLOAT_SUPPLEMENTAL_TESTS
