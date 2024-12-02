@@ -127,32 +127,32 @@ TEST_CASE("system_info") {
   std::cout << std::endl;
 }
 
-TEST_CASE("rounds_to_nearest") {
+TEST_CASE("float.rounds_to_nearest") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
   static float volatile fmin = std::numeric_limits<float>::min();
   fesetround(FE_UPWARD);
-  std::cout << "FE_UPWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_UPWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
   CHECK(fegetround() == FE_UPWARD);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_DOWNWARD);
-  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
   CHECK(fegetround() == FE_DOWNWARD);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_TOWARDZERO);
-  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
   CHECK(fegetround() == FE_TOWARDZERO);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_TONEAREST);
-  std::cout << "FE_TONEAREST: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_TONEAREST: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
   CHECK(fegetround() == FE_TONEAREST);
 #if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
   CHECK(fast_float::detail::rounds_to_nearest() == true);
