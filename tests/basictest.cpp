@@ -3,15 +3,17 @@
 #include "doctest/doctest.h"
 
 #include "fast_float/fast_float.h"
+#include <cfenv>
 #include <cmath>
 #include <cstdio>
 #include <iomanip>
 #include <ios>
+#include <iostream>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <system_error>
 #include <type_traits>
-#include <cfenv>
 
 #if FASTFLOAT_IS_CONSTEXPR
 #ifndef FASTFLOAT_CONSTEXPR_TESTS
@@ -54,9 +56,14 @@
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
-#define iHexAndDec(v) std::hex << "0x" << (v) << " (" << std::dec << (v) << ")"
+#define iHexAndDec(v)                                                          \
+  (std::ostringstream{} << std::hex << "0x" << (v) << " (" << std::dec << (v)  \
+                        << ")")                                                \
+      .str()
 #define fHexAndDec(v)                                                          \
-  std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
+  (std::ostringstream{} << std::hexfloat << (v) << " (" << std::defaultfloat   \
+                        << (v) << ")")                                         \
+      .str()
 
 char const *round_name(int d) {
   switch (d) {
@@ -256,7 +263,6 @@ TEST_CASE("parse_negative_zero") {
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) &&      \
     !defined(FASTFLOAT_ODDPLATFORM)
 
-#include <iostream>
 #include <filesystem>
 #include <charconv>
 
@@ -722,6 +728,38 @@ uint64_t get_mantissa(double f) {
   return (m & ((uint64_t(1) << 57) - 1));
 }
 
+#ifdef __STDCPP_FLOAT64_T__
+uint64_t get_mantissa(std::float64_t f) {
+  uint64_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint64_t(1) << 10) - 1));
+}
+#endif
+
+#ifdef __STDCPP_FLOAT32_T__
+uint32_t get_mantissa(std::float32_t f) {
+  uint32_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint32_t(1) << 10) - 1));
+}
+#endif
+
+#ifdef __STDCPP_FLOAT16_T__
+uint16_t get_mantissa(std::float16_t f) {
+  uint16_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint16_t(1) << 10) - 1));
+}
+#endif
+
+#ifdef __STDCPP_BFLOAT16_T__
+uint16_t get_mantissa(std::bfloat16_t f) {
+  uint16_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint16_t(1) << 7) - 1));
+}
+#endif
+
 std::string append_zeros(std::string str, size_t number_of_zeros) {
   std::string answer(str);
   for (size_t i = 0; i < number_of_zeros; i++) {
@@ -736,19 +774,12 @@ enum class Diag { runtime, comptime };
 
 } // anonymous namespace
 
+constexpr size_t global_string_capacity = 2048;
+
 template <Diag diag, class T, typename result_type, typename stringtype>
 constexpr void check_basic_test_result(stringtype str, result_type result,
                                        T actual, T expected,
                                        std::errc expected_ec) {
-  if constexpr (diag == Diag::runtime) {
-    INFO("str=" << str << "\n"
-                << "  expected=" << fHexAndDec(expected) << "\n"
-                << "  ..actual=" << fHexAndDec(actual) << "\n"
-                << "  expected mantissa=" << iHexAndDec(get_mantissa(expected))
-                << "\n"
-                << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual)));
-  }
-
   struct ComptimeDiag {
     // Purposely not constexpr
     static void error_not_equal() {}
@@ -756,6 +787,18 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 
 #define FASTFLOAT_CHECK_EQ(...)                                                \
   if constexpr (diag == Diag::runtime) {                                       \
+    char narrow[global_string_capacity]{};                                     \
+    for (size_t i = 0; i < str.size(); i++) {                                  \
+      narrow[i] = char(str[i]);                                                \
+    }                                                                          \
+    INFO("str(char" << 8 * sizeof(typename stringtype::value_type)             \
+                    << ")=" << narrow << "\n"                                  \
+                    << "  expected=" << fHexAndDec(expected) << "\n"           \
+                    << "  ..actual=" << fHexAndDec(actual) << "\n"             \
+                    << "  expected mantissa="                                  \
+                    << iHexAndDec(get_mantissa(expected)) << "\n"              \
+                    << "  ..actual mantissa="                                  \
+                    << iHexAndDec(get_mantissa(actual)));                      \
     CHECK_EQ(__VA_ARGS__);                                                     \
   } else {                                                                     \
     if ([](auto const &lhs, auto const &rhs) {                                 \
@@ -774,9 +817,9 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
         return -x;
       }
       return x;
-    }
+    } else
 #endif
-    return std::copysign(x, y);
+      return std::copysign(x, y);
   };
 
   auto isnan = [](double x) -> bool { return x != x; };
@@ -797,26 +840,26 @@ constexpr void basic_test(std::string_view str, T expected,
   auto result =
       fast_float::from_chars(str.data(), str.data() + str.size(), actual);
   check_basic_test_result<diag>(str, result, actual, expected, expected_ec);
-  constexpr size_t global_string_capacity = 2048;
 
   if (str.size() > global_string_capacity) {
     return;
   }
+
   // We give plenty of memory: 2048 characters.
   char16_t u16[global_string_capacity]{};
-
   for (size_t i = 0; i < str.size(); i++) {
     u16[i] = char16_t(str[i]);
   }
+
   auto result16 = fast_float::from_chars(u16, u16 + str.size(), actual);
   check_basic_test_result<diag>(std::u16string_view(u16, str.size()), result16,
                                 actual, expected, expected_ec);
 
   char32_t u32[global_string_capacity]{};
-
   for (size_t i = 0; i < str.size(); i++) {
     u32[i] = char32_t(str[i]);
   }
+
   auto result32 = fast_float::from_chars(u32, u32 + str.size(), actual);
   check_basic_test_result<diag>(std::u32string_view(u32, str.size()), result32,
                                 actual, expected, expected_ec);
@@ -906,7 +949,7 @@ void basic_test(float val) {
     basic_test(val);                                                           \
   }
 
-TEST_CASE("64bit.inf") {
+TEST_CASE("double.inf") {
   verify("INF", std::numeric_limits<double>::infinity());
   verify("-INF", -std::numeric_limits<double>::infinity());
   verify("INFINITY", std::numeric_limits<double>::infinity());
@@ -934,7 +977,7 @@ TEST_CASE("64bit.inf") {
          std::errc::result_out_of_range);
 }
 
-TEST_CASE("64bit.general") {
+TEST_CASE("double.general") {
   verify("0.95000000000000000000", 0.95);
   verify("22250738585072012e-324",
          0x1p-1022); /* limit between normal and subnormal*/
@@ -1118,7 +1161,7 @@ TEST_CASE("64bit.general") {
          -0x1.f1660a65b00bfp+60);
 }
 
-TEST_CASE("64bit.decimal_point") {
+TEST_CASE("double.decimal_point") {
   constexpr auto options = [] {
     fast_float::parse_options ret{};
     ret.decimal_point = ',';
@@ -1274,7 +1317,7 @@ TEST_CASE("64bit.decimal_point") {
       0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022250738585072008890245868760858598876504231122409594654935248025624400092282356951787758888037591552642309780950434312085877387158357291821993020294379224223559819827501242041788969571311791082261043971979604000454897391938079198936081525613113376149842043271751033627391549782731594143828136275113838604094249464942286316695429105080201815926642134996606517803095075913058719846423906068637102005108723282784678843631944515866135041223479014792369585208321597621066375401613736583044193603714778355306682834535634005074073040135602968046375918583163124224521599262546494300836851861719422417646455137135420132217031370496583210154654068035397417906022589503023501937519773030945763173210852507299305089761582519159720757232455434770912461317493580281734466552734375);
 }
 
-TEST_CASE("32bit.inf") {
+TEST_CASE("float.inf") {
   verify("INF", std::numeric_limits<float>::infinity());
   verify("-INF", -std::numeric_limits<float>::infinity());
   verify("INFINITY", std::numeric_limits<float>::infinity());
@@ -1292,7 +1335,7 @@ TEST_CASE("32bit.inf") {
          std::errc::result_out_of_range);
 }
 
-TEST_CASE("32bit.general") {
+TEST_CASE("float.general") {
   verify("-1e-999", -0.0f, std::errc::result_out_of_range);
   verify("1."
          "175494140627517859246175898662808184331245864732796240031385942718174"
@@ -1432,7 +1475,7 @@ TEST_CASE("32bit.general") {
       0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875f);
 }
 
-TEST_CASE("32bit.decimal_point") {
+TEST_CASE("float.decimal_point") {
   constexpr auto options = [] {
     fast_float::parse_options ret{};
     ret.decimal_point = ',';
