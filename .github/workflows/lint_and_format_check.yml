@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08 # v4.1.7
 
       - name: Run clang-format
-        uses: jidicula/clang-format-action@c74383674bf5f7c69f60ce562019c1c94bc1421a # v4.13.0
+        uses: jidicula/clang-format-action@d05cecd4a1a5b7e64c22f5a468456135a43f13f6 # v4.14.0
         with:
           clang-format-version: '17'
 
