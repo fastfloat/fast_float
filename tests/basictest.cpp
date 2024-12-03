@@ -56,15 +56,18 @@
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
-#define iHexAndDec(v)                                                          \
-  (std::ostringstream{} << std::hex << "0x" << (v) << " (" << std::dec << (v)  \
-                        << ")")                                                \
-      .str()
-#define fHexAndDec(v)                                                          \
-  (std::ostringstream{} << std::hexfloat << (v) << " (" << std::defaultfloat   \
-                        << std::setprecision(DBL_MAX_10_EXP + 1) << (v)        \
-                        << ")")                                                \
-      .str()
+template <typename T> std::string iHexAndDec(T v) {
+  std::ostringstream ss;
+  ss << std::hex << "0x" << (v) << " (" << std::dec << (v) << ")";
+  return ss.str();
+}
+
+template <typename T> std::string fHexAndDec(T v) {
+  std::ostringstream ss;
+  ss << std::hexfloat << (v) << " (" << std::defaultfloat
+     << std::setprecision(DBL_MAX_10_EXP + 1) << (v) << ")";
+  return ss.str();
+}
 
 char const *round_name(int d) {
   switch (d) {
@@ -174,7 +177,7 @@ TEST_CASE("double.parse_zero") {
   auto r1 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r1.ec == std::errc());
   std::cout << "FE_UPWARD parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -184,7 +187,7 @@ TEST_CASE("double.parse_zero") {
   auto r2 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r2.ec == std::errc());
   std::cout << "FE_TOWARDZERO parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -194,7 +197,7 @@ TEST_CASE("double.parse_zero") {
   auto r3 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r3.ec == std::errc());
   std::cout << "FE_DOWNWARD parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -204,7 +207,7 @@ TEST_CASE("double.parse_zero") {
   auto r4 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r4.ec == std::errc());
   std::cout << "FE_TONEAREST parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -226,7 +229,7 @@ TEST_CASE("double.parse_negative_zero") {
   CHECK(r1.ec == std::errc());
   std::cout << "FE_UPWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -237,7 +240,7 @@ TEST_CASE("double.parse_negative_zero") {
   CHECK(r2.ec == std::errc());
   std::cout << "FE_TOWARDZERO parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -248,7 +251,7 @@ TEST_CASE("double.parse_negative_zero") {
   CHECK(r3.ec == std::errc());
   std::cout << "FE_DOWNWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -259,7 +262,7 @@ TEST_CASE("double.parse_negative_zero") {
   CHECK(r4.ec == std::errc());
   std::cout << "FE_TONEAREST parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
   std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
             << std::endl;
@@ -312,7 +315,7 @@ TEST_CASE("float.parse_zero") {
   auto r1 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r1.ec == std::errc());
   std::cout << "FE_UPWARD parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -322,7 +325,7 @@ TEST_CASE("float.parse_zero") {
   auto r2 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r2.ec == std::errc());
   std::cout << "FE_TOWARDZERO parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -332,7 +335,7 @@ TEST_CASE("float.parse_zero") {
   auto r3 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r3.ec == std::errc());
   std::cout << "FE_DOWNWARD parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -342,7 +345,7 @@ TEST_CASE("float.parse_zero") {
   auto r4 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r4.ec == std::errc());
   std::cout << "FE_TONEAREST parsed zero as " << fHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -364,7 +367,7 @@ TEST_CASE("float.parse_negative_zero") {
   CHECK(r1.ec == std::errc());
   std::cout << "FE_UPWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -375,7 +378,7 @@ TEST_CASE("float.parse_negative_zero") {
   CHECK(r2.ec == std::errc());
   std::cout << "FE_TOWARDZERO parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -386,7 +389,7 @@ TEST_CASE("float.parse_negative_zero") {
   CHECK(r3.ec == std::errc());
   std::cout << "FE_DOWNWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
@@ -397,7 +400,7 @@ TEST_CASE("float.parse_negative_zero") {
   CHECK(r4.ec == std::errc());
   std::cout << "FE_TONEAREST parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.f);
   ::memcpy(&float32_parsed, &f, sizeof(f));
   std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
             << std::endl;
