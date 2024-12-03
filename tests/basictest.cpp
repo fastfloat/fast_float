@@ -986,7 +986,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 template <Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected,
                           std::errc expected_ec = std::errc()) {
-  T actual;
+  T actual{};
   auto result =
       fast_float::from_chars(str.data(), str.data() + str.size(), actual);
   check_basic_test_result<diag>(str, result, actual, expected, expected_ec);
@@ -1018,7 +1018,7 @@ constexpr void basic_test(std::string_view str, T expected,
 template <Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected,
                           fast_float::parse_options options) {
-  T actual;
+  T actual{};
   auto result = fast_float::from_chars_advanced(
       str.data(), str.data() + str.size(), actual, options);
   check_basic_test_result<diag>(str, result, actual, expected, std::errc());
@@ -1028,7 +1028,7 @@ template <Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected,
                           std::errc expected_ec,
                           fast_float::parse_options options) {
-  T actual;
+  T actual{};
   auto result = fast_float::from_chars_advanced(
       str.data(), str.data() + str.size(), actual, options);
   check_basic_test_result<diag>(str, result, actual, expected, expected_ec);
