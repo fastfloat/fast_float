@@ -72,7 +72,7 @@ to_extended(T value) noexcept {
                  binary_format<T>::minimum_exponent();
   equiv_uint bits;
 #if FASTFLOAT_HAS_BIT_CAST
-  bits = bit_cast<equiv_uint>(value);
+  bits = std::bit_cast<equiv_uint>(value);
 #else
   ::memcpy(&bits, &value, sizeof(T));
 #endif
