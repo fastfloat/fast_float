@@ -1067,8 +1067,10 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 to_float(bool negative, adjusted_mantissa am, T &value) {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
-  word |= equiv_uint(am.power2) << binary_format<T>::mantissa_explicit_bits();
-  word |= equiv_uint(negative) << binary_format<T>::sign_index();
+  word = equiv_uint(word | equiv_uint(am.power2)
+                               << binary_format<T>::mantissa_explicit_bits());
+  word =
+      equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
 #if FASTFLOAT_HAS_BIT_CAST
   value = std::bit_cast<T>(word);
 #else
