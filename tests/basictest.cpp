@@ -3,15 +3,17 @@
 #include "doctest/doctest.h"
 
 #include "fast_float/fast_float.h"
+#include <cfenv>
 #include <cmath>
 #include <cstdio>
 #include <iomanip>
 #include <ios>
+#include <iostream>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <system_error>
 #include <type_traits>
-#include <cfenv>
 
 #if FASTFLOAT_IS_CONSTEXPR
 #ifndef FASTFLOAT_CONSTEXPR_TESTS
@@ -54,9 +56,18 @@
 #define FASTFLOAT_ODDPLATFORM 1
 #endif
 
-#define iHexAndDec(v) std::hex << "0x" << (v) << " (" << std::dec << (v) << ")"
-#define fHexAndDec(v)                                                          \
-  std::hexfloat << (v) << " (" << std::defaultfloat << (v) << ")"
+template <typename T> std::string iHexAndDec(T v) {
+  std::ostringstream ss;
+  ss << std::hex << "0x" << (v) << " (" << std::dec << (v) << ")";
+  return ss.str();
+}
+
+template <typename T> std::string fHexAndDec(T v) {
+  std::ostringstream ss;
+  ss << std::hexfloat << (v) << " (" << std::defaultfloat
+     << std::setprecision(DBL_MAX_10_EXP + 1) << (v) << ")";
+  return ss.str();
+}
 
 char const *round_name(int d) {
   switch (d) {
@@ -120,39 +131,39 @@ TEST_CASE("system_info") {
   std::cout << std::endl;
 }
 
-TEST_CASE("rounds_to_nearest") {
+TEST_CASE("double.rounds_to_nearest") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
-  static float volatile fmin = std::numeric_limits<float>::min();
+  static double volatile fmin = std::numeric_limits<double>::min();
   fesetround(FE_UPWARD);
-  std::cout << "FE_UPWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_UPWARD: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_UPWARD);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_DOWNWARD);
-  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_DOWNWARD: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_DOWNWARD);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_TOWARDZERO);
-  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_TOWARDZERO: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_TOWARDZERO);
   CHECK(fast_float::detail::rounds_to_nearest() == false);
 
   fesetround(FE_TONEAREST);
-  std::cout << "FE_TONEAREST: fmin + 1.0f = " << iHexAndDec(fmin + 1.0f)
-            << " 1.0f - fmin = " << iHexAndDec(1.0f - fmin) << std::endl;
+  std::cout << "FE_TONEAREST: fmin + 1.0 = " << fHexAndDec(fmin + 1.0)
+            << " 1.0 - fmin = " << fHexAndDec(1.0 - fmin) << std::endl;
   CHECK(fegetround() == FE_TONEAREST);
 #if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
   CHECK(fast_float::detail::rounds_to_nearest() == true);
 #endif
 }
 
-TEST_CASE("parse_zero") {
+TEST_CASE("double.parse_zero") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
@@ -165,41 +176,45 @@ TEST_CASE("parse_zero") {
   fesetround(FE_UPWARD);
   auto r1 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r1.ec == std::errc());
-  std::cout << "FE_UPWARD parsed zero as " << iHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  std::cout << "FE_UPWARD parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 
   fesetround(FE_TOWARDZERO);
   auto r2 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r2.ec == std::errc());
-  std::cout << "FE_TOWARDZERO parsed zero as " << iHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  std::cout << "FE_TOWARDZERO parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 
   fesetround(FE_DOWNWARD);
   auto r3 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r3.ec == std::errc());
-  std::cout << "FE_DOWNWARD parsed zero as " << iHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  std::cout << "FE_DOWNWARD parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 
   fesetround(FE_TONEAREST);
   auto r4 = fast_float::from_chars(zero, zero + 1, f);
   CHECK(r4.ec == std::errc());
-  std::cout << "FE_TONEAREST parsed zero as " << iHexAndDec(f) << std::endl;
-  CHECK(f == 0);
+  std::cout << "FE_TONEAREST parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0);
 }
 
-TEST_CASE("parse_negative_zero") {
+TEST_CASE("double.parse_negative_zero") {
   //
   // If this function fails, we may be left in a non-standard rounding state.
   //
@@ -212,42 +227,184 @@ TEST_CASE("parse_negative_zero") {
   fesetround(FE_UPWARD);
   auto r1 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r1.ec == std::errc());
-  std::cout << "FE_UPWARD parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_UPWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 
   fesetround(FE_TOWARDZERO);
   auto r2 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r2.ec == std::errc());
-  std::cout << "FE_TOWARDZERO parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_TOWARDZERO parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 
   fesetround(FE_DOWNWARD);
   auto r3 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r3.ec == std::errc());
-  std::cout << "FE_DOWNWARD parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_DOWNWARD parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
 
   fesetround(FE_TONEAREST);
   auto r4 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
   CHECK(r4.ec == std::errc());
-  std::cout << "FE_TONEAREST parsed negative zero as " << iHexAndDec(f)
+  std::cout << "FE_TONEAREST parsed negative zero as " << fHexAndDec(f)
             << std::endl;
-  CHECK(f == 0);
+  CHECK(f == 0.);
   ::memcpy(&float64_parsed, &f, sizeof(f));
-  std::cout << "double as uint64_t is " << float64_parsed << std::endl;
+  std::cout << "double as uint64_t is " << iHexAndDec(float64_parsed)
+            << std::endl;
   CHECK(float64_parsed == 0x8000'0000'0000'0000);
+}
+
+TEST_CASE("float.rounds_to_nearest") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  static float volatile fmin = std::numeric_limits<float>::min();
+  fesetround(FE_UPWARD);
+  std::cout << "FE_UPWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_UPWARD);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_DOWNWARD);
+  std::cout << "FE_DOWNWARD: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_DOWNWARD);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_TOWARDZERO);
+  std::cout << "FE_TOWARDZERO: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_TOWARDZERO);
+  CHECK(fast_float::detail::rounds_to_nearest() == false);
+
+  fesetround(FE_TONEAREST);
+  std::cout << "FE_TONEAREST: fmin + 1.0f = " << fHexAndDec(fmin + 1.0f)
+            << " 1.0f - fmin = " << fHexAndDec(1.0f - fmin) << std::endl;
+  CHECK(fegetround() == FE_TONEAREST);
+#if (FLT_EVAL_METHOD == 1) || (FLT_EVAL_METHOD == 0)
+  CHECK(fast_float::detail::rounds_to_nearest() == true);
+#endif
+}
+
+TEST_CASE("float.parse_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  char const *zero = "0";
+  uint32_t float32_parsed;
+  float f = 0;
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(zero, zero + 1, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed zero as " << fHexAndDec(f) << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0);
+}
+
+TEST_CASE("float.parse_negative_zero") {
+  //
+  // If this function fails, we may be left in a non-standard rounding state.
+  //
+  char const *negative_zero = "-0";
+  uint32_t float32_parsed;
+  float f = -0.;
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_UPWARD);
+  auto r1 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r1.ec == std::errc());
+  std::cout << "FE_UPWARD parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_TOWARDZERO);
+  auto r2 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r2.ec == std::errc());
+  std::cout << "FE_TOWARDZERO parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_DOWNWARD);
+  auto r3 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r3.ec == std::errc());
+  std::cout << "FE_DOWNWARD parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
+
+  fesetround(FE_TONEAREST);
+  auto r4 = fast_float::from_chars(negative_zero, negative_zero + 2, f);
+  CHECK(r4.ec == std::errc());
+  std::cout << "FE_TONEAREST parsed negative zero as " << fHexAndDec(f)
+            << std::endl;
+  CHECK(f == 0.f);
+  ::memcpy(&float32_parsed, &f, sizeof(f));
+  std::cout << "float as uint32_t is " << iHexAndDec(float32_parsed)
+            << std::endl;
+  CHECK(float32_parsed == 0x8000'0000);
 }
 
 #if FASTFLOAT_SUPPLEMENTAL_TESTS
@@ -256,7 +413,6 @@ TEST_CASE("parse_negative_zero") {
 #if (FASTFLOAT_CPLUSPLUS >= 201703L) && (FASTFLOAT_IS_BIG_ENDIAN == 0) &&      \
     !defined(FASTFLOAT_ODDPLATFORM)
 
-#include <iostream>
 #include <filesystem>
 #include <charconv>
 
@@ -275,61 +431,100 @@ bool check_file(std::string file_name) {
       std::string str;
       while (std::getline(newfile, str)) {
         if (str.size() > 0) {
+#ifdef __STDCPP_FLOAT16_T__
+          // Read 16-bit hex
+          uint16_t float16{};
+          auto r16 =
+              std::from_chars(str.data(), str.data() + str.size(), float16, 16);
+          if (r16.ec != std::errc()) {
+            std::cerr << "16-bit parsing failure: " << str << "\n";
+            return false;
+          }
+#endif
           // Read 32-bit hex
-          uint32_t float32;
+          uint32_t float32{};
           auto r32 = std::from_chars(str.data() + 5, str.data() + str.size(),
                                      float32, 16);
           if (r32.ec != std::errc()) {
-            std::cerr << "32-bit parsing failure\n";
+            std::cerr << "32-bit parsing failure: " << str << "\n";
             return false;
           }
           // Read 64-bit hex
-          uint64_t float64;
+          uint64_t float64{};
           auto r64 = std::from_chars(str.data() + 14, str.data() + str.size(),
                                      float64, 16);
           if (r64.ec != std::errc()) {
-            std::cerr << "64-bit parsing failure\n";
+            std::cerr << "64-bit parsing failure: " << str << "\n";
             return false;
           }
           // The string to parse:
           char const *number_string = str.data() + 31;
           char const *end_of_string = str.data() + str.size();
+#ifdef __STDCPP_FLOAT16_T__
+          // Parse as 16-bit float
+          std::float16_t parsed_16{};
+          auto fast_float_r16 =
+              fast_float::from_chars(number_string, end_of_string, parsed_16);
+          if (fast_float_r16.ec != std::errc() &&
+              fast_float_r16.ec != std::errc::result_out_of_range) {
+            std::cerr << "16-bit fast_float parsing failure: " << str << "\n";
+            return false;
+          }
+#endif
           // Parse as 32-bit float
-          float parsed_32;
+          float parsed_32{};
           auto fast_float_r32 =
               fast_float::from_chars(number_string, end_of_string, parsed_32);
           if (fast_float_r32.ec != std::errc() &&
               fast_float_r32.ec != std::errc::result_out_of_range) {
-            std::cerr << "32-bit fast_float parsing failure for: " + str + "\n";
+            std::cerr << "32-bit fast_float parsing failure: " << str << "\n";
             return false;
           }
           // Parse as 64-bit float
-          double parsed_64;
+          double parsed_64{};
           auto fast_float_r64 =
               fast_float::from_chars(number_string, end_of_string, parsed_64);
           if (fast_float_r64.ec != std::errc() &&
               fast_float_r32.ec != std::errc::result_out_of_range) {
-            std::cerr << "64-bit fast_float parsing failure: " + str + "\n";
+            std::cerr << "64-bit fast_float parsing failure: " << str << "\n";
             return false;
           }
           // Convert the floats to unsigned ints.
-          uint32_t float32_parsed;
-          uint64_t float64_parsed;
+#ifdef __STDCPP_FLOAT16_T__
+          uint16_t float16_parsed{};
+#endif
+          uint32_t float32_parsed{};
+          uint64_t float64_parsed{};
+#ifdef __STDCPP_FLOAT16_T__
+          ::memcpy(&float16_parsed, &parsed_16, sizeof(parsed_16));
+
+#endif
           ::memcpy(&float32_parsed, &parsed_32, sizeof(parsed_32));
           ::memcpy(&float64_parsed, &parsed_64, sizeof(parsed_64));
           // Compare with expected results
+#ifdef __STDCPP_FLOAT16_T__
+          if (float16_parsed != float16) {
+            std::cout << "bad 16: " << str << std::endl;
+            std::cout << "parsed as " << fHexAndDec(parsed_16) << std::endl;
+            std::cout << "as raw uint16_t, parsed = " << float16_parsed
+                      << ", expected = " << float16 << std::endl;
+            std::cout << "fesetround: " << round_name(d) << std::endl;
+            fesetround(FE_TONEAREST);
+            return false;
+          }
+#endif
           if (float32_parsed != float32) {
-            std::cout << "bad 32 " << str << std::endl;
-            std::cout << "parsed as " << iHexAndDec(parsed_32) << std::endl;
-            std::cout << "as  raw uint32_t, parsed = " << float32_parsed
+            std::cout << "bad 32: " << str << std::endl;
+            std::cout << "parsed as " << fHexAndDec(parsed_32) << std::endl;
+            std::cout << "as raw uint32_t, parsed = " << float32_parsed
                       << ", expected = " << float32 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
             return false;
           }
           if (float64_parsed != float64) {
-            std::cout << "bad 64 " << str << std::endl;
-            std::cout << "parsed as " << iHexAndDec(parsed_64) << std::endl;
+            std::cout << "bad 64: " << str << std::endl;
+            std::cout << "parsed as " << fHexAndDec(parsed_64) << std::endl;
             std::cout << "as raw uint64_t, parsed = " << float64_parsed
                       << ", expected = " << float64 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
@@ -355,7 +550,9 @@ bool check_file(std::string file_name) {
 TEST_CASE("supplemental") {
   std::string path = SUPPLEMENTAL_TEST_DATA_DIR;
   for (auto const &entry : std::filesystem::directory_iterator(path)) {
-    CHECK(check_file(entry.path().string()));
+    const auto file = entry.path().string();
+    CAPTURE(file);
+    CHECK(check_file(file));
   }
 }
 #endif
@@ -683,6 +880,38 @@ uint64_t get_mantissa(double f) {
   return (m & ((uint64_t(1) << 57) - 1));
 }
 
+#ifdef __STDCPP_FLOAT64_T__
+uint64_t get_mantissa(std::float64_t f) {
+  uint64_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint64_t(1) << 10) - 1));
+}
+#endif
+
+#ifdef __STDCPP_FLOAT32_T__
+uint32_t get_mantissa(std::float32_t f) {
+  uint32_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint32_t(1) << 10) - 1));
+}
+#endif
+
+#ifdef __STDCPP_FLOAT16_T__
+uint16_t get_mantissa(std::float16_t f) {
+  uint16_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint16_t(1) << 10) - 1));
+}
+#endif
+
+#ifdef __STDCPP_BFLOAT16_T__
+uint16_t get_mantissa(std::bfloat16_t f) {
+  uint16_t m;
+  memcpy(&m, &f, sizeof(f));
+  return (m & ((uint16_t(1) << 7) - 1));
+}
+#endif
+
 std::string append_zeros(std::string str, size_t number_of_zeros) {
   std::string answer(str);
   for (size_t i = 0; i < number_of_zeros; i++) {
@@ -697,19 +926,12 @@ enum class Diag { runtime, comptime };
 
 } // anonymous namespace
 
+constexpr size_t global_string_capacity = 2048;
+
 template <Diag diag, class T, typename result_type, typename stringtype>
 constexpr void check_basic_test_result(stringtype str, result_type result,
                                        T actual, T expected,
                                        std::errc expected_ec) {
-  if constexpr (diag == Diag::runtime) {
-    INFO("str=" << str << "\n"
-                << "  expected=" << fHexAndDec(expected) << "\n"
-                << "  ..actual=" << fHexAndDec(actual) << "\n"
-                << "  expected mantissa=" << iHexAndDec(get_mantissa(expected))
-                << "\n"
-                << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual)));
-  }
-
   struct ComptimeDiag {
     // Purposely not constexpr
     static void error_not_equal() {}
@@ -717,6 +939,18 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 
 #define FASTFLOAT_CHECK_EQ(...)                                                \
   if constexpr (diag == Diag::runtime) {                                       \
+    char narrow[global_string_capacity]{};                                     \
+    for (size_t i = 0; i < str.size(); i++) {                                  \
+      narrow[i] = char(str[i]);                                                \
+    }                                                                          \
+    INFO("str(char" << 8 * sizeof(typename stringtype::value_type)             \
+                    << ")=" << narrow << "\n"                                  \
+                    << "  expected=" << fHexAndDec(expected) << "\n"           \
+                    << "  ..actual=" << fHexAndDec(actual) << "\n"             \
+                    << "  expected mantissa="                                  \
+                    << iHexAndDec(get_mantissa(expected)) << "\n"              \
+                    << "  ..actual mantissa="                                  \
+                    << iHexAndDec(get_mantissa(actual)));                      \
     CHECK_EQ(__VA_ARGS__);                                                     \
   } else {                                                                     \
     if ([](auto const &lhs, auto const &rhs) {                                 \
@@ -735,9 +969,9 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
         return -x;
       }
       return x;
-    }
+    } else
 #endif
-    return std::copysign(x, y);
+      return std::copysign(x, y);
   };
 
   auto isnan = [](double x) -> bool { return x != x; };
@@ -754,30 +988,30 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 template <Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected,
                           std::errc expected_ec = std::errc()) {
-  T actual;
+  T actual{};
   auto result =
       fast_float::from_chars(str.data(), str.data() + str.size(), actual);
   check_basic_test_result<diag>(str, result, actual, expected, expected_ec);
-  constexpr size_t global_string_capacity = 2048;
 
   if (str.size() > global_string_capacity) {
     return;
   }
+
   // We give plenty of memory: 2048 characters.
   char16_t u16[global_string_capacity]{};
-
   for (size_t i = 0; i < str.size(); i++) {
     u16[i] = char16_t(str[i]);
   }
+
   auto result16 = fast_float::from_chars(u16, u16 + str.size(), actual);
   check_basic_test_result<diag>(std::u16string_view(u16, str.size()), result16,
                                 actual, expected, expected_ec);
 
   char32_t u32[global_string_capacity]{};
-
   for (size_t i = 0; i < str.size(); i++) {
     u32[i] = char32_t(str[i]);
   }
+
   auto result32 = fast_float::from_chars(u32, u32 + str.size(), actual);
   check_basic_test_result<diag>(std::u32string_view(u32, str.size()), result32,
                                 actual, expected, expected_ec);
@@ -786,7 +1020,7 @@ constexpr void basic_test(std::string_view str, T expected,
 template <Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected,
                           fast_float::parse_options options) {
-  T actual;
+  T actual{};
   auto result = fast_float::from_chars_advanced(
       str.data(), str.data() + str.size(), actual, options);
   check_basic_test_result<diag>(str, result, actual, expected, std::errc());
@@ -796,7 +1030,7 @@ template <Diag diag, class T>
 constexpr void basic_test(std::string_view str, T expected,
                           std::errc expected_ec,
                           fast_float::parse_options options) {
-  T actual;
+  T actual{};
   auto result = fast_float::from_chars_advanced(
       str.data(), str.data() + str.size(), actual, options);
   check_basic_test_result<diag>(str, result, actual, expected, expected_ec);
@@ -867,7 +1101,7 @@ void basic_test(float val) {
     basic_test(val);                                                           \
   }
 
-TEST_CASE("64bit.inf") {
+TEST_CASE("double.inf") {
   verify("INF", std::numeric_limits<double>::infinity());
   verify("-INF", -std::numeric_limits<double>::infinity());
   verify("INFINITY", std::numeric_limits<double>::infinity());
@@ -895,7 +1129,7 @@ TEST_CASE("64bit.inf") {
          std::errc::result_out_of_range);
 }
 
-TEST_CASE("64bit.general") {
+TEST_CASE("double.general") {
   verify("0.95000000000000000000", 0.95);
   verify("22250738585072012e-324",
          0x1p-1022); /* limit between normal and subnormal*/
@@ -1079,7 +1313,7 @@ TEST_CASE("64bit.general") {
          -0x1.f1660a65b00bfp+60);
 }
 
-TEST_CASE("64bit.decimal_point") {
+TEST_CASE("double.decimal_point") {
   constexpr auto options = [] {
     fast_float::parse_options ret{};
     ret.decimal_point = ',';
@@ -1235,7 +1469,7 @@ TEST_CASE("64bit.decimal_point") {
       0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022250738585072008890245868760858598876504231122409594654935248025624400092282356951787758888037591552642309780950434312085877387158357291821993020294379224223559819827501242041788969571311791082261043971979604000454897391938079198936081525613113376149842043271751033627391549782731594143828136275113838604094249464942286316695429105080201815926642134996606517803095075913058719846423906068637102005108723282784678843631944515866135041223479014792369585208321597621066375401613736583044193603714778355306682834535634005074073040135602968046375918583163124224521599262546494300836851861719422417646455137135420132217031370496583210154654068035397417906022589503023501937519773030945763173210852507299305089761582519159720757232455434770912461317493580281734466552734375);
 }
 
-TEST_CASE("32bit.inf") {
+TEST_CASE("float.inf") {
   verify("INF", std::numeric_limits<float>::infinity());
   verify("-INF", -std::numeric_limits<float>::infinity());
   verify("INFINITY", std::numeric_limits<float>::infinity());
@@ -1253,7 +1487,12 @@ TEST_CASE("32bit.inf") {
          std::errc::result_out_of_range);
 }
 
-TEST_CASE("32bit.general") {
+TEST_CASE("float.general") {
+  // max
+  verify("340282346638528859811704183484516925440", 0x1.fffffep+127f);
+  // -max
+  verify("-340282346638528859811704183484516925440", -0x1.fffffep+127f);
+
   verify("-1e-999", -0.0f, std::errc::result_out_of_range);
   verify("1."
          "175494140627517859246175898662808184331245864732796240031385942718174"
@@ -1393,7 +1632,7 @@ TEST_CASE("32bit.general") {
       0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875f);
 }
 
-TEST_CASE("32bit.decimal_point") {
+TEST_CASE("float.decimal_point") {
   constexpr auto options = [] {
     fast_float::parse_options ret{};
     ret.decimal_point = ',';
@@ -1479,7 +1718,7 @@ TEST_CASE("32bit.decimal_point") {
       "0,"
       "000000000000000000000000000000000000011754943508222875079687365372222456"
       "778186655567720875215087517062784172594547271728515625",
-      0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625);
+      0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625f);
   verify_options(
       "0,"
       "000000000000000000000000000000000000000000001401298464324817070923729583"
@@ -1499,3 +1738,328 @@ TEST_CASE("32bit.decimal_point") {
       "96875",
       0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875f);
 }
+
+#ifdef __STDCPP_FLOAT16_T__
+TEST_CASE("float16.inf") {
+  verify("INF", std::numeric_limits<std::float16_t>::infinity());
+  verify("-INF", -std::numeric_limits<std::float16_t>::infinity());
+  verify("INFINITY", std::numeric_limits<std::float16_t>::infinity());
+  verify("-INFINITY", -std::numeric_limits<std::float16_t>::infinity());
+  verify("infinity", std::numeric_limits<std::float16_t>::infinity());
+  verify("-infinity", -std::numeric_limits<std::float16_t>::infinity());
+  verify("inf", std::numeric_limits<std::float16_t>::infinity());
+  verify("-inf", -std::numeric_limits<std::float16_t>::infinity());
+  verify("1234456789012345678901234567890e9999999999999999999999999999",
+         std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("2e3000", std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("3.5028234666e38", std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+}
+
+TEST_CASE("float16.general") {
+  // max
+  verify("65504", 0x1.ffcp+15f16);
+  // -max
+  verify("-65504", -0x1.ffcp+15f16);
+  // min
+  verify("0.000060975551605224609375", 0x1.ff8p-15f16);
+  verify("6.0975551605224609375e-5", 0x1.ff8p-15f16);
+  // denorm_min
+  verify("0.000000059604644775390625", 0x1p-24f16);
+  verify("5.9604644775390625e-8", 0x1p-24f16);
+  // -min
+  verify("-0.000060975551605224609375", -0x1.ff8p-15f16);
+  verify("-6.0975551605224609375e-5", -0x1.ff8p-15f16);
+  // -denorm_min
+  verify("-0.000000059604644775390625", -0x1p-24f16);
+  verify("-5.9604644775390625e-8", -0x1p-24f16);
+
+  verify("-1e-999", -0.0f16, std::errc::result_out_of_range);
+  verify("6.0975551605224609375", 0x1.864p+2f16);
+  verify_runtime(append_zeros("6.0975551605224609375", 655), 0x1.864p+2f16);
+  verify_runtime(append_zeros("6.0975551605224609375", 656), 0x1.864p+2f16);
+  verify_runtime(append_zeros("6.0975551605224609375", 1000), 0x1.864p+2f16);
+  verify_runtime(append_zeros("6.0975551605224609375", 655) +
+                     std::string("e-5"),
+                 0x1.ff8p-15f16);
+  verify_runtime(append_zeros("6.0975551605224609375", 656) +
+                     std::string("e-5"),
+                 0x1.ff8p-15f16);
+  verify_runtime(append_zeros("6.0975551605224609375", 1000) +
+                     std::string("e-5"),
+                 0x1.ff8p-15f16);
+  verify("-0", -0.0f16);
+  // verify("1090544144181609348835077142190", 0x1.b877ap+99f16);
+  // verify("1.1754943508e-38", 1.1754943508e-38f16);
+  verify("30219.0830078125", 30219.0830078125f16);
+  verify("17419.6494140625", 17419.6494140625f16);
+  verify("15498.36376953125", 15498.36376953125f16);
+  verify("6318.580322265625", 6318.580322265625f16);
+  verify("2525.2840576171875", 2525.2840576171875f16);
+  verify("1370.9265747070312", 1370.9265747070312f16);
+  verify("936.3702087402344", 936.3702087402344f16);
+  verify("411.88682556152344", 411.88682556152344f16);
+  verify("206.50310516357422", 206.50310516357422f16);
+  verify("124.16878890991211", 124.16878890991211f16);
+  verify("50.811574935913086", 50.811574935913086f16);
+  verify("17.486443519592285", 17.486443519592285f16);
+  verify("13.91745138168335", 13.91745138168335f16);
+  verify("7.5464513301849365", 0x1.e2f90ep+2f16);
+  verify("2.687217116355896", 2.687217116355896f16);
+  verify("1.1877630352973938", 0x1.30113ep+0f16);
+  verify("0.7622503340244293", 0.7622503340244293f16);
+  verify("0.30531780421733856", 0x1.38a53ap-2f16);
+  verify("0.21791061013936996", 0x1.be47eap-3f16);
+  verify("0.09289376810193062", 0x1.7c7e2ep-4f16);
+  verify("0.03706067614257336", 0.03706067614257336f16);
+  verify("0.028068351559340954", 0.028068351559340954f16);
+  verify("0.012114629615098238", 0x1.8cf8e2p-7f16);
+  verify("0.004221370676532388", 0x1.14a6dap-8f16);
+  verify("0.002153817447833717", 0.002153817447833717f16);
+  verify("0.0015924838953651488", 0x1.a175cap-10f16);
+  verify("0.0008602388261351734", 0.0008602388261351734f16);
+  verify("0.00036393293703440577", 0x1.7d9c82p-12f16);
+  verify("0.00013746770127909258", 0.00013746770127909258f16);
+  verify("16407.9462890625", 16407.9462890625f16);
+  // verify("1.1754947011469036e-38", 0x1.000006p-126f16);
+  // verify("7.0064923216240854e-46", 0x1p-149f16);
+  // verify("8388614.5", 8388614.5f16);
+  verify("0e9999999999999999999999999999", 0.f16);
+  // verify(
+  //     "4.7019774032891500318749461488889827112746622270883500860350068251e-38",
+  //     4.7019774032891500318749461488889827112746622270883500860350068251e-38f16);
+  verify(
+      "3."
+      "141592653589793238462643383279502884197169399375105820974944592307816406"
+      "2862089986280348253421170679",
+      3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679f16);
+  // verify(
+  //     "2.3509887016445750159374730744444913556373311135441750430175034126e-38",
+  //     2.3509887016445750159374730744444913556373311135441750430175034126e-38f16);
+  verify("1", 1.f16);
+  // verify("7.0060e-46", 0.f16, std::errc::result_out_of_range);
+  // verify("3.4028234664e38", 0x1.fffffep+127f16);
+  // verify("3.4028234665e38", 0x1.fffffep+127f16);
+  // verify("3.4028234666e38", 0x1.fffffep+127f16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000011754943508222875079687365372222456"
+  //     "778186655567720875215087517062784172594547271728515625",
+  //     0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625f16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000000000001401298464324817070923729583"
+  //     "289916131280261941876515771757068283889791082685860601486638188362121582"
+  //     "03125",
+  //     0.00000000000000000000000000000000000000000000140129846432481707092372958328991613128026194187651577175706828388979108268586060148663818836212158203125f16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000023509885615147285834557659820715330"
+  //     "266457179855179808553659262368500061299303460771170648513361811637878417"
+  //     "96875",
+  //     0.00000000000000000000000000000000000002350988561514728583455765982071533026645717985517980855365926236850006129930346077117064851336181163787841796875f16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000011754942106924410754870294448492873"
+  //     "488270524287458933338571745305715888704756189042655023513361811637878417"
+  //     "96875",
+  //     0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875f16);
+}
+#endif
+
+#ifdef __STDCPP_BFLOAT16_T__
+TEST_CASE("bfloat16.inf") {
+  verify("INF", std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("-INF", -std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("INFINITY", std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("-INFINITY", -std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("infinity", std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("-infinity", -std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("inf", std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("-inf", -std::numeric_limits<std::bfloat16_t>::infinity());
+  verify("1234456789012345678901234567890e9999999999999999999999999999",
+         std::numeric_limits<std::bfloat16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("2e3000", std::numeric_limits<std::bfloat16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("3.5028234666e38", std::numeric_limits<std::bfloat16_t>::infinity(),
+         std::errc::result_out_of_range);
+}
+
+TEST_CASE("bfloat16.general") {
+  // max
+  verify("338953138925153547590470800371487866880", 0x1.fep+127bf16);
+  // -max
+  verify("-338953138925153547590470800371487866880", -0x1.fep+127bf16);
+  // min
+  verify(
+      "0."
+      "000000000000000000000000000000000000011754943508222875079687365372222456"
+      "778186655567720875215087517062784172594547271728515625",
+      0x1p-126bf16);
+  verify("1."
+         "175494350822287507968736537222245677818665556772087521508751706278417"
+         "2594"
+         "547271728515625e-38",
+         0x1p-126bf16);
+  // denorm_min
+  verify("0."
+         "000000000000000000000000000000000000000091835496157991211560057541970"
+         "4879"
+         "435795832466228193376178712270530013483949005603790283203125",
+         0x1p-133bf16);
+  verify("9."
+         "183549615799121156005754197048794357958324662281933761787122705300134"
+         "8394"
+         "9005603790283203125e-41",
+         0x1p-133bf16);
+  // -min
+  verify(
+      "-0."
+      "000000000000000000000000000000000000011754943508222875079687365372222456"
+      "778186655567720875215087517062784172594547271728515625",
+      -0x1p-126bf16);
+  verify(
+      "-1."
+      "175494350822287507968736537222245677818665556772087521508751706278417259"
+      "4547271728515625e-38",
+      -0x1p-126bf16);
+  // -denorm_min
+  verify("-0"
+         ".00000000000000000000000000000000000000009183549615799121156005754197"
+         "0487"
+         "9435795832466228193376178712270530013483949005603790283203125",
+         -0x1p-133bf16);
+  verify("-9"
+         ".18354961579912115600575419704879435795832466228193376178712270530013"
+         "4839"
+         "49005603790283203125e-41",
+         -0x1p-133bf16);
+
+  verify("-1e-999", -0.0bf16, std::errc::result_out_of_range);
+  verify_runtime(
+      "1."
+      "175494350822287507968736537222245677818665556772087521508751706278417"
+      "2594547271728515625",
+      0x1.2cp+0bf16);
+  verify_runtime(append_zeros("1."
+                              "175494350822287507968736537222245677818665556772"
+                              "0875215087517062784172594547271728515625",
+                              655),
+                 0x1.2cp+0bf16);
+  verify_runtime(append_zeros("1."
+                              "175494350822287507968736537222245677818665556772"
+                              "0875215087517062784172594547271728515625",
+                              656),
+                 0x1.2cp+0bf16);
+  verify_runtime(append_zeros("1."
+                              "175494350822287507968736537222245677818665556772"
+                              "0875215087517062784172594547271728515625",
+                              1000),
+                 0x1.2cp+0bf16);
+  verify_runtime(append_zeros("1."
+                              "175494350822287507968736537222245677818665556772"
+                              "0875215087517062784172594547271728515625",
+                              655) +
+                     std::string("e-38"),
+                 0x1p-126bf16);
+  verify_runtime(append_zeros("1."
+                              "175494350822287507968736537222245677818665556772"
+                              "0875215087517062784172594547271728515625",
+                              656) +
+                     std::string("e-38"),
+                 0x1p-126bf16);
+  verify_runtime(append_zeros("1."
+                              "175494350822287507968736537222245677818665556772"
+                              "0875215087517062784172594547271728515625",
+                              1000) +
+                     std::string("e-38"),
+                 0x1p-126bf16);
+  verify("-0", -0.0bf16);
+  // verify("1090544144181609348835077142190", 0x1.b877ap+99bf16);
+  // verify("1.1754943508e-38", 1.1754943508e-38bf16);
+  verify("30219.0830078125", 30219.0830078125bf16);
+  verify("16252921.5", 16252921.5bf16);
+  verify("5322519.25", 5322519.25bf16);
+  verify("3900245.875", 3900245.875bf16);
+  verify("1510988.3125", 1510988.3125bf16);
+  verify("782262.28125", 782262.28125bf16);
+  verify("328381.484375", 328381.484375bf16);
+  verify("156782.0703125", 156782.0703125bf16);
+  verify("85003.24609375", 85003.24609375bf16);
+  verify("17419.6494140625", 17419.6494140625bf16);
+  verify("15498.36376953125", 15498.36376953125bf16);
+  verify("6318.580322265625", 6318.580322265625bf16);
+  verify("2525.2840576171875", 2525.2840576171875bf16);
+  verify("1370.9265747070312", 1370.9265747070312bf16);
+  verify("936.3702087402344", 936.3702087402344bf16);
+  verify("411.88682556152344", 411.88682556152344bf16);
+  verify("206.50310516357422", 206.50310516357422bf16);
+  verify("124.16878890991211", 124.16878890991211bf16);
+  verify("50.811574935913086", 50.811574935913086bf16);
+  verify("17.486443519592285", 17.486443519592285bf16);
+  verify("13.91745138168335", 13.91745138168335bf16);
+  verify("7.5464513301849365", 0x1.e2f90ep+2bf16);
+  verify("2.687217116355896", 2.687217116355896bf16);
+  verify("1.1877630352973938", 0x1.30113ep+0bf16);
+  verify("0.7622503340244293", 0.7622503340244293bf16);
+  verify("0.30531780421733856", 0x1.38a53ap-2bf16);
+  verify("0.21791061013936996", 0x1.be47eap-3bf16);
+  verify("0.09289376810193062", 0x1.7c7e2ep-4bf16);
+  verify("0.03706067614257336", 0.03706067614257336bf16);
+  verify("0.028068351559340954", 0.028068351559340954bf16);
+  verify("0.012114629615098238", 0x1.8cf8e2p-7bf16);
+  verify("0.004221370676532388", 0x1.14a6dap-8bf16);
+  verify("0.002153817447833717", 0.002153817447833717bf16);
+  verify("0.0015924838953651488", 0x1.a175cap-10bf16);
+  verify("0.0008602388261351734", 0.0008602388261351734bf16);
+  verify("0.00036393293703440577", 0x1.7d9c82p-12bf16);
+  verify("0.00013746770127909258", 0.00013746770127909258bf16);
+  verify("16407.9462890625", 16407.9462890625bf16);
+  // verify("1.1754947011469036e-38", 0x1.000006p-126bf16);
+  // verify("7.0064923216240854e-46", 0x1p-149bf16);
+  // verify("8388614.5", 8388614.5bf16);
+  verify("0e9999999999999999999999999999", 0.bf16);
+  // verify(
+  //     "4.7019774032891500318749461488889827112746622270883500860350068251e-38",
+  //     4.7019774032891500318749461488889827112746622270883500860350068251e-38bf16);
+  verify(
+      "3."
+      "141592653589793238462643383279502884197169399375105820974944592307816406"
+      "2862089986280348253421170679",
+      3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679bf16);
+  // verify(
+  //     "2.3509887016445750159374730744444913556373311135441750430175034126e-38",
+  //     2.3509887016445750159374730744444913556373311135441750430175034126e-38bf16);
+  verify("1", 1.bf16);
+  verify("7.0060e-46", 0.bf16, std::errc::result_out_of_range);
+  verify("3.388e+38", 0x1.fep+127bf16);
+  verify("3.389e+38", 0x1.fep+127bf16);
+  verify("3.390e+38", 0x1.fep+127bf16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000011754943508222875079687365372222456"
+  //     "778186655567720875215087517062784172594547271728515625",
+  //     0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625bf16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000000000001401298464324817070923729583"
+  //     "289916131280261941876515771757068283889791082685860601486638188362121582"
+  //     "03125",
+  //     0.00000000000000000000000000000000000000000000140129846432481707092372958328991613128026194187651577175706828388979108268586060148663818836212158203125bf16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000023509885615147285834557659820715330"
+  //     "266457179855179808553659262368500061299303460771170648513361811637878417"
+  //     "96875",
+  //     0.00000000000000000000000000000000000002350988561514728583455765982071533026645717985517980855365926236850006129930346077117064851336181163787841796875bf16);
+  // verify(
+  //     "0."
+  //     "000000000000000000000000000000000000011754942106924410754870294448492873"
+  //     "488270524287458933338571745305715888704756189042655023513361811637878417"
+  //     "96875",
+  //     0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875bf16);
+}
+#endif

@@ -107,9 +107,9 @@ The library seeks to follow the C++17 (see
 [28.2.3.(6.1)](https://eel.is/c++draft/charconv.from.chars#6.1)) specification.
 
 * The `from_chars` function does not skip leading white-space characters (unless
-  `fast_float::chars_format::chars_format` is set).
+  `fast_float::chars_format::skip_white_space` is set).
 * [A leading `+` sign](https://en.cppreference.com/w/cpp/utility/from_chars) is
-  forbidden (unless `fast_float::chars_format::skip_white_space` is set).
+  forbidden (unless `fast_float::chars_format::allow_leading_plus` is set).
 * It is generally impossible to represent a decimal value exactly as binary
   floating-point number (`float` and `double` types). We seek the nearest value.
   We round to an even mantissa when we are in-between two binary floating-point
@@ -118,8 +118,8 @@ The library seeks to follow the C++17 (see
 Furthermore, we have the following restrictions:
 
 * We support `float` and `double`, but not `long double`. We also support
-  fixed-width floating-point types such as `std::float32_t` and
-  `std::float64_t`.
+  fixed-width floating-point types such as `std::float64_t`, `std::float32_t`,
+  `std::float16_t`, and `std::bfloat16_t`.
 * We only support the decimal format: we do not support hexadecimal strings.
 * For values that are either very large or very small (e.g., `1e9999`), we
   represent it using the infinity or negative infinity value and the returned
@@ -241,7 +241,8 @@ constexpr double constexptest() {
 ## C++23: Fixed width floating-point types
 
 The library also supports fixed-width floating-point types such as
-`std::float32_t` and `std::float64_t`. E.g., you can write:
+`std::float64_t`, `std::float32_t`, `std::float16_t`, and `std::bfloat16_t`.
+E.g., you can write:
 
 ```C++
 std::float32_t result;
