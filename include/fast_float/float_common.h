@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cassert>
 #include <cstring>
+#include <limits>
 #include <type_traits>
 #include <system_error>
 #ifdef __has_include
@@ -222,12 +223,12 @@ fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
 template <typename T>
 struct is_supported_float_type
     : std::integral_constant<
-          bool, std::is_same<T, float>::value || std::is_same<T, double>::value
-#ifdef __STDCPP_FLOAT32_T__
-                    || std::is_same<T, std::float32_t>::value
-#endif
+          bool, std::is_same<T, double>::value || std::is_same<T, float>::value
 #ifdef __STDCPP_FLOAT64_T__
                     || std::is_same<T, std::float64_t>::value
+#endif
+#ifdef __STDCPP_FLOAT32_T__
+                    || std::is_same<T, std::float32_t>::value
 #endif
 #ifdef __STDCPP_FLOAT16_T__
                     || std::is_same<T, std::float16_t>::value
@@ -757,8 +758,7 @@ template <>
 inline constexpr size_t binary_format<std::float16_t>::max_digits() {
   return 22;
 }
-
-#endif
+#endif // __STDCPP_FLOAT16_T__
 
 // credit: Jakub Jelínek
 #ifdef __STDCPP_BFLOAT16_T__
@@ -881,8 +881,7 @@ template <>
 inline constexpr size_t binary_format<std::bfloat16_t>::max_digits() {
   return 98;
 }
-
-#endif
+#endif // __STDCPP_BFLOAT16_T__
 
 template <>
 inline constexpr uint64_t
@@ -1051,7 +1050,6 @@ template <> constexpr char32_t const *str_const_nan<char32_t>() {
 template <> constexpr char8_t const *str_const_nan<char8_t>() {
   return u8"nan";
 }
-
 #endif
 
 template <typename UC> constexpr UC const *str_const_inf();
@@ -1074,7 +1072,6 @@ template <> constexpr char32_t const *str_const_inf<char32_t>() {
 template <> constexpr char8_t const *str_const_inf<char8_t>() {
   return u8"infinity";
 }
-
 #endif
 
 template <typename = void> struct int_luts {
@@ -1158,7 +1155,7 @@ static_assert(std::is_same<equiv_uint_t<std::float64_t>, uint64_t>::value,
 static_assert(
     std::numeric_limits<std::float64_t>::is_iec559,
     "std::float64_t must fulfill the requirements of IEC 559 (IEEE 754)");
-#endif
+#endif // __STDCPP_FLOAT64_T__
 
 #ifdef __STDCPP_FLOAT32_T__
 static_assert(std::is_same<equiv_uint_t<std::float32_t>, uint32_t>::value,
@@ -1166,7 +1163,7 @@ static_assert(std::is_same<equiv_uint_t<std::float32_t>, uint32_t>::value,
 static_assert(
     std::numeric_limits<std::float32_t>::is_iec559,
     "std::float32_t must fulfill the requirements of IEC 559 (IEEE 754)");
-#endif
+#endif // __STDCPP_FLOAT32_T__
 
 #ifdef __STDCPP_FLOAT16_T__
 static_assert(
@@ -1175,7 +1172,7 @@ static_assert(
 static_assert(
     std::numeric_limits<std::float16_t>::is_iec559,
     "std::float16_t must fulfill the requirements of IEC 559 (IEEE 754)");
-#endif
+#endif // __STDCPP_FLOAT16_T__
 
 #ifdef __STDCPP_BFLOAT16_T__
 static_assert(
@@ -1184,7 +1181,7 @@ static_assert(
 static_assert(
     std::numeric_limits<std::bfloat16_t>::is_iec559,
     "std::bfloat16_t must fulfill the requirements of IEC 559 (IEEE 754)");
-#endif
+#endif // __STDCPP_BFLOAT16_T__
 
 constexpr chars_format operator~(chars_format rhs) noexcept {
   using int_type = std::underlying_type<chars_format>::type;
