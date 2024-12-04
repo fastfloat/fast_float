@@ -107,9 +107,9 @@ The library seeks to follow the C++17 (see
 [28.2.3.(6.1)](https://eel.is/c++draft/charconv.from.chars#6.1)) specification.
 
 * The `from_chars` function does not skip leading white-space characters (unless
-  `fast_float::chars_format::chars_format` is set).
+  `fast_float::chars_format::skip_white_space` is set).
 * [A leading `+` sign](https://en.cppreference.com/w/cpp/utility/from_chars) is
-  forbidden (unless `fast_float::chars_format::skip_white_space` is set).
+  forbidden (unless `fast_float::chars_format::allow_leading_plus` is set).
 * It is generally impossible to represent a decimal value exactly as binary
   floating-point number (`float` and `double` types). We seek the nearest value.
   We round to an even mantissa when we are in-between two binary floating-point
