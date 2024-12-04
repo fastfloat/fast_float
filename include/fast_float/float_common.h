@@ -1258,30 +1258,46 @@ fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
 
 static_assert(std::is_same<equiv_uint_t<double>, uint64_t>::value,
               "equiv_uint should be uint64_t for double");
+static_assert(std::numeric_limits<double>::is_iec559,
+              "double must fulfill the requirements of IEC 559 (IEEE 754)");
 
 static_assert(std::is_same<equiv_uint_t<float>, uint32_t>::value,
               "equiv_uint should be uint32_t for float");
+static_assert(std::numeric_limits<float>::is_iec559,
+              "float must fulfill the requirements of IEC 559 (IEEE 754)");
 
 #ifdef __STDCPP_FLOAT64_T__
 static_assert(std::is_same<equiv_uint_t<std::float64_t>, uint64_t>::value,
               "equiv_uint should be uint64_t for std::float64_t");
+static_assert(
+    std::numeric_limits<std::float64_t>::is_iec559,
+    "std::float64_t must fulfill the requirements of IEC 559 (IEEE 754)");
 #endif
 
 #ifdef __STDCPP_FLOAT32_T__
 static_assert(std::is_same<equiv_uint_t<std::float32_t>, uint32_t>::value,
               "equiv_uint should be uint32_t for std::float32_t");
+static_assert(
+    std::numeric_limits<std::float32_t>::is_iec559,
+    "std::float32_t must fulfill the requirements of IEC 559 (IEEE 754)");
 #endif
 
 #ifdef __STDCPP_FLOAT16_T__
 static_assert(
     std::is_same<binary_format<std::float16_t>::equiv_uint, uint16_t>::value,
     "equiv_uint should be uint16_t for std::float16_t");
+static_assert(
+    std::numeric_limits<std::float16_t>::is_iec559,
+    "std::float16_t must fulfill the requirements of IEC 559 (IEEE 754)");
 #endif
 
 #ifdef __STDCPP_BFLOAT16_T__
 static_assert(
     std::is_same<binary_format<std::bfloat16_t>::equiv_uint, uint16_t>::value,
     "equiv_uint should be uint16_t for std::bfloat16_t");
+static_assert(
+    std::numeric_limits<std::bfloat16_t>::is_iec559,
+    "std::bfloat16_t must fulfill the requirements of IEC 559 (IEEE 754)");
 #endif
 
 constexpr chars_format operator~(chars_format rhs) noexcept {
