@@ -118,8 +118,8 @@ The library seeks to follow the C++17 (see
 Furthermore, we have the following restrictions:
 
 * We support `float` and `double`, but not `long double`. We also support
-  fixed-width floating-point types such as `std::float32_t` and
-  `std::float64_t`.
+  fixed-width floating-point types such as `std::float64_t`, `std::float32_t`,
+  `std::float16_t`, and `std::bfloat16_t`.
 * We only support the decimal format: we do not support hexadecimal strings.
 * For values that are either very large or very small (e.g., `1e9999`), we
   represent it using the infinity or negative infinity value and the returned
@@ -241,7 +241,8 @@ constexpr double constexptest() {
 ## C++23: Fixed width floating-point types
 
 The library also supports fixed-width floating-point types such as
-`std::float32_t` and `std::float64_t`. E.g., you can write:
+`std::float64_t`, `std::float32_t`, `std::float16_t`, and `std::bfloat16_t`.
+E.g., you can write:
 
 ```C++
 std::float32_t result;
