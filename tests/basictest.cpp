@@ -433,28 +433,28 @@ bool check_file(std::string file_name) {
         if (str.size() > 0) {
 #ifdef __STDCPP_FLOAT16_T__
           // Read 16-bit hex
-          uint16_t float16;
+          uint16_t float16{};
           auto r16 =
               std::from_chars(str.data(), str.data() + str.size(), float16, 16);
           if (r16.ec != std::errc()) {
-            std::cerr << "16-bit parsing failure\n";
+            std::cerr << "16-bit parsing failure: " << str << "\n";
             return false;
           }
 #endif
           // Read 32-bit hex
-          uint32_t float32;
+          uint32_t float32{};
           auto r32 = std::from_chars(str.data() + 5, str.data() + str.size(),
                                      float32, 16);
           if (r32.ec != std::errc()) {
-            std::cerr << "32-bit parsing failure\n";
+            std::cerr << "32-bit parsing failure: " << str << "\n";
             return false;
           }
           // Read 64-bit hex
-          uint64_t float64;
+          uint64_t float64{};
           auto r64 = std::from_chars(str.data() + 14, str.data() + str.size(),
                                      float64, 16);
           if (r64.ec != std::errc()) {
-            std::cerr << "64-bit parsing failure\n";
+            std::cerr << "64-bit parsing failure: " << str << "\n";
             return false;
           }
           // The string to parse:
@@ -467,34 +467,34 @@ bool check_file(std::string file_name) {
               fast_float::from_chars(number_string, end_of_string, parsed_16);
           if (fast_float_r16.ec != std::errc() &&
               fast_float_r16.ec != std::errc::result_out_of_range) {
-            std::cerr << "16-bit fast_float parsing failure for: " + str + "\n";
+            std::cerr << "16-bit fast_float parsing failure: " << str << "\n";
             return false;
           }
 #endif
           // Parse as 32-bit float
-          float parsed_32;
+          float parsed_32{};
           auto fast_float_r32 =
               fast_float::from_chars(number_string, end_of_string, parsed_32);
           if (fast_float_r32.ec != std::errc() &&
               fast_float_r32.ec != std::errc::result_out_of_range) {
-            std::cerr << "32-bit fast_float parsing failure for: " + str + "\n";
+            std::cerr << "32-bit fast_float parsing failure: " << str << "\n";
             return false;
           }
           // Parse as 64-bit float
-          double parsed_64;
+          double parsed_64{};
           auto fast_float_r64 =
               fast_float::from_chars(number_string, end_of_string, parsed_64);
           if (fast_float_r64.ec != std::errc() &&
               fast_float_r32.ec != std::errc::result_out_of_range) {
-            std::cerr << "64-bit fast_float parsing failure: " + str + "\n";
+            std::cerr << "64-bit fast_float parsing failure: " << str << "\n";
             return false;
           }
           // Convert the floats to unsigned ints.
 #ifdef __STDCPP_FLOAT16_T__
-          uint16_t float16_parsed;
+          uint16_t float16_parsed{};
 #endif
-          uint32_t float32_parsed;
-          uint64_t float64_parsed;
+          uint32_t float32_parsed{};
+          uint64_t float64_parsed{};
 #ifdef __STDCPP_FLOAT16_T__
           ::memcpy(&float16_parsed, &parsed_16, sizeof(parsed_16));
 
@@ -504,9 +504,9 @@ bool check_file(std::string file_name) {
           // Compare with expected results
 #ifdef __STDCPP_FLOAT16_T__
           if (float16_parsed != float16) {
-            std::cout << "bad 16 " << str << std::endl;
-            std::cout << "parsed as " << iHexAndDec(parsed_16) << std::endl;
-            std::cout << "as  raw uint16_t, parsed = " << float16_parsed
+            std::cout << "bad 16: " << str << std::endl;
+            std::cout << "parsed as " << fHexAndDec(parsed_16) << std::endl;
+            std::cout << "as raw uint16_t, parsed = " << float16_parsed
                       << ", expected = " << float16 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
@@ -514,17 +514,17 @@ bool check_file(std::string file_name) {
           }
 #endif
           if (float32_parsed != float32) {
-            std::cout << "bad 32 " << str << std::endl;
-            std::cout << "parsed as " << iHexAndDec(parsed_32) << std::endl;
-            std::cout << "as  raw uint32_t, parsed = " << float32_parsed
+            std::cout << "bad 32: " << str << std::endl;
+            std::cout << "parsed as " << fHexAndDec(parsed_32) << std::endl;
+            std::cout << "as raw uint32_t, parsed = " << float32_parsed
                       << ", expected = " << float32 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
             fesetround(FE_TONEAREST);
             return false;
           }
           if (float64_parsed != float64) {
-            std::cout << "bad 64 " << str << std::endl;
-            std::cout << "parsed as " << iHexAndDec(parsed_64) << std::endl;
+            std::cout << "bad 64: " << str << std::endl;
+            std::cout << "parsed as " << fHexAndDec(parsed_64) << std::endl;
             std::cout << "as raw uint64_t, parsed = " << float64_parsed
                       << ", expected = " << float64 << std::endl;
             std::cout << "fesetround: " << round_name(d) << std::endl;
@@ -550,7 +550,9 @@ bool check_file(std::string file_name) {
 TEST_CASE("supplemental") {
   std::string path = SUPPLEMENTAL_TEST_DATA_DIR;
   for (auto const &entry : std::filesystem::directory_iterator(path)) {
-    CHECK(check_file(entry.path().string()));
+    const auto file = entry.path().string();
+    CAPTURE(file);
+    CHECK(check_file(file));
   }
 }
 #endif
