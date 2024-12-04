@@ -260,90 +260,6 @@ struct is_supported_char_type
                              > {
 };
 
-#if 0
-union float_union {
-  float f;
-  uint32_t bits;
-};
-
-union double_union {
-  double f;
-  uint64_t bits;
-};
-
-template <typename T, typename U> constexpr T bit_cast(const U &u);
-
-template <>
-fastfloat_really_inline constexpr float bit_cast(const uint32_t &u) {
-  float_union fu;
-  fu.bits = u;
-  return fu.f;
-}
-
-template <>
-fastfloat_really_inline constexpr double bit_cast(const uint64_t &u) {
-  double_union fu;
-  fu.bits = u;
-  return fu.f;
-}
-
-template <>
-fastfloat_really_inline constexpr uint32_t bit_cast(const float &u) {
-  float_union fu;
-  fu.f = u;
-  return fu.bits;
-}
-
-template <>
-fastfloat_really_inline constexpr uint64_t bit_cast(const double &u) {
-  double_union fu;
-  fu.f = u;
-  return fu.bits;
-}
-
-#ifdef __STDCPP_FLOAT16_T__
-union float16_union {
-  std::float16_t f;
-  uint16_t bits;
-};
-
-template <>
-fastfloat_really_inline constexpr uint16_t bit_cast(const std::float16_t &u) {
-  float16_union fu;
-  fu.f = u;
-  return fu.bits;
-}
-
-template <>
-fastfloat_really_inline constexpr std::float16_t bit_cast(const uint16_t &u) {
-  float16_union fu;
-  fu.bits = u;
-  return fu.f;
-}
-#endif // __STDCPP_FLOAT16_T__
-
-#ifdef __STDCPP_BFLOAT16_T__
-union bfloat16_union {
-  std::bfloat16_t f;
-  uint16_t bits;
-};
-
-template <>
-fastfloat_really_inline constexpr uint16_t bit_cast(const std::bfloat16_t &u) {
-  bfloat16_union fu;
-  fu.f = u;
-  return fu.bits;
-}
-
-template <>
-fastfloat_really_inline constexpr std::bfloat16_t bit_cast(const uint16_t &u) {
-  bfloat16_union fu;
-  fu.bits = u;
-  return fu.f;
-}
-#endif // __STDCPP_BFLOAT16_T__
-#endif // 0
-
 // Compares two ASCII strings in a case insensitive manner.
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
@@ -1077,36 +993,6 @@ to_float(bool negative, adjusted_mantissa am, T &value) {
   ::memcpy(&value, &word, sizeof(T));
 #endif
 }
-
-#if 0
-#ifdef __STDCPP_FLOAT16_T__
-template <>
-fastfloat_really_inline void to_float<std::float16_t>(bool negative,
-                                                      adjusted_mantissa am,
-                                                      std::float16_t &value) {
-  constexpr int mantissa_bits =
-      binary_format<std::float16_t>::mantissa_explicit_bits();
-  value = bit_cast<std::float16_t>(
-      uint16_t(am.mantissa | (uint16_t(am.power2) << mantissa_bits) |
-               (negative ? 0x8000 : 0)));
-}
-
-#endif // __STDCPP_FLOAT16_T__
-
-#ifdef __STDCPP_BFLOAT16_T__
-template <>
-fastfloat_really_inline void to_float<std::bfloat16_t>(bool negative,
-                                                       adjusted_mantissa am,
-                                                       std::bfloat16_t &value) {
-  constexpr int mantissa_bits =
-      binary_format<std::bfloat16_t>::mantissa_explicit_bits();
-  value = bit_cast<std::bfloat16_t>(
-      uint16_t(am.mantissa | (uint16_t(am.power2) << mantissa_bits) |
-               (negative ? 0x8000 : 0)));
-}
-
-#endif // __STDCPP_BFLOAT16_T__
-#endif // 0
 
 template <typename = void> struct space_lut {
   static constexpr bool value[] = {
