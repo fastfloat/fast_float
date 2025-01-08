@@ -52,10 +52,13 @@ struct performance_counters {
   double branches;
   double missed_branches;
   double instructions;
+
   performance_counters(uint64_t c, uint64_t b, uint64_t m, uint64_t i)
       : cycles(c), branches(b), missed_branches(m), instructions(i) {}
+
   performance_counters(double c, double b, double m, double i)
       : cycles(c), branches(b), missed_branches(m), instructions(i) {}
+
   performance_counters(double init)
       : cycles(init), branches(init), missed_branches(init),
         instructions(init) {}
@@ -67,6 +70,7 @@ struct performance_counters {
     instructions -= other.instructions;
     return *this;
   }
+
   inline performance_counters &min(const performance_counters &other) {
     cycles = other.cycles < cycles ? other.cycles : cycles;
     branches = other.branches < branches ? other.branches : branches;
@@ -77,6 +81,7 @@ struct performance_counters {
         other.instructions < instructions ? other.instructions : instructions;
     return *this;
   }
+
   inline performance_counters &operator+=(const performance_counters &other) {
     cycles += other.cycles;
     branches += other.branches;
@@ -920,6 +925,7 @@ static int kdebug_wait(usize timeout_ms, bool *suc) {
 // -----------------------------------------------------------------------------
 
 #define EVENT_NAME_MAX 8
+
 typedef struct {
   const char *alias;                 /// name for print
   const char *names[EVENT_NAME_MAX]; /// name from pmc db

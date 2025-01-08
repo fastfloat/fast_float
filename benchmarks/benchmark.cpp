@@ -187,7 +187,7 @@ std::vector<std::u16string> widen(const std::vector<std::string> &lines) {
 }
 
 void process(std::vector<std::string> &lines, size_t volume) {
-  size_t repeat = 100;
+  size_t repeat = 1000;
   double volumeMB = volume / (1024. * 1024.);
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",

@@ -58,6 +58,7 @@ template <typename UC> struct from_chars_result_t {
   UC const *ptr;
   std::errc ec;
 };
+
 using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
@@ -72,6 +73,7 @@ template <typename UC> struct parse_options_t {
   /** The base used for integers */
   int base;
 };
+
 using parse_options = parse_options_t<char>;
 
 } // namespace fast_float
@@ -225,14 +227,22 @@ template <typename T>
 struct is_supported_float_type
     : std::integral_constant<bool, std::is_same<T, float>::value ||
                                        std::is_same<T, double>::value
-#if __STDCPP_FLOAT32_T__
+#ifdef __STDCPP_FLOAT32_T__
                                        || std::is_same<T, std::float32_t>::value
 #endif
-#if __STDCPP_FLOAT64_T__
+#ifdef __STDCPP_FLOAT64_T__
                                        || std::is_same<T, std::float64_t>::value
 #endif
                              > {
 };
+
+template <typename T>
+using equiv_uint_t = typename std::conditional<
+    sizeof(T) == 1, uint8_t,
+    typename std::conditional<
+        sizeof(T) == 2, uint16_t,
+        typename std::conditional<sizeof(T) == 4, uint32_t,
+                                  uint64_t>::type>::type>::type;
 
 template <typename T> struct is_supported_integer_type : std::is_integral<T> {};
 
@@ -270,7 +280,9 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 template <typename T> struct span {
   T const *ptr;
   size_t length;
+
   constexpr span(T const *_ptr, size_t _length) : ptr(_ptr), length(_length) {}
+
   constexpr span() : ptr(nullptr), length(0) {}
 
   constexpr size_t len() const noexcept { return length; }
@@ -284,7 +296,9 @@ template <typename T> struct span {
 struct value128 {
   uint64_t low;
   uint64_t high;
+
   constexpr value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
+
   constexpr value128() : low(0), high(0) {}
 };
 
@@ -400,9 +414,11 @@ struct adjusted_mantissa {
   uint64_t mantissa{0};
   int32_t power2{0}; // a negative value indicates an invalid result
   adjusted_mantissa() = default;
+
   constexpr bool operator==(adjusted_mantissa const &o) const {
     return mantissa == o.mantissa && power2 == o.power2;
   }
+
   constexpr bool operator!=(adjusted_mantissa const &o) const {
     return mantissa != o.mantissa || power2 != o.power2;
   }
@@ -417,8 +433,7 @@ constexpr uint64_t constant_55555 = 5 * 5 * 5 * 5 * 5;
 template <typename T, typename U = void> struct binary_format_lookup_tables;
 
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
-  using equiv_uint =
-      typename std::conditional<sizeof(T) == 4, uint32_t, uint64_t>::type;
+  using equiv_uint = equiv_uint_t<T>;
 
   static inline constexpr int mantissa_explicit_bits();
   static inline constexpr int minimum_exponent();
@@ -546,6 +561,7 @@ template <>
 inline constexpr int binary_format<double>::mantissa_explicit_bits() {
   return 52;
 }
+
 template <>
 inline constexpr int binary_format<float>::mantissa_explicit_bits() {
   return 23;
@@ -574,6 +590,7 @@ inline constexpr int binary_format<float>::min_exponent_round_to_even() {
 template <> inline constexpr int binary_format<double>::minimum_exponent() {
   return -1023;
 }
+
 template <> inline constexpr int binary_format<float>::minimum_exponent() {
   return -127;
 }
@@ -581,6 +598,7 @@ template <> inline constexpr int binary_format<float>::minimum_exponent() {
 template <> inline constexpr int binary_format<double>::infinite_power() {
   return 0x7FF;
 }
+
 template <> inline constexpr int binary_format<float>::infinite_power() {
   return 0xFF;
 }
@@ -588,6 +606,7 @@ template <> inline constexpr int binary_format<float>::infinite_power() {
 template <> inline constexpr int binary_format<double>::sign_index() {
   return 63;
 }
+
 template <> inline constexpr int binary_format<float>::sign_index() {
   return 31;
 }
@@ -596,6 +615,7 @@ template <>
 inline constexpr int binary_format<double>::max_exponent_fast_path() {
   return 22;
 }
+
 template <>
 inline constexpr int binary_format<float>::max_exponent_fast_path() {
   return 10;
@@ -605,6 +625,7 @@ template <>
 inline constexpr uint64_t binary_format<double>::max_mantissa_fast_path() {
   return uint64_t(2) << mantissa_explicit_bits();
 }
+
 template <>
 inline constexpr uint64_t
 binary_format<double>::max_mantissa_fast_path(int64_t power) {
@@ -614,10 +635,12 @@ binary_format<double>::max_mantissa_fast_path(int64_t power) {
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
 }
+
 template <>
 inline constexpr uint64_t binary_format<float>::max_mantissa_fast_path() {
   return uint64_t(2) << mantissa_explicit_bits();
 }
+
 template <>
 inline constexpr uint64_t
 binary_format<float>::max_mantissa_fast_path(int64_t power) {
@@ -634,6 +657,7 @@ binary_format<double>::exact_power_of_ten(int64_t power) {
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)powers_of_ten[0], powers_of_ten[power];
 }
+
 template <>
 inline constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
@@ -643,6 +667,7 @@ inline constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
 template <> inline constexpr int binary_format<double>::largest_power_of_ten() {
   return 308;
 }
+
 template <> inline constexpr int binary_format<float>::largest_power_of_ten() {
   return 38;
 }
@@ -651,6 +676,7 @@ template <>
 inline constexpr int binary_format<double>::smallest_power_of_ten() {
   return -342;
 }
+
 template <> inline constexpr int binary_format<float>::smallest_power_of_ten() {
   return -64;
 }
@@ -658,6 +684,7 @@ template <> inline constexpr int binary_format<float>::smallest_power_of_ten() {
 template <> inline constexpr size_t binary_format<double>::max_digits() {
   return 769;
 }
+
 template <> inline constexpr size_t binary_format<float>::max_digits() {
   return 114;
 }
@@ -667,6 +694,7 @@ inline constexpr binary_format<float>::equiv_uint
 binary_format<float>::exponent_mask() {
   return 0x7F800000;
 }
+
 template <>
 inline constexpr binary_format<double>::equiv_uint
 binary_format<double>::exponent_mask() {
@@ -678,6 +706,7 @@ inline constexpr binary_format<float>::equiv_uint
 binary_format<float>::mantissa_mask() {
   return 0x007FFFFF;
 }
+
 template <>
 inline constexpr binary_format<double>::equiv_uint
 binary_format<double>::mantissa_mask() {
@@ -689,6 +718,7 @@ inline constexpr binary_format<float>::equiv_uint
 binary_format<float>::hidden_bit_mask() {
   return 0x00800000;
 }
+
 template <>
 inline constexpr binary_format<double>::equiv_uint
 binary_format<double>::hidden_bit_mask() {
@@ -698,11 +728,10 @@ binary_format<double>::hidden_bit_mask() {
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 to_float(bool negative, adjusted_mantissa am, T &value) {
-  using fastfloat_uint = typename binary_format<T>::equiv_uint;
-  fastfloat_uint word = (fastfloat_uint)am.mantissa;
-  word |= fastfloat_uint(am.power2)
-          << binary_format<T>::mantissa_explicit_bits();
-  word |= fastfloat_uint(negative) << binary_format<T>::sign_index();
+  using equiv_uint = equiv_uint_t<T>;
+  equiv_uint word = equiv_uint(am.mantissa);
+  word |= equiv_uint(am.power2) << binary_format<T>::mantissa_explicit_bits();
+  word |= equiv_uint(negative) << binary_format<T>::sign_index();
 #if FASTFLOAT_HAS_BIT_CAST
   value = std::bit_cast<T>(word);
 #else
@@ -744,16 +773,21 @@ template <typename UC> static constexpr uint64_t int_cmp_zeros() {
                 uint64_t(UC('0')) << 16 | UC('0'))
              : (uint64_t(UC('0')) << 32 | UC('0'));
 }
+
 template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
 
 template <typename UC> constexpr UC const *str_const_nan();
+
 template <> constexpr char const *str_const_nan<char>() { return "nan"; }
+
 template <> constexpr wchar_t const *str_const_nan<wchar_t>() { return L"nan"; }
+
 template <> constexpr char16_t const *str_const_nan<char16_t>() {
   return u"nan";
 }
+
 template <> constexpr char32_t const *str_const_nan<char32_t>() {
   return U"nan";
 }
@@ -764,13 +798,17 @@ template <> constexpr char8_t const *str_const_nan<char8_t>() {
 #endif
 
 template <typename UC> constexpr UC const *str_const_inf();
+
 template <> constexpr char const *str_const_inf<char>() { return "infinity"; }
+
 template <> constexpr wchar_t const *str_const_inf<wchar_t>() {
   return L"infinity";
 }
+
 template <> constexpr char16_t const *str_const_inf<char16_t>() {
   return u"infinity";
 }
+
 template <> constexpr char32_t const *str_const_inf<char32_t>() {
   return U"infinity";
 }
@@ -844,6 +882,21 @@ fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
 fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
   return int_luts<>::min_safe_u64[base - 2];
 }
+
+static_assert(std::is_same<equiv_uint_t<double>, uint64_t>::value,
+              "equiv_uint should be uint64_t for double");
+static_assert(std::is_same<equiv_uint_t<float>, uint32_t>::value,
+              "equiv_uint should be uint32_t for float");
+
+#ifdef __STDCPP_FLOAT64_T__
+static_assert(std::is_same<equiv_uint_t<std::float64_t>, uint64_t>::value,
+              "equiv_uint should be uint64_t for std::float64_t");
+#endif
+
+#ifdef __STDCPP_FLOAT32_T__
+static_assert(std::is_same<equiv_uint_t<std::float32_t>, uint32_t>::value,
+              "equiv_uint should be uint32_t for std::float32_t");
+#endif
 
 constexpr chars_format operator~(chars_format rhs) noexcept {
   using int_type = std::underlying_type<chars_format>::type;

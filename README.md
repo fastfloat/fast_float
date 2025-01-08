@@ -366,7 +366,7 @@ The fast_float library is part of:
 * [WebKit](https://github.com/WebKit/WebKit), the engine behind Safari (Apple's
   web browser),
 * [DuckDB](https://duckdb.org),
-* [Redis](https://github.com/redis/redis),
+* [Redis](https://github.com/redis/redis) and [Valkey](https://github.com/valkey-io/valkey),
 * [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied
   the number parsing speed by two or three times,
 * [Google Jsonnet](https://github.com/google/jsonnet),
