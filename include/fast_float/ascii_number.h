@@ -482,7 +482,14 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   UC const *const first = p;
 
   bool const negative = (*p == UC('-'));
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#endif
   if (!std::is_signed<T>::value && negative) {
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#pragma warning(pop)
+#endif
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
