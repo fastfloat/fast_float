@@ -112,7 +112,7 @@ bool large() {
 }
 
 int main() {
-  std::string const input = "3.1416 xyz ";
+  std::string input = "3.1416 xyz ";
   double result;
   auto answer =
       fast_float::from_chars(input.data(), input.data() + input.size(), result);
@@ -121,6 +121,20 @@ int main() {
     return EXIT_FAILURE;
   }
   std::cout << "parsed the number " << result << std::endl;
+#ifdef __STDCPP_FLOAT16_T__
+  printf("16-bit float\n");
+  // Parse as 16-bit float
+  std::float16_t parsed_16{};
+  input = "10000e-1452";
+  auto fast_float_r16 = fast_float::from_chars(
+      input.data(), input.data() + input.size(), parsed_16);
+  if (fast_float_r16.ec != std::errc() &&
+      fast_float_r16.ec != std::errc::result_out_of_range) {
+    std::cerr << "16-bit fast_float parsing failure for: " + input + "\n";
+    return false;
+  }
+  std::cout << "parsed the 16-bit value " << float(parsed_16) << std::endl;
+#endif
   if (!small()) {
     printf("Bug\n");
     return EXIT_FAILURE;
