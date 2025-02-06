@@ -429,8 +429,7 @@ abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfl
 fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s
 ```
 
-See <https://github.com/lemire/simple_fastfloat_benchmark> for our benchmarking
-code.
+See the [Benchmarking](#benchmarking) Section for instructions on how to run our benchmarks.
 
 ## Video
 
@@ -485,6 +484,29 @@ if desired as described in the command line help.
 You may directly download automatically generated single-header files:
 
 <https://github.com/fastfloat/fast_float/releases/download/v7.0.0/fast_float.h>
+
+## Benchmarking
+
+The project has its own benchmarks with realistic data inputs. Under Linux or macOS,
+you can use it as follows if your system supports C++17:
+
+```
+cmake -B build -D FASTFLOAT_BENCHMARKS=ON
+cmake --build build
+./build/benchmarks/realbenchmark
+```
+
+Importantly, by default, the benchmark is built in Release mode.
+
+The instructions are similar under Windows.
+
+Under Linux and macOS, it is recommended to run the benchmarks in a privileged manner to get access
+to hardware performance counters. You may be able to do so with the `sudo` command
+in some cases:
+
+```
+sudo ./build/benchmarks/realbenchmark
+```
 
 ## Packages
 

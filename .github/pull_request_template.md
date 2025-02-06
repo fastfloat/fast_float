@@ -1,3 +1,4 @@
+We have benchmarks, please consider running them: see our README for details.
 
 Our CI tests check formatting automating. If such a test fails, please consider running the bash script:
 
