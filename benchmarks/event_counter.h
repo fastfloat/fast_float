@@ -17,7 +17,7 @@
 #include <libgen.h>
 #endif
 
-#if __APPLE__ && __aarch64__
+#if (defined(__APPLE__) && __APPLE__) && (defined(__aarch64__) && __aarch64__)
 #include "apple_arm_events.h"
 #endif
 

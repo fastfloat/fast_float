@@ -9,15 +9,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Use cmake
         run: |
-          mkdir build &&
-          cd build &&
-          CXXFLAGS=-Werror cmake -DFASTFLOAT_TEST=ON -D FASTFLOAT_BENCHMARKS=ON ..  &&
-          cmake --build .   &&
-          ctest --output-on-failure
+          set -xe
+          cmake -B build \
+             -DFASTFLOAT_TEST=ON \
+             -DFASTFLOAT_BENCHMARKS=ON \
+             -DCMAKE_CXX_FLAGS=' -Werror -Wundef '
+          cmake --build build --parallel
+          ( cd build ; ctest --output-on-failure )
       - name: Use cmake CXX23
         run: |
-          mkdir build20 &&
-          cd build20 &&
-          CXXFLAGS=-Werror cmake -DFASTFLOAT_CONSTEXPR_TESTS=ON -DFASTFLOAT_FIXEDWIDTH_TESTS=ON -DFASTFLOAT_CXX_STANDARD=23 -DFASTFLOAT_TEST=ON  ..  &&
-          cmake --build .   &&
-          ctest --output-on-failure
+          set -xe
+          cmake -B build20 \
+             -DFASTFLOAT_TEST=ON \
+             -DFASTFLOAT_CONSTEXPR_TESTS=ON \
+             -DFASTFLOAT_FIXEDWIDTH_TESTS=ON \
+             -DFASTFLOAT_CXX_STANDARD=23 \
+             -DCMAKE_CXX_FLAGS=' -Werror -Wundef '
+          cmake --build build20 --parallel
+          ( cd build20 ; ctest --output-on-failure )

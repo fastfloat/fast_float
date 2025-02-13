@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <system_error>
 #ifdef __has_include
-#if __has_include(<stdfloat>) && (__cplusplus > 202002L || _MSVC_LANG > 202002L)
+#if __has_include(<stdfloat>) && (__cplusplus > 202002L || (defined(_MSVC_LANG) && (_MSVC_LANG > 202002L)))
 #include <stdfloat>
 #endif
 #endif
