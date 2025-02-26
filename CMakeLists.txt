@@ -56,7 +56,10 @@ if(FASTFLOAT_SANITIZE)
   endif()
 endif()
 if(MSVC_VERSION GREATER 1910)
-  target_compile_options(fast_float INTERFACE /permissive-)
+  # /permissive- will only work on MSVC or clang-cl, clang will not accept it.
+  if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(fast_float INTERFACE /permissive-)
+  endif()
 endif()
 
 
