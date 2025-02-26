@@ -55,13 +55,14 @@ if(FASTFLOAT_SANITIZE)
     target_link_libraries(fast_float INTERFACE -fuse-ld=gold)
   endif()
 endif()
-if(MSVC_VERSION GREATER 1910)
-  # /permissive- will only work on MSVC or clang-cl, clang will not accept it.
-  if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(fast_float INTERFACE /permissive-)
-  endif()
-endif()
 
+include(CheckCXXCompilerFlag)
+unset(FASTFLOAT_COMPILER_SUPPORTS_PERMISSIVE)
+CHECK_CXX_COMPILER_FLAG(/permissive- FASTFLOAT_COMPILER_SUPPORTS_PERMISSIVE)
+
+if(FASTFLOAT_COMPILER_SUPPORTS_PERMISSIVE)
+  target_compile_options(fast_float INTERFACE /permissive-)
+endif()
 
 if(FASTFLOAT_INSTALL)
   include(CMakePackageConfigHelpers)
