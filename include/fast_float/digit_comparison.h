@@ -381,7 +381,11 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
   round<T>(am_b,
            [](adjusted_mantissa &a, int32_t shift) { round_down(a, shift); });
   T b;
-  to_float(false, am_b, b);
+  to_float(
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+           false,
+#endif
+           am_b, b);
   adjusted_mantissa theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
   int32_t theor_exp = theor.power2;

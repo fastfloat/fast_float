@@ -255,7 +255,9 @@ template <typename UC> struct parsed_number_string_t {
   int64_t exponent{0};
   uint64_t mantissa{0};
   UC const *lastmatch{nullptr};
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   bool negative{false};
+#endif
   bool valid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
@@ -290,6 +292,7 @@ parse_number_string(UC const *p, UC const *pend,
   answer.valid = false;
   answer.too_many_digits = false;
   // assume p < pend, so dereference without checks;
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*p == UC('-')) ||
@@ -314,6 +317,7 @@ parse_number_string(UC const *p, UC const *pend,
       }
     }
   }
+#endif
   UC const *const start_digits = p;
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
@@ -481,6 +485,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const first = p;
 
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   bool const negative = (*p == UC('-'));
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -498,6 +503,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       (uint64_t(fmt & chars_format::allow_leading_plus) && (*p == UC('+')))) {
     ++p;
   }
+#endif
 
   UC const *const start_num = p;
 
@@ -553,12 +559,17 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   // check other types overflow
   if (!std::is_same<T, uint64_t>::value) {
-    if (i > uint64_t(std::numeric_limits<T>::max()) + uint64_t(negative)) {
+    if (i > uint64_t(std::numeric_limits<T>::max())
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+        + uint64_t(negative)
+#endif
+        ) {
       answer.ec = std::errc::result_out_of_range;
       return answer;
     }
   }
 
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   if (negative) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -576,8 +587,11 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #pragma warning(pop)
 #endif
   } else {
+#endif
     value = T(i);
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   }
+#endif
 
   answer.ec = std::errc();
   return answer;

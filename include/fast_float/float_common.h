@@ -51,8 +51,10 @@ enum class chars_format : uint64_t {
   json_or_infnan = uint64_t(detail::basic_json_fmt) | fixed | scientific,
   fortran = uint64_t(detail::basic_fortran_fmt) | fixed | scientific,
   general = fixed | scientific,
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   allow_leading_plus = 1 << 7,
   skip_white_space = 1 << 8,
+#endif
 };
 
 template <typename UC> struct from_chars_result_t {
@@ -606,6 +608,8 @@ template <> inline constexpr int binary_format<float>::infinite_power() {
   return 0xFF;
 }
 
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+
 template <> inline constexpr int binary_format<double>::sign_index() {
   return 63;
 }
@@ -613,6 +617,8 @@ template <> inline constexpr int binary_format<double>::sign_index() {
 template <> inline constexpr int binary_format<float>::sign_index() {
   return 31;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<double>::max_exponent_fast_path() {
@@ -979,19 +985,27 @@ binary_format<double>::hidden_bit_mask() {
 
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-to_float(bool negative, adjusted_mantissa am, T &value) {
+to_float(
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+         bool negative,
+#endif
+         adjusted_mantissa am, T &value) {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
                                << binary_format<T>::mantissa_explicit_bits());
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   word =
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
+#endif
 #if FASTFLOAT_HAS_BIT_CAST
   value = std::bit_cast<T>(word);
 #else
   ::memcpy(&value, &word, sizeof(T));
 #endif
 }
+
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
 
 template <typename = void> struct space_lut {
   static constexpr bool value[] = {
@@ -1018,6 +1032,8 @@ template <typename UC> constexpr bool is_space(UC c) {
   return c < 256 && space_lut<>::value[uint8_t(c)];
 }
 
+#endif
+
 template <typename UC> static constexpr uint64_t int_cmp_zeros() {
   static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4),
                 "Unsupported character size");
@@ -1031,6 +1047,8 @@ template <typename UC> static constexpr uint64_t int_cmp_zeros() {
 template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
+
+#ifndef FASTFLOAT_DISALLOW_NAN
 
 template <typename UC> constexpr UC const *str_const_nan();
 
@@ -1050,6 +1068,8 @@ template <> constexpr char32_t const *str_const_nan<char32_t>() {
 template <> constexpr char8_t const *str_const_nan<char8_t>() {
   return u8"nan";
 }
+#endif
+
 #endif
 
 template <typename UC> constexpr UC const *str_const_inf();
@@ -1223,7 +1243,12 @@ operator^=(chars_format &lhs, chars_format rhs) noexcept {
 
 namespace detail {
 // adjust for deprecated feature macros
-constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
+fastfloat_really_inline constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
+#if defined(FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN) &&            \
+    (defined(FASTFLOAT_ALLOWS_LEADING_PLUS) ||                                 \
+     defined(FASTFLOAT_SKIP_WHITE_SPACE))
+#error "FASTFLOAT_ALLOWS_LEADING_PLUS and FASTFLOAT_SKIP_WHITE_SPACE require FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN to be undefined"
+#endif
   return fmt
 #ifdef FASTFLOAT_ALLOWS_LEADING_PLUS
          | chars_format::allow_leading_plus

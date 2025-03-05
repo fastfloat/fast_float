@@ -22,11 +22,16 @@ namespace detail {
 template <typename T, typename UC>
 from_chars_result_t<UC>
     FASTFLOAT_CONSTEXPR14 parse_infnan(UC const *first, UC const *last,
-                                       T &value, chars_format fmt) noexcept {
+                                       T &value
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+                                       , chars_format fmt
+#endif
+                                       ) noexcept {
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
   // assume first < last, so dereference without checks;
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   bool const minusSign = (*first == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*first == UC('-')) ||
@@ -34,11 +39,16 @@ from_chars_result_t<UC>
        (*first == UC('+')))) {
     ++first;
   }
+#endif
   if (last - first >= 3) {
+#ifndef FASTFLOAT_DISALLOW_NAN
     if (fastfloat_strncasecmp(first, str_const_nan<UC>(), 3)) {
       answer.ptr = (first += 3);
-      value = minusSign ? -std::numeric_limits<T>::quiet_NaN()
-                        : std::numeric_limits<T>::quiet_NaN();
+      value =
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+              minusSign ? -std::numeric_limits<T>::quiet_NaN() :
+#endif
+              std::numeric_limits<T>::quiet_NaN();
       // Check for possible nan(n-char-seq-opt), C++17 20.19.3.7,
       // C11 7.20.1.3.3. At least MSVC produces nan(ind) and nan(snan).
       if (first != last && *first == UC('(')) {
@@ -54,6 +64,7 @@ from_chars_result_t<UC>
       }
       return answer;
     }
+#endif
     if (fastfloat_strncasecmp(first, str_const_inf<UC>(), 3)) {
       if ((last - first >= 8) &&
           fastfloat_strncasecmp(first + 3, str_const_inf<UC>() + 3, 5)) {
@@ -61,8 +72,11 @@ from_chars_result_t<UC>
       } else {
         answer.ptr = first + 3;
       }
-      value = minusSign ? -std::numeric_limits<T>::infinity()
-                        : std::numeric_limits<T>::infinity();
+      value =
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+              minusSign ? -std::numeric_limits<T>::infinity() :
+#endif
+              std::numeric_limits<T>::infinity();
       return answer;
     }
   }
@@ -231,9 +245,11 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
         } else {
           value = value * binary_format<T>::exact_power_of_ten(pns.exponent);
         }
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
         if (pns.negative) {
           value = -value;
         }
+#endif
         return answer;
       }
     } else {
@@ -246,15 +262,21 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
 #if defined(__clang__) || defined(FASTFLOAT_32BIT)
         // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
         if (pns.mantissa == 0) {
-          value = pns.negative ? T(-0.) : T(0.);
+          value =
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+                  pns.negative ? T(-0.) :
+#endif
+                 T(0.);
           return answer;
         }
 #endif
         value = T(pns.mantissa) *
                 binary_format<T>::exact_power_of_ten(pns.exponent);
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
         if (pns.negative) {
           value = -value;
         }
+#endif
         return answer;
       }
     }
@@ -272,7 +294,11 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
   if (am.power2 < 0) {
     am = digit_comp<T>(pns, am);
   }
-  to_float(pns.negative, am, value);
+  to_float(
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+           pns.negative,
+#endif
+           am, value);
   // Test for over/underflow.
   if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
       am.power2 == binary_format<T>::infinite_power()) {
@@ -294,11 +320,13 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
 
   from_chars_result_t<UC> answer;
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   if (uint64_t(fmt & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }
+#endif
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
@@ -312,7 +340,11 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
       answer.ptr = first;
       return answer;
     } else {
-      return detail::parse_infnan(first, last, value, fmt);
+      return detail::parse_infnan(first, last, value
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
+                                                    , fmt
+#endif
+                                                    );
     }
   }
 
@@ -348,11 +380,13 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   int const base = options.base;
 
   from_chars_result_t<UC> answer;
+#ifndef FASTFLOAT_DISALLOW_ANY_LEADING_SYMBOLS_INCLUDE_SIGN
   if (uint64_t(fmt & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }
+#endif
   if (first == last || base < 2 || base > 36) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
