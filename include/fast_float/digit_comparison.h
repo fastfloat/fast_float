@@ -40,7 +40,7 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int32_t
-scientific_exponent(parsed_number_string_t<UC> &num) noexcept {
+scientific_exponent(const parsed_number_string_t<UC> &num) noexcept {
   uint64_t mantissa = num.mantissa;
   int32_t exponent = int32_t(num.exponent);
   while (mantissa >= 10000) {
@@ -258,7 +258,7 @@ round_up_bigint(bigint &big, size_t &count) noexcept {
 // parse the significant digits into a big integer
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR20 void
-parse_mantissa(bigint &result, parsed_number_string_t<UC> &num,
+parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
                size_t max_digits, size_t &digits) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
@@ -370,9 +370,9 @@ positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
 // are of the same magnitude.
 template <typename T>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
-    bigint &bigmant, adjusted_mantissa am, int32_t exponent) noexcept {
+    bigint &bigmant, const adjusted_mantissa& am, const int32_t exponent) noexcept {
   bigint &real_digits = bigmant;
-  int32_t real_exp = exponent;
+  const int32_t &real_exp = exponent;
 
   // get the value of `b`, rounded down, and get a bigint representation of b+h
   adjusted_mantissa am_b = am;
@@ -434,7 +434,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
 // of both, and use that to direct rounding.
 template <typename T, typename UC>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-digit_comp(parsed_number_string_t<UC> &num, adjusted_mantissa am) noexcept {
+digit_comp(const parsed_number_string_t<UC> &num, adjusted_mantissa& am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 

@@ -22,18 +22,26 @@ namespace detail {
 template <typename T, typename UC>
 from_chars_result_t<UC>
     FASTFLOAT_CONSTEXPR14 parse_infnan(UC const *first, UC const *last,
-                                       T &value, chars_format fmt) noexcept {
+                                       T &value, const chars_format fmt) noexcept {
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
-  // assume first < last, so dereference without checks;
-  bool const minusSign = (*first == UC('-'));
-  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*first == UC('-')) ||
-      (uint64_t(fmt & chars_format::allow_leading_plus) &&
-       (*first == UC('+')))) {
-    ++first;
+  [[assume(first < last)]]; // so dereference without checks
+  
+  bool minusSign;
+  if (!uint64_t(fmt & chars_format::disallow_leading_sign)) {
+    // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+    minusSign = (*first == UC('-'));
+    // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+    if ((*first == UC('-')) ||
+        (uint64_t(fmt & chars_format::allow_leading_plus) &&
+         (*first == UC('+')))) {
+      ++first;
+    }
+  } else {
+    minusSign = false;
   }
+
   if (last - first >= 3) {
     if (fastfloat_strncasecmp(first, str_const_nan<UC>(), 3)) {
       answer.ptr = (first += 3);
@@ -284,17 +292,15 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
-                          parse_options_t<UC> options) noexcept {
+                          const parse_options_t<UC> options) noexcept {
 
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
-
   from_chars_result_t<UC> answer;
-  if (uint64_t(fmt & chars_format::skip_white_space)) {
+  if (uint64_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
@@ -307,12 +313,12 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   parsed_number_string_t<UC> pns =
       parse_number_string<UC>(first, last, options);
   if (!pns.valid) {
-    if (uint64_t(fmt & chars_format::no_infnan)) {
+    if (uint64_t(options.format & chars_format::no_infnan)) {
       answer.ec = std::errc::invalid_argument;
       answer.ptr = first;
       return answer;
     } else {
-      return detail::parse_infnan(first, last, value, fmt);
+      return detail::parse_infnan(first, last, value, options.format);
     }
   }
 
@@ -344,16 +350,13 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
-  int const base = options.base;
-
   from_chars_result_t<UC> answer;
-  if (uint64_t(fmt & chars_format::skip_white_space)) {
+  if (uint64_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }
-  if (first == last || base < 2 || base > 36) {
+  if (first == last || options.base < 2 || options.base > 36) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
@@ -370,7 +373,7 @@ template <> struct from_chars_advanced_caller<1> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> options) noexcept {
+       const parse_options_t<UC> options) noexcept {
     return from_chars_float_advanced(first, last, value, options);
   }
 };
@@ -379,7 +382,7 @@ template <> struct from_chars_advanced_caller<2> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> options) noexcept {
+       const parse_options_t<UC> options) noexcept {
     return from_chars_int_advanced(first, last, value, options);
   }
 };
@@ -387,7 +390,7 @@ template <> struct from_chars_advanced_caller<2> {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
-                    parse_options_t<UC> options) noexcept {
+                    const parse_options_t<UC> options) noexcept {
   return from_chars_advanced_caller<
       size_t(is_supported_float_type<T>::value) +
       2 * size_t(is_supported_integer_type<T>::value)>::call(first, last, value,
