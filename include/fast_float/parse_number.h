@@ -14,6 +14,7 @@
 namespace fast_float {
 
 namespace detail {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 /**
  * Special case +inf, -inf, nan, infinity, -infinity.
  * The case comparisons could be made much faster given that we know that the
@@ -77,6 +78,7 @@ from_chars_result_t<UC>
   answer.ec = std::errc::invalid_argument;
   return answer;
 }
+#endif
 
 /**
  * Returns true if the floating-pointing rounding mode is to 'nearest'.
@@ -239,9 +241,11 @@ from_chars_advanced(const parsed_number_string_t<UC> &pns, T &value) noexcept {
         } else {
           value = value * binary_format<T>::exact_power_of_ten(pns.exponent);
         }
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
         if (pns.negative) {
           value = -value;
         }
+#endif
         return answer;
       }
     } else {
@@ -254,15 +258,21 @@ from_chars_advanced(const parsed_number_string_t<UC> &pns, T &value) noexcept {
 #if defined(__clang__) || defined(FASTFLOAT_32BIT)
         // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
         if (pns.mantissa == 0) {
-          value = pns.negative ? T(-0.) : T(0.);
+          value =
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+                  pns.negative ? T(-0.)
+#endif
+                               : T(0.);
           return answer;
         }
 #endif
         value = T(pns.mantissa) *
                 binary_format<T>::exact_power_of_ten(pns.exponent);
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
         if (pns.negative) {
           value = -value;
         }
+#endif
         return answer;
       }
     }
@@ -280,7 +290,11 @@ from_chars_advanced(const parsed_number_string_t<UC> &pns, T &value) noexcept {
   if (am.power2 < 0) {
     am = digit_comp<T>(pns, am);
   }
-  to_float(pns.negative, am, value);
+  to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+           pns.negative,
+#endif
+           am, value);
   // Test for over/underflow.
   if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
       am.power2 == binary_format<T>::infinite_power()) {
@@ -300,26 +314,32 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   from_chars_result_t<UC> answer;
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (uint64_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }
+#endif
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
   }
-  parsed_number_string_t<UC> pns =
+  parsed_number_string_t<UC> const pns =
       parse_number_string<UC>(first, last, options);
   if (!pns.valid) {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     if (uint64_t(options.format & chars_format::no_infnan)) {
+#endif
       answer.ec = std::errc::invalid_argument;
       answer.ptr = first;
       return answer;
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     } else {
       return detail::parse_infnan(first, last, value, options.format);
     }
+#endif
   }
 
   // call overload that takes parsed_number_string_t directly.
@@ -335,28 +355,29 @@ from_chars(UC const *first, UC const *last, T &value, int base) noexcept {
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  parse_options_t<UC> options;
-  options.base = base;
+  parse_options_t<UC> const options(chars_format::general, UC('.'), base);
   return from_chars_advanced(first, last, value, options);
 }
 
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_int_advanced(UC const *first, UC const *last, T &value,
-                        parse_options_t<UC> options) noexcept {
+                        const parse_options_t<UC> options) noexcept {
 
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  from_chars_result_t<UC> answer;
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (uint64_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
   }
+#endif
   if (first == last || options.base < 2 || options.base > 36) {
+    from_chars_result_t<UC> answer;
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;

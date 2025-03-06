@@ -234,6 +234,7 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
 
 enum class parse_error {
   no_error,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   // [JSON-only] The minus sign must be followed by an integer.
   missing_integer_after_sign,
   // A sign must be followed by an integer or dot.
@@ -245,6 +246,7 @@ enum class parse_error {
   // [JSON-only] If there is a decimal point, there must be digits in the
   // fractional part.
   no_digits_in_fractional_part,
+#endif
   // The mantissa must have at least one digit.
   no_digits_in_mantissa,
   // Scientific notation requires an exponential part.
@@ -255,7 +257,9 @@ template <typename UC> struct parsed_number_string_t {
   int64_t exponent{0};
   uint64_t mantissa{0};
   UC const *lastmatch{nullptr};
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
+#endif
   bool valid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
@@ -288,34 +292,32 @@ parse_number_string(UC const *p, UC const *pend,
   answer.valid = false;
   answer.too_many_digits = false;
   [[assume(p < pend)]]; // assume p < pend, so dereference without checks;
-  if (!uint64_t(options.format & chars_format::disallow_leading_sign)) {
-    answer.negative = (*p == UC('-'));
-    // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-    if ((*p == UC('-')) ||
-        (uint64_t(options.format & chars_format::allow_leading_plus) &&
-         !uint64_t(options.format & detail::basic_json_fmt) && *p == UC('+'))) {
-      ++p;
-      if (p == pend) {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  answer.negative = (*p == UC('-'));
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if ((*p == UC('-')) ||
+      (uint64_t(options.format & chars_format::allow_leading_plus) &&
+       !uint64_t(options.format & detail::basic_json_fmt) && *p == UC('+'))) {
+    ++p;
+    if (p == pend) {
+      return report_parse_error<UC>(
+          p, parse_error::missing_integer_or_dot_after_sign);
+    }
+    if (uint64_t(options.format & detail::basic_json_fmt)) {
+      if (!is_integer(*p)) { // a sign must be followed by an integer
+        return report_parse_error<UC>(p,
+                                      parse_error::missing_integer_after_sign);
+      }
+    } else {
+      if (!is_integer(*p) &&
+          (*p !=
+           options.decimal_point)) { // a sign must be followed by an integer or the dot
         return report_parse_error<UC>(
             p, parse_error::missing_integer_or_dot_after_sign);
       }
-      if (uint64_t(options.format & detail::basic_json_fmt)) {
-        if (!is_integer(*p)) { // a sign must be followed by an integer
-          return report_parse_error<UC>(p,
-                                        parse_error::missing_integer_after_sign);
-        }
-      } else {
-        if (!is_integer(*p) &&
-            (*p !=
-             options.decimal_point)) { // a sign must be followed by an integer or the dot
-          return report_parse_error<UC>(
-              p, parse_error::missing_integer_or_dot_after_sign);
-        }
-      }
     }
-  } else {
-    answer.negative = false;
   }
+#endif
 
   UC const *const start_digits = p;
 
@@ -332,6 +334,7 @@ parse_number_string(UC const *p, UC const *pend,
   UC const *const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, size_t(digit_count));
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (uint64_t(options.format & detail::basic_json_fmt)) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0) {
@@ -342,6 +345,7 @@ parse_number_string(UC const *p, UC const *pend,
                                     parse_error::leading_zeros_in_integer_part);
     }
   }
+#endif
 
   int64_t exponent = 0;
   bool const has_decimal_point = (p != pend) && (*p == options.decimal_point);
@@ -361,22 +365,28 @@ parse_number_string(UC const *p, UC const *pend,
     answer.fraction = span<UC const>(before, size_t(p - before));
     digit_count -= exponent;
   }
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (uint64_t(options.format & detail::basic_json_fmt)) {
     // at least 1 digit in fractional part
     if (has_decimal_point && exponent == 0) {
       return report_parse_error<UC>(p,
                                     parse_error::no_digits_in_fractional_part);
     }
-  } else if (digit_count ==
+  } else
+#endif
+         if (digit_count ==
              0) { // we must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   int64_t exp_number = 0; // explicit exponential part
   if ((uint64_t(options.format & chars_format::scientific) && (p != pend) &&
-       ((UC('e') == *p) || (UC('E') == *p))) ||
-      (uint64_t(options.format & detail::basic_fortran_fmt) && (p != pend) &&
+       ((UC('e') == *p) || (UC('E') == *p)))
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      || (uint64_t(options.format & detail::basic_fortran_fmt) && (p != pend) &&
        ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
-        (UC('D') == *p)))) {
+        (UC('D') == *p)))
+#endif
+      ) {
     UC const *location_of_e = p;
     if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
         (UC('D') == *p)) {
@@ -483,9 +493,8 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const first = p;
 
-  bool negative;
-  if (!uint64_t(options.fmt & chars_format::disallow_leading_sign)) {
-    negative = (*p == UC('-'));
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  bool const negative = (*p == UC('-'));
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
 #pragma warning(disable : 4127)
@@ -502,9 +511,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         (uint64_t(options.fmt & chars_format::allow_leading_plus) && (*p == UC('+')))) {
       ++p;
     }
-  } else {
-    negative = false;
-  }
+#endif
 
   UC const *const start_num = p;
 
@@ -560,12 +567,17 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   // check other types overflow
   if (!std::is_same<T, uint64_t>::value) {
-    if (i > uint64_t(std::numeric_limits<T>::max()) + uint64_t(negative)) {
+    if (i > uint64_t(std::numeric_limits<T>::max())
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+        + uint64_t(negative)
+#endif
+        ) {
       answer.ec = std::errc::result_out_of_range;
       return answer;
     }
   }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (negative) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -583,8 +595,11 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #pragma warning(pop)
 #endif
   } else {
+#endif
     value = T(i);
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   }
+#endif
 
   answer.ec = std::errc();
   return answer;

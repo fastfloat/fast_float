@@ -35,25 +35,29 @@ namespace fast_float {
 
 enum class chars_format : uint64_t;
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 namespace detail {
 constexpr chars_format basic_json_fmt = chars_format(1 << 5);
 constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
 } // namespace detail
+#endif
 
 enum class chars_format : uint64_t {
   scientific = 1 << 0,
   fixed = 1 << 2,
+  general = fixed | scientific,
   hex = 1 << 3,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   no_infnan = 1 << 4,
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
-  json = uint64_t(detail::basic_json_fmt) | fixed | scientific | no_infnan,
+  json = uint64_t(detail::basic_json_fmt) | general | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
-  json_or_infnan = uint64_t(detail::basic_json_fmt) | fixed | scientific,
-  fortran = uint64_t(detail::basic_fortran_fmt) | fixed | scientific,
-  general = fixed | scientific,
+  json_or_infnan = uint64_t(detail::basic_json_fmt) | general,
+  fortran = uint64_t(detail::basic_fortran_fmt) | general,
   allow_leading_plus = 1 << 7,
   skip_white_space = 1 << 8,
   disallow_leading_sign = 1 << 9,
+#endif
 };
 
 template <typename UC> struct from_chars_result_t {
@@ -616,6 +620,8 @@ template <> inline constexpr int binary_format<float>::infinite_power() {
   return 0xFF;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <> inline constexpr int binary_format<double>::sign_index() {
   return 63;
 }
@@ -623,6 +629,8 @@ template <> inline constexpr int binary_format<double>::sign_index() {
 template <> inline constexpr int binary_format<float>::sign_index() {
   return 31;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<double>::max_exponent_fast_path() {
@@ -750,9 +758,13 @@ inline constexpr int binary_format<std::float16_t>::infinite_power() {
   return 0x1F;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <> inline constexpr int binary_format<std::float16_t>::sign_index() {
   return 15;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<std::float16_t>::largest_power_of_ten() {
@@ -873,9 +885,13 @@ inline constexpr int binary_format<std::bfloat16_t>::infinite_power() {
   return 0xFF;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <> inline constexpr int binary_format<std::bfloat16_t>::sign_index() {
   return 15;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<std::bfloat16_t>::largest_power_of_ten() {
@@ -989,13 +1005,19 @@ binary_format<double>::hidden_bit_mask() {
 
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-to_float(const bool negative, const adjusted_mantissa am, T &value) noexcept {
+to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+         const bool negative,
+#endif
+         const adjusted_mantissa am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
                                << binary_format<T>::mantissa_explicit_bits());
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   word =
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
+#endif
 #if FASTFLOAT_HAS_BIT_CAST
   value = std::bit_cast<T>(word);
 #else
@@ -1042,6 +1064,8 @@ template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <typename UC> constexpr UC const *str_const_nan();
 
 template <> constexpr char const *str_const_nan<char>() { return "nan"; }
@@ -1082,6 +1106,8 @@ template <> constexpr char32_t const *str_const_inf<char32_t>() {
 template <> constexpr char8_t const *str_const_inf<char8_t>() {
   return u8"infinity";
 }
+#endif
+
 #endif
 
 template <typename = void> struct int_luts {
