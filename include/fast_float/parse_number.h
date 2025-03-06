@@ -260,9 +260,9 @@ from_chars_advanced(const parsed_number_string_t<UC> &pns, T &value) noexcept {
         if (pns.mantissa == 0) {
           value =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-                  pns.negative ? T(-0.)
+                  pns.negative ? T(-0.) :
 #endif
-                               : T(0.);
+                                 T(0.);
           return answer;
         }
 #endif
