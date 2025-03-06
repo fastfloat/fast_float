@@ -28,19 +28,13 @@ from_chars_result_t<UC>
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
   [[assume(first < last)]]; // so dereference without checks
-  
-  bool minusSign;
-  if (!uint64_t(fmt & chars_format::disallow_leading_sign)) {
-    // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-    minusSign = (*first == UC('-'));
-    // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-    if ((*first == UC('-')) ||
-        (uint64_t(fmt & chars_format::allow_leading_plus) &&
-         (*first == UC('+')))) {
-      ++first;
-    }
-  } else {
-    minusSign = false;
+
+  bool const minusSign = (*first == UC('-'));
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if ((*first == UC('-')) ||
+      (uint64_t(fmt & chars_format::allow_leading_plus) &&
+       (*first == UC('+')))) {
+    ++first;
   }
 
   if (last - first >= 3) {

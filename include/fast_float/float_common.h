@@ -56,7 +56,6 @@ enum class chars_format : uint64_t {
   fortran = uint64_t(detail::basic_fortran_fmt) | general,
   allow_leading_plus = 1 << 7,
   skip_white_space = 1 << 8,
-  disallow_leading_sign = 1 << 9,
 #endif
 };
 
