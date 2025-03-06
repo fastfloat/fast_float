@@ -203,7 +203,7 @@ from_chars(UC const *first, UC const *last, T &value,
  */
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
-from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
+from_chars_advanced(const parsed_number_string_t<UC> &pns, T &value) noexcept {
 
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
