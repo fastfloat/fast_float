@@ -1006,9 +1006,9 @@ template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-         const bool negative,
+         bool const negative,
 #endif
-         const adjusted_mantissa am, T &value) noexcept {
+         adjusted_mantissa const &am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)

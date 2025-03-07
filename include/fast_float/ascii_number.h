@@ -286,7 +286,7 @@ report_parse_error(UC const *p, parse_error error) noexcept {
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
-                    const parse_options_t<UC> options) noexcept {
+                    parse_options_t<UC> const &options) noexcept {
 
   parsed_number_string_t<UC> answer;
   answer.valid = false;
@@ -487,7 +487,7 @@ parse_number_string(UC const *p, UC const *pend,
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
-                 parse_options_t<UC> options) {
+                 parse_options_t<UC> const &options) noexcept {
 
   from_chars_result_t<UC> answer;
 
