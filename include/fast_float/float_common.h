@@ -68,8 +68,8 @@ using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
   FASTFLOAT_CONSTEXPR20 explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'), uint8_t b = 10) noexcept
-      : format(fmt), decimal_point(dot), base(b) {}
+                                     UC dot = UC('.'), const int b = 10) noexcept
+      : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
 
   /** Which number formats are accepted */
   const chars_format format
