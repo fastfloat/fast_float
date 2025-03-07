@@ -42,14 +42,14 @@ template <uint16_t size> struct stackvec {
   // we never need more than 150 limbs
   uint16_t length{0};
 
-  stackvec() = default;
+  FASTFLOAT_CONSTEXPR20 stackvec() noexcept = default;
   stackvec(stackvec const &) = delete;
   stackvec &operator=(stackvec const &) = delete;
   stackvec(stackvec &&) = delete;
   stackvec &operator=(stackvec &&other) = delete;
 
   // create stack vector from existing limb span.
-  FASTFLOAT_CONSTEXPR20 stackvec(limb_span s) {
+  FASTFLOAT_CONSTEXPR20 stackvec(limb_span s) noexcept {
     FASTFLOAT_ASSERT(try_extend(s));
   }
 
@@ -435,14 +435,14 @@ struct bigint : pow5_tables<> {
   // storage of the limbs, in little-endian order.
   stackvec<bigint_limbs> vec;
 
-  FASTFLOAT_CONSTEXPR20 bigint() : vec() {}
+  FASTFLOAT_CONSTEXPR20 bigint() noexcept : vec() {}
 
   bigint(bigint const &) = delete;
   bigint &operator=(bigint const &) = delete;
   bigint(bigint &&) = delete;
   bigint &operator=(bigint &&other) = delete;
 
-  FASTFLOAT_CONSTEXPR20 bigint(uint64_t value) : vec() {
+  FASTFLOAT_CONSTEXPR20 bigint(uint64_t value) noexcept : vec() {
 #ifdef FASTFLOAT_64BIT_LIMB
     vec.push_unchecked(value);
 #else
@@ -517,8 +517,8 @@ struct bigint : pow5_tables<> {
     FASTFLOAT_DEBUG_ASSERT(n != 0);
     FASTFLOAT_DEBUG_ASSERT(n < sizeof(limb) * 8);
 
-    size_t shl = n;
-    size_t shr = limb_bits - shl;
+    size_t const shl = n;
+    size_t const shr = limb_bits - shl;
     limb prev = 0;
     for (size_t index = 0; index < vec.len(); index++) {
       limb xi = vec[index];
@@ -556,8 +556,8 @@ struct bigint : pow5_tables<> {
 
   // move the limbs left by `n` bits.
   FASTFLOAT_CONSTEXPR20 bool shl(size_t n) noexcept {
-    size_t rem = n % limb_bits;
-    size_t div = n / limb_bits;
+    size_t const rem = n % limb_bits;
+    size_t const div = n / limb_bits;
     if (rem != 0) {
       FASTFLOAT_TRY(shl_bits(rem));
     }
@@ -598,8 +598,8 @@ struct bigint : pow5_tables<> {
   // multiply as if by 5 raised to a power.
   FASTFLOAT_CONSTEXPR20 bool pow5(uint32_t exp) noexcept {
     // multiply by a power of 5
-    size_t large_length = sizeof(large_power_of_5) / sizeof(limb);
-    limb_span large = limb_span(large_power_of_5, large_length);
+    size_t const large_length = sizeof(large_power_of_5) / sizeof(limb);
+    limb_span const large = limb_span(large_power_of_5, large_length);
     while (exp >= large_step) {
       FASTFLOAT_TRY(large_mul(vec, large));
       exp -= large_step;
