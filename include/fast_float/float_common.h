@@ -68,7 +68,7 @@ using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
   FASTFLOAT_CONSTEXPR20 explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'), unsigned char b = 10) noexcept
+                                     UC dot = UC('.'), uint8_t b = 10) noexcept
       : format(fmt), decimal_point(dot), base(b) {}
 
   /** Which number formats are accepted */
@@ -84,7 +84,7 @@ template <typename UC> struct parse_options_t {
   /** The character used as decimal point */
   const UC decimal_point;
   /** The base used for integers */
-  const unsigned char base;
+  const uint8_t base; /* only allowed from 2 to 36 */
 };
 
 using parse_options = parse_options_t<char>;
@@ -224,7 +224,7 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 
-fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEVAL20 bool cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
   return std::is_constant_evaluated();
 #else
@@ -1024,6 +1024,8 @@ to_float(
 #endif
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <typename = void> struct space_lut {
   static constexpr bool value[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1048,6 +1050,8 @@ template <typename T> constexpr bool space_lut<T>::value[];
 template <typename UC> constexpr bool is_space(UC c) {
   return c < 256 && space_lut<>::value[uint8_t(c)];
 }
+
+#endif
 
 template <typename UC> static constexpr uint64_t int_cmp_zeros() {
   static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4),

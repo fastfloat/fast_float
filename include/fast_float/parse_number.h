@@ -314,12 +314,15 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
       first++;
     }
   }
-#endif
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
   }
+#else
+  // We are in parser code with external loop that checks bounds.
+  [[assume((first < last))]];
+#endif
   parsed_number_string_t<UC> const pns =
       parse_number_string<UC>(first, last, options);
   if (!pns.valid) {
@@ -369,8 +372,15 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
       first++;
     }
   }
+#else
+  // We are in parser code with external loop that checks bounds.
+  [[assume((first < last))]];
 #endif
-  if (first == last || options.base < 2 || options.base > 36) {
+  if (
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      first == last
+#endif
+      options.base < 2 || options.base > 36) {
     from_chars_result_t<UC> answer;
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;

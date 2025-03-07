@@ -515,6 +515,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_num = p;
 
+  // use SIMD if possible
   while (p != pend && *p == UC('0')) {
     ++p;
   }
