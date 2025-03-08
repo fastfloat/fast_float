@@ -72,15 +72,7 @@ template <typename UC> struct parse_options_t {
       : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
 
   /** Which number formats are accepted */
-  const chars_format format
-      // adjust for deprecated feature macros
-#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS
-                            | chars_format::allow_leading_plus
-#endif
-#ifdef FASTFLOAT_SKIP_WHITE_SPACE
-                            | chars_format::skip_white_space
-#endif
-                            ;
+  const chars_format format;
   /** The character used as decimal point */
   const UC decimal_point;
   /** The base used for integers */

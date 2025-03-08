@@ -378,7 +378,7 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
 #endif
   if (
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      first == last
+      first == last ||
 #endif
       options.base < 2 || options.base > 36) {
     from_chars_result_t<UC> answer;
