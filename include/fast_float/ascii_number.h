@@ -292,9 +292,8 @@ parse_number_string(UC const *p, UC const *pend,
   // assume p < pend, so dereference without checks;
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) ||
-      (uint64_t(fmt & chars_format::allow_leading_plus) &&
-       !basic_json_fmt && *p == UC('+'))) {
+  if ((*p == UC('-')) || (uint64_t(fmt & chars_format::allow_leading_plus) &&
+                          !basic_json_fmt && *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
