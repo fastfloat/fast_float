@@ -50,7 +50,7 @@
 #if defined(__clang__)
 #define FASTFLOAT_ASSUME(expr) __builtin_assume(expr)
 #elif defined(__GNUC__) && !defined(__ICC)
-#define ASSUME(expr) __attribute__((expr)))
+#define ASSUME(expr) __attribute__((expr))
 #elif defined(_MSC_VER) || defined(__ICC)
 #define FASTFLOAT_ASSUME(expr) __assume(expr)
 #endif
