@@ -293,8 +293,7 @@ parse_number_string(UC const *p, UC const *pend,
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*p == UC('-')) ||
-      (allow_leading_plus &&
-       !basic_json_fmt && *p == UC('+'))) {
+      (allow_leading_plus && !basic_json_fmt && *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -474,7 +473,7 @@ template <bool allow_leading_plus = false, typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
                  parse_options_t<UC> options) {
-  //chars_format const fmt = detail::adjust_for_feature_macros(options.format);
+  // chars_format const fmt = detail::adjust_for_feature_macros(options.format);
   int const base = options.base;
 
   from_chars_result_t<UC> answer;
@@ -494,8 +493,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     answer.ptr = first;
     return answer;
   }
-  if ((*p == UC('-')) ||
-      (allow_leading_plus && (*p == UC('+')))) {
+  if ((*p == UC('-')) || (allow_leading_plus && (*p == UC('+')))) {
     ++p;
   }
 
