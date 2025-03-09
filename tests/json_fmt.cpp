@@ -131,7 +131,7 @@ int main() {
   for (std::size_t i = 0; i < reject.size(); ++i) {
     auto const &f = reject[i].input;
     auto const &expected_reason = reject[i].reason;
-    auto answer = fast_float::parse_number_string(
+    auto answer = fast_float::parse_number_string<true, true>(
         f.data(), f.data() + f.size(),
         fast_float::parse_options(
             fast_float::chars_format::json |

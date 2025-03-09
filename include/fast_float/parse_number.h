@@ -304,8 +304,11 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
     answer.ptr = first;
     return answer;
   }
-  parsed_number_string_t<UC> pns =
-      parse_number_string<UC>(first, last, options);
+  bool allow_leading_plus = uint64_t(fmt & chars_format::allow_leading_plus);
+  bool basic_json_fmt = uint64_t(fmt & detail::basic_json_fmt);
+  parsed_number_string_t<UC> pns = allow_leading_plus ?
+    (basic_json_fmt ? parse_number_string<true, true, UC>(first, last, options): parse_number_string<true, false, UC>(first, last, options)) :
+    (basic_json_fmt ? parse_number_string<false, true,  UC>(first, last, options): parse_number_string<false, false, UC>(first, last, options));
   if (!pns.valid) {
     if (uint64_t(fmt & chars_format::no_infnan)) {
       answer.ec = std::errc::invalid_argument;
