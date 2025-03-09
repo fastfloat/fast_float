@@ -27,6 +27,12 @@
 #define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 0
 #endif
 
+#if defined(__cpp_lib_byteswap)
+#define FASTFLOAT_HAS_BYTESWAP 1
+#else
+#define FASTFLOAT_HAS_BYTESWAP 0
+#endif
+
 // Testing for relevant C++20 constexpr library features
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST &&           \
     defined(__cpp_lib_constexpr_algorithms) &&                                 \
@@ -36,7 +42,7 @@
 #define FASTFLOAT_IS_CONSTEXPR 1
 #else
 #define FASTFLOAT_CONSTEXPR20
-#define FASTFLOAT_CONSTEVAL20
+#define FASTFLOAT_CONSTEVAL20 FASTFLOAT_CONSTEXPR14
 #define FASTFLOAT_IS_CONSTEXPR 0
 #endif
 

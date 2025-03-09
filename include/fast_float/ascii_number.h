@@ -35,12 +35,14 @@ fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
   return !(c > UC('9') || c < UC('0'));
 }
 
+#if FASTFLOAT_HAS_BYTESWAP == 0
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
   return (val & 0xFF00000000000000) >> 56 | (val & 0x00FF000000000000) >> 40 |
          (val & 0x0000FF0000000000) >> 24 | (val & 0x000000FF00000000) >> 8 |
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
 }
+#endif
 
 // Read 8 UC into a u64. Truncates UC if not char.
 template <typename UC>
@@ -58,7 +60,11 @@ read8_to_u64(UC const *chars) {
   ::memcpy(&val, chars, sizeof(uint64_t));
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
-  val = byteswap(val);
+  val = 
+#if FASTFLOAT_HAS_BYTESWAP == 1
+        std::
+#endif
+        byteswap(val);
 #endif
   return val;
 }
@@ -382,24 +388,27 @@ parse_number_string(UC const *p, UC const *pend,
   if ((uint64_t(options.format & chars_format::scientific) && (p != pend) &&
        ((UC('e') == *p) || (UC('E') == *p)))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      || (uint64_t(options.format & detail::basic_fortran_fmt) && (p != pend) &&
-       ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
-        (UC('D') == *p)))
+      || (uint64_t(options.format & detail::basic_fortran_fmt) &&
+       ((UC('+') == *p) || (UC('-') == *p) ||
+        (UC('d') == *p) || (UC('D') == *p)))
 #endif
       ) {
     UC const *location_of_e = p;
-    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
-        (UC('D') == *p)) {
+    if (((UC('e') == *p) || (UC('E') == *p))
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      || (UC('d') == *p) || (UC('D') == *p)
+#endif
+        ) {
       ++p;
     }
     bool neg_exp = false;
-    if ((p != pend) && (UC('-') == *p)) {
-      neg_exp = true;
-      ++p;
-    } else if ((p != pend) &&
-               (UC('+') ==
-                *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
-      ++p;
+    if (p != pend) {
+        if (       UC('-') == *p) {
+          neg_exp = true;
+          ++p;
+        } else if (UC('+') == *p) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+          ++p;
+        }
     }
     if ((p == pend) || !is_integer(*p)) {
       if (!uint64_t(options.format & chars_format::fixed)) {
