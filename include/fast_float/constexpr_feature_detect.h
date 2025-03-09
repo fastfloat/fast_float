@@ -8,7 +8,7 @@
 #endif
 
 // Testing for https://wg21.link/N3652, adopted in C++14
-#if __cpp_constexpr >= 201304
+#if defined(__cpp_constexpr) && __cpp_constexpr >= 201304
 #define FASTFLOAT_CONSTEXPR14 constexpr
 #else
 #define FASTFLOAT_CONSTEXPR14
@@ -29,6 +29,7 @@
 
 // Testing for relevant C++20 constexpr library features
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST &&           \
+    defined(__cpp_lib_constexpr_algorithms) &&                                 \
     __cpp_lib_constexpr_algorithms >= 201806L /*For std::copy and std::fill*/
 #define FASTFLOAT_CONSTEXPR20 constexpr
 #define FASTFLOAT_IS_CONSTEXPR 1
