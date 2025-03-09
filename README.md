@@ -429,7 +429,7 @@ abseil                                  :   430.45 MB/s (+/- 2.2 %)    20.52 Mfl
 fastfloat                               :  1042.38 MB/s (+/- 9.9 %)    49.68 Mfloat/s
 ```
 
-See the [Benchmarking](#benchmarking) Section for instructions on how to run our benchmarks.
+See the [Benchmarking](#benchmarking) section for instructions on how to run our benchmarks.
 
 ## Video
 
