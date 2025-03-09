@@ -46,4 +46,13 @@
 #define FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE 1
 #endif
 
+// For support attribute [[assume]] is declared in P1774
+#if defined(__clang__)
+#define FASTFLOAT_ASSUME(expr) __builtin_assume(expr)
+#elif defined(__GNUC__) && !defined(__ICC)
+#define ASSUME(expr) __attribute__((expr)))
+#elif defined(_MSC_VER) || defined(__ICC)
+#define FASTFLOAT_ASSUME(expr) __assume(expr)
+#endif
+
 #endif // FASTFLOAT_CONSTEXPR_FEATURE_DETECT_H

@@ -291,7 +291,7 @@ parse_number_string(UC const *p, UC const *pend,
   parsed_number_string_t<UC> answer;
   answer.valid = false;
   answer.too_many_digits = false;
-  [[assume(p < pend)]]; // assume p < pend, so dereference without checks;
+  FASTFLOAT_ASSUME(p < pend); // assume p < pend, so dereference without checks;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here

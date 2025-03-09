@@ -342,7 +342,7 @@ leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
 leading_zeroes(uint64_t input_num) noexcept {
   assert(input_num > 0);
-  [[assume(input_num > 0)]];
+  FASTFLOAT_ASSUME(input_num > 0);
   if (cpp20_and_in_constexpr()) {
     return leading_zeroes_generic(input_num);
   }

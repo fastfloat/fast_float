@@ -27,7 +27,7 @@ from_chars_result_t<UC>
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
   answer.ec = std::errc(); // be optimistic
-  [[assume(first < last)]]; // so dereference without checks
+  FASTFLOAT_ASSUME(first < last); // so dereference without checks
 
   bool const minusSign = (*first == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
@@ -321,7 +321,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   }
 #else
   // We are in parser code with external loop that checks bounds.
-  [[assume((first < last))]];
+  FASTFLOAT_ASSUME(first < last);
 #endif
   parsed_number_string_t<UC> const pns =
       parse_number_string<UC>(first, last, options);
@@ -374,7 +374,7 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   }
 #else
   // We are in parser code with external loop that checks bounds.
-  [[assume((first < last))]];
+  FASTFLOAT_ASSUME(first < last);
 #endif
   if (
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
