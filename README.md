@@ -508,6 +508,14 @@ in some cases:
 sudo ./build/benchmarks/realbenchmark
 ```
 
+If you have a text file containing one number per line (`myfile.txt`), you can run a benchmark over it like so:
+```
+cmake -B build -D FASTFLOAT_BENCHMARKS=ON
+cmake --build build
+./build/benchmarks/realbenchmark myfile.txt
+```
+
+
 ## Packages
 
 * The fast_float library is part of the [Conan package
