@@ -53,12 +53,16 @@
 #endif
 
 // For support attribute [[assume]] is declared in P1774
-#if defined(__clang__)
+#if defined(__clang__) // needs testing
 #define FASTFLOAT_ASSUME(expr) __builtin_assume(expr)
-#elif defined(__GNUC__) && !defined(__ICC)
-#define ASSUME(expr) __attribute__((expr))
-#elif defined(_MSC_VER) || defined(__ICC)
+#elif defined(__GNUC__) && !defined(__ICC) // needs testing
+#define FASTFLOAT_ASSUME(expr) __attribute__((expr))
+#elif defined(__ICC) // needs testing
 #define FASTFLOAT_ASSUME(expr) __assume(expr)
+#elif defined(_MSC_VER)
+/* currently disable, because MSVC is generated slower code when enabled,
+it's probably reason why MSVC doesnt have [[assume]] */
+#define FASTFLOAT_ASSUME(expr) /*__assume(expr)*/
 #endif
 
 #endif // FASTFLOAT_CONSTEXPR_FEATURE_DETECT_H
