@@ -304,7 +304,8 @@ parse_number_string(UC const *p, UC const *pend,
         return report_parse_error<UC>(p,
                                       parse_error::missing_integer_after_sign);
       }
-    } else {
+    }
+    else {
       if (!is_integer(*p) &&
           (*p !=
            decimal_point)) { // a sign must be followed by an integer or the dot
@@ -363,8 +364,8 @@ parse_number_string(UC const *p, UC const *pend,
       return report_parse_error<UC>(p,
                                     parse_error::no_digits_in_fractional_part);
     }
-  } else if (digit_count ==
-             0) { // we must have encountered at least one integer!
+  }
+  else if (digit_count == 0) { // we must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   int64_t exp_number = 0; // explicit exponential part
