@@ -1,6 +1,6 @@
+#include "event_counter.h"
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
-#include "event_counter.h"
 #endif
 #include <algorithm>
 #include "fast_float/fast_float.h"
