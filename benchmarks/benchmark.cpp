@@ -1,3 +1,5 @@
+//#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
 #endif
@@ -21,9 +23,11 @@
 
 #include "fast_float/fast_float.h"
 
+#ifdef USING_COUNTERS
 event_collector collector{};
-
+#else
 std::chrono::high_resolution_clock::time_point t1, t2;
+#endif
 
 template <typename CharT, typename Value>
 Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
@@ -267,6 +271,7 @@ void fileload(std::string filename) {
 }
 
 int main(int argc, char **argv) {
+#ifdef USING_COUNTERS
   if (collector.has_events()) {
     std::cout << "# Using hardware counters" << std::endl;
   } else {
@@ -276,6 +281,8 @@ int main(int argc, char **argv) {
               << std::endl;
 #endif
   }
+#endif
+
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
 }
