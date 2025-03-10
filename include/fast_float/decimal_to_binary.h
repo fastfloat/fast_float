@@ -19,7 +19,7 @@ namespace fast_float {
 //
 template <int bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
-compute_product_approximation(int64_t q, uint64_t w) {
+compute_product_approximation(int64_t q, uint64_t w) noexcept {
   int const index = 2 * int(q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact
   // because The line value128 firstproduct = full_multiplication(w,
@@ -103,15 +103,15 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_float(int64_t q, uint64_t w) noexcept {
   adjusted_mantissa answer;
   if ((w == 0) || (q < binary::smallest_power_of_ten())) {
-    answer.power2 = 0;
-    answer.mantissa = 0;
+    // answer.power2 = 0; already set
+    // answer.mantissa = 0; already set
     // result should be zero
     return answer;
   }
   if (q > binary::largest_power_of_ten()) {
     // we want to get infinity:
     answer.power2 = binary::infinite_power();
-    answer.mantissa = 0;
+    // answer.mantissa = 0; already set
     return answer;
   }
   // At this point in time q is in [powers::smallest_power_of_five,
