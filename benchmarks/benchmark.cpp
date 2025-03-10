@@ -1,4 +1,4 @@
-//#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
