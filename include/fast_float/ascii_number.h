@@ -513,7 +513,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       return answer;
     }
     if ((*p == UC('-')) ||
-        (uint64_t(options.fmt & chars_format::allow_leading_plus) && (*p == UC('+')))) {
+        (uint64_t(options.format & chars_format::allow_leading_plus) && (*p == UC('+')))) {
       ++p;
     }
 #endif
