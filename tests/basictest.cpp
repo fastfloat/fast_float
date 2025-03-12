@@ -644,19 +644,20 @@ TEST_CASE("check_behavior") {
 
 TEST_CASE("decimal_point_parsing") {
   double result;
-  fast_float::parse_options options{};
   {
     std::string const input = "1,25";
     auto answer = fast_float::from_chars_advanced(
-        input.data(), input.data() + input.size(), result, options);
+        input.data(), input.data() + input.size(), result,
+        fast_float::parse_options{});
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
     CHECK_MESSAGE(answer.ptr == input.data() + 1,
                   "Parsing should have stopped at comma");
     CHECK_EQ(result, 1.0);
 
-    options.decimal_point = ',';
     answer = fast_float::from_chars_advanced(
-        input.data(), input.data() + input.size(), result, options);
+        input.data(), input.data() + input.size(), result,
+        fast_float::parse_options(fast_float::chars_format::general, ',', 10)
+        );
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
     CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
                   "Parsing should have stopped at end");
@@ -665,15 +666,18 @@ TEST_CASE("decimal_point_parsing") {
   {
     std::string const input = "1.25";
     auto answer = fast_float::from_chars_advanced(
-        input.data(), input.data() + input.size(), result, options);
+        input.data(), input.data() + input.size(), result,
+        fast_float::parse_options(fast_float::chars_format::general, ',', 10)
+        );
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
     CHECK_MESSAGE(answer.ptr == input.data() + 1,
                   "Parsing should have stopped at dot");
     CHECK_EQ(result, 1.0);
 
-    options.decimal_point = '.';
     answer = fast_float::from_chars_advanced(
-        input.data(), input.data() + input.size(), result, options);
+        input.data(), input.data() + input.size(), result,
+        fast_float::parse_options{}
+        );
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
     CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
                   "Parsing should have stopped at end");
