@@ -1323,7 +1323,8 @@ TEST_CASE("double.general") {
 
 TEST_CASE("double.decimal_point") {
   constexpr auto options = [] {
-    return fast_float::parse_options(fast_float::chars_format::general, ',', 10);
+    return fast_float::parse_options(fast_float::chars_format::general, ',',
+                                     10);
   }();
 
   // infinities
@@ -1640,7 +1641,8 @@ TEST_CASE("float.general") {
 
 TEST_CASE("float.decimal_point") {
   constexpr auto options = [] {
-    return fast_float::parse_options(fast_float::chars_format::general, ',', 10);
+    return fast_float::parse_options(fast_float::chars_format::general, ',',
+                                     10);
   }();
 
   // infinity
