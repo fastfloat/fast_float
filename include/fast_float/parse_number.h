@@ -23,10 +23,11 @@ namespace detail {
 template <typename T, typename UC>
 from_chars_result_t<UC>
     FASTFLOAT_CONSTEXPR14 parse_infnan(UC const *first, UC const *last,
-                                       T &value, const chars_format fmt) noexcept {
+                                       T &value,
+                                       const chars_format fmt) noexcept {
   from_chars_result_t<UC> answer{};
   answer.ptr = first;
-  answer.ec = std::errc(); // be optimistic
+  answer.ec = std::errc();        // be optimistic
   FASTFLOAT_ASSUME(first < last); // so dereference without checks
 
   bool const minusSign = (*first == UC('-'));
@@ -254,9 +255,9 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
         if (pns.mantissa == 0) {
           value =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-                  pns.negative ? T(-0.) :
+              pns.negative ? T(-0.) :
 #endif
-                                 T(0.);
+                           T(0.);
           return answer;
         }
 #endif
@@ -286,9 +287,9 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
   }
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-           pns.negative,
+      pns.negative,
 #endif
-           am, value);
+      am, value);
   // Test for over/underflow.
   if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
       am.power2 == binary_format<T>::infinite_power()) {
@@ -329,7 +330,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
           ? parse_number_string<true, UC>(first, last, options)
           :
 #endif
-            parse_number_string<false, UC>(first, last, options);
+          parse_number_string<false, UC>(first, last, options);
   if (!pns.valid) {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     if (uint64_t(options.format & chars_format::no_infnan)) {
