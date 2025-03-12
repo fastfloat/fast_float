@@ -187,7 +187,7 @@ template <> struct from_chars_caller<std::float64_t> {
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
-           chars_format fmt /*= chars_format::general*/) noexcept {
+           chars_format const fmt /*= chars_format::general*/) noexcept {
   return from_chars_caller<T>::call(first, last, value,
                                     parse_options_t<UC>(fmt));
 }
@@ -350,7 +350,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
-from_chars(UC const *first, UC const *last, T &value, int base) noexcept {
+from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
 
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
