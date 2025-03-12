@@ -62,7 +62,7 @@
 #if defined(__clang__) // needs testing
 #define FASTFLOAT_ASSUME(expr) __builtin_assume(expr)
 #elif defined(__GNUC__) && !defined(__ICC) // needs testing
-#define FASTFLOAT_ASSUME(expr) __attribute__((expr))
+#define FASTFLOAT_ASSUME(expr) if (expr) {} else { __builtin_unreachable(); }
 #elif defined(__ICC) // needs testing
 #define FASTFLOAT_ASSUME(expr) __assume(expr)
 #elif defined(_MSC_VER)
