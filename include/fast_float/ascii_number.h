@@ -342,6 +342,7 @@ parse_number_string(UC const *p, UC const *pend,
   UC const *const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, size_t(digit_count));
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0) {
@@ -352,6 +353,7 @@ parse_number_string(UC const *p, UC const *pend,
                                     parse_error::leading_zeros_in_integer_part);
     }
   }
+#endif
 
   int64_t exponent = 0;
   bool const has_decimal_point = (p != pend) && (*p == options.decimal_point);
@@ -371,6 +373,7 @@ parse_number_string(UC const *p, UC const *pend,
     answer.fraction = span<UC const>(before, size_t(p - before));
     digit_count -= exponent;
   }
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in fractional part
     if (has_decimal_point && exponent == 0) {
@@ -378,6 +381,7 @@ parse_number_string(UC const *p, UC const *pend,
                                     parse_error::no_digits_in_fractional_part);
     }
   }
+#endif
   else if (digit_count == 0) { // we must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
