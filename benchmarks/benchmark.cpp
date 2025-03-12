@@ -34,7 +34,7 @@ Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
 #ifdef USING_COUNTERS
                         std::vector<event_count> &aggregate
 #else
-                        std::chrono::nanoseconds& time
+                        std::chrono::nanoseconds &time
 #endif
 ) {
   Value answer = 0;
@@ -55,7 +55,7 @@ Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
     t2 = std::chrono::high_resolution_clock::now();
     time += t2 - t1;
 #endif
-    
+
     if (ec != std::errc{}) {
       throw std::runtime_error("bug in findmax_fastfloat");
     }
@@ -71,7 +71,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
            size_t repeat) {
   std::vector<event_count> aggregate;
   bool printed_bug = false;
-  for (size_t i = 0; i < repeat; i++) {  
+  for (size_t i = 0; i < repeat; i++) {
     double ts = function(lines, aggregate);
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
@@ -155,7 +155,8 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
       printf("bug\n");
       printed_bug = true;
     }
-    double dif = std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
+    double dif =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
     average += dif;
     min_value = min_value < dif ? min_value : dif;
   }
@@ -206,8 +207,9 @@ void process(std::vector<std::string> &lines, size_t volume) {
   volume = 2 * volume;
   volumeMB = volume / (1024. * 1024.);
   std::cout << "UTF-16 volume = " << volumeMB << " MB " << std::endl;
-  pretty_print(volume, lines.size(), "fastfloat (64)",
-               time_it_ns(lines16, findmax_fastfloat<char16_t, double>, repeat));
+  pretty_print(
+      volume, lines.size(), "fastfloat (64)",
+      time_it_ns(lines16, findmax_fastfloat<char16_t, double>, repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
                time_it_ns(lines16, findmax_fastfloat<char16_t, float>, repeat));
 }
@@ -229,29 +231,23 @@ void fileload(std::string filename) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     /* This code is a simple parser emulator */
     for (size_t n = 0; n < line.size(); ++n) {
-      if ((line[n] >= '0' && line[n] <= '9'))
-      {
+      if ((line[n] >= '0' && line[n] <= '9')) {
         /* in the real parser we don't check anything else
          and call the from_chars function immediately */
         const auto s = n;
         for (++n; n < line.size() &&
-                  ((line[n] >= '0' && line[n] <= '9') ||
-                    line[n] == 'e' || line[n] == 'E' ||
-                    line[n] == '.' ||
-                    line[n] == '-' || line[n] == '+'
-                    /* last line for exponent sign*/
-                   );
-           ++n)
-        {
-        
+                  ((line[n] >= '0' && line[n] <= '9') || line[n] == 'e' ||
+                   line[n] == 'E' || line[n] == '.' || line[n] == '-' ||
+                   line[n] == '+'
+                   /* last line for exponent sign*/
+                  );
+             ++n) {
         }
         /*~ in the real parser we don't check anything else
            and call the from_chars function immediately */
 
         volume += lines.emplace_back(line.substr(s, n)).size();
-      }
-      else
-      {
+      } else {
         /* for the test we simplify skipped all other symbols,
            in real application this should be a full parser,
            that parse also any mathematical operations like + and -
@@ -261,7 +257,7 @@ void fileload(std::string filename) {
         continue;
       }
     }
-  // in the real parser this part of code should return end token
+    // in the real parser this part of code should return end token
 #else
     volume += lines.emplace_back(line).size();
 #endif

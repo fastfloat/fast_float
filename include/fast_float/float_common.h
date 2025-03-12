@@ -67,8 +67,9 @@ template <typename UC> struct from_chars_result_t {
 using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
-  FASTFLOAT_CONSTEXPR20 explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'), const int b = 10) noexcept
+  FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
+      chars_format fmt = chars_format::general, UC dot = UC('.'),
+      const int b = 10) noexcept
       : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
 
   /** Which number formats are accepted */
@@ -216,7 +217,8 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 
-fastfloat_really_inline FASTFLOAT_CONSTEVAL20 bool cpp20_and_in_constexpr() noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEVAL20 bool
+cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
   return std::is_constant_evaluated();
 #else
@@ -304,7 +306,8 @@ struct value128 {
   uint64_t low;
   uint64_t high;
 
-  constexpr value128(uint64_t _low, uint64_t _high) noexcept : low(_low), high(_high) {}
+  constexpr value128(uint64_t _low, uint64_t _high) noexcept
+      : low(_low), high(_high) {}
 
   constexpr value128() noexcept : low(0), high(0) {}
 };
@@ -362,7 +365,8 @@ leading_zeroes(uint64_t input_num) noexcept {
 }
 
 // slow emulation routine for 32-bit
-fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) noexcept {
+fastfloat_really_inline constexpr uint64_t emulu(uint32_t x,
+                                                 uint32_t y) noexcept {
   return x * (uint64_t)y;
 }
 
@@ -995,12 +999,11 @@ binary_format<double>::hidden_bit_mask() {
 }
 
 template <typename T>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-to_float(
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-         bool const negative,
+    bool const negative,
 #endif
-         adjusted_mantissa const &am, T &value) noexcept {
+    adjusted_mantissa const &am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
