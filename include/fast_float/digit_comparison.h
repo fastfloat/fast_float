@@ -369,8 +369,9 @@ positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
 // we then need to scale by `2^(f- e)`, and then the two significant digits
 // are of the same magnitude.
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
-    bigint &bigmant, const adjusted_mantissa& am, const int32_t exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
+negative_digit_comp(bigint &bigmant, const adjusted_mantissa &am,
+                    const int32_t exponent) noexcept {
   bigint &real_digits = bigmant;
   const int32_t &real_exp = exponent;
 
@@ -383,9 +384,9 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
   T b;
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-          false,
+      false,
 #endif
-          am_b, b);
+      am_b, b);
   adjusted_mantissa theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
   int32_t theor_exp = theor.power2;
@@ -437,8 +438,8 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
 // the actual digits. we then compare the big integer representations
 // of both, and use that to direct rounding.
 template <typename T, typename UC>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-digit_comp(const parsed_number_string_t<UC> &num, adjusted_mantissa& am) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
+    const parsed_number_string_t<UC> &num, adjusted_mantissa &am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
