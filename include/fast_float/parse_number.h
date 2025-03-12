@@ -79,7 +79,7 @@ from_chars_result_t<UC>
  * It is the default on most system. This function is meant to be inexpensive.
  * Credit : @mwalcott3
  */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool rounds_to_nearest() noexcept {
+fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // https://lemire.me/blog/2020/06/26/gcc-not-nearest/
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return false;
@@ -225,7 +225,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
-    FASTFLOAT_IF_CONSTEXPR17 (!cpp20_and_in_constexpr() && detail::rounds_to_nearest()) {
+    if (!cpp20_and_in_constexpr() && detail::rounds_to_nearest()) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
       if (pns.mantissa <= binary_format<T>::max_mantissa_fast_path()) {
