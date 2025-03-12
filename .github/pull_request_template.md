@@ -1,4 +1,5 @@
-We have benchmarks, please consider running them: see our README for details.
+We have benchmarks, please consider running them: [see our README for details](https://github.com/fastfloat/fast_float/blob/main/README.md#benchmarking). We expect you to run our benchmarks if you make claims with respect to the performance.
+
 
 Our CI tests check formatting automating. If such a test fails, please consider running the bash script:
 
