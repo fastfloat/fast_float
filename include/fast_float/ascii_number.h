@@ -240,11 +240,15 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
 
 enum class parse_error {
   no_error,
+  // A sign must be followed by an integer or dot.
+  missing_integer_or_dot_after_sign,
+  // The mantissa must have at least one digit.
+  no_digits_in_mantissa,
+  // Scientific notation requires an exponential part.
+  missing_exponential_part,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   // [JSON-only] The minus sign must be followed by an integer.
   missing_integer_after_sign,
-  // A sign must be followed by an integer or dot.
-  missing_integer_or_dot_after_sign,
   // [JSON-only] The integer part must not have leading zeros.
   leading_zeros_in_integer_part,
   // [JSON-only] The integer part must have at least one digit.
@@ -253,10 +257,6 @@ enum class parse_error {
   // fractional part.
   no_digits_in_fractional_part,
 #endif
-  // The mantissa must have at least one digit.
-  no_digits_in_mantissa,
-  // Scientific notation requires an exponential part.
-  missing_exponential_part,
 };
 
 template <typename UC> struct parsed_number_string_t {
@@ -301,15 +301,15 @@ parse_number_string(UC const *p, UC const *pend,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) ||
-      (uint64_t(options.format & chars_format::allow_leading_plus) &&
-       !uint64_t(options.format & detail::basic_json_fmt) && *p == UC('+'))) {
+  if (*p == UC('-') ||
+    (uint64_t(options.format & chars_format::allow_leading_plus) &&
+    *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
-          p, parse_error::missing_integer_or_dot_after_sign);
+        p, parse_error::missing_integer_or_dot_after_sign);
     }
-    if (uint64_t(options.format & detail::basic_json_fmt)) {
+    FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
       if (!is_integer(*p)) { // a sign must be followed by an integer
         return report_parse_error<UC>(p,
                                       parse_error::missing_integer_after_sign);

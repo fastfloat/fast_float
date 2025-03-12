@@ -225,7 +225,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
-    if (!cpp20_and_in_constexpr() && detail::rounds_to_nearest()) {
+    FASTFLOAT_IF_CONSTEXPR17 (!cpp20_and_in_constexpr() && detail::rounds_to_nearest()) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
       if (pns.mantissa <= binary_format<T>::max_mantissa_fast_path()) {
