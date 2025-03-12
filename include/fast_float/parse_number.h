@@ -324,7 +324,12 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   FASTFLOAT_ASSUME(first < last);
 #endif
   parsed_number_string_t<UC> const pns =
-      parse_number_string<UC>(first, last, options);
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      uint64_t(fmt & detail::basic_json_fmt)
+          ? parse_number_string<true, UC>(first, last, options)
+          :
+#endif
+            parse_number_string<false, UC>(first, last, options);
   if (!pns.valid) {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     if (uint64_t(options.format & chars_format::no_infnan)) {

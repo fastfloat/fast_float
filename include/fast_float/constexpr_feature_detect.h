@@ -31,6 +31,11 @@
 #define FASTFLOAT_HAS_BYTESWAP 1
 #else
 #define FASTFLOAT_HAS_BYTESWAP 0
+
+#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+#define FASTFLOAT_IF_CONSTEXPR17(x) if constexpr (x)
+#else
+#define FASTFLOAT_IF_CONSTEXPR17(x) if (x)
 #endif
 
 // Testing for relevant C++20 constexpr library features

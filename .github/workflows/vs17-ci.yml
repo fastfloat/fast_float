@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
       - name: configure
         run: |
-          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_BENCHMARKS=ON  -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination
       - name: build
         run: |
           cmake --build build --verbose --config ${{matrix.cfg}} --parallel

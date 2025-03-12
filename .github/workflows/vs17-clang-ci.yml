@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure
         run: |
-          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -T ClangCL -DFASTFLOAT_TEST=ON
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_BENCHMARKS=ON -T ClangCL -DFASTFLOAT_TEST=ON
       - name: Build
         run: cmake --build build --config ${{matrix.cfg}} --parallel --verbose
       - name: Run basic tests

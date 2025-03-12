@@ -282,7 +282,11 @@ int main(int argc, char **argv) {
 #endif
   }
 #endif
-
+  if (argc > 1) {
+    fileload(argv[1]);
+    return EXIT_SUCCESS;
+  }
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
+  return EXIT_SUCCESS;
 }
