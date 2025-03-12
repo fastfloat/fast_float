@@ -79,7 +79,7 @@ from_chars_result_t<UC>
  * It is the default on most system. This function is meant to be inexpensive.
  * Credit : @mwalcott3
  */
-fastfloat_really_inline bool rounds_to_nearest() noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool rounds_to_nearest() noexcept {
   // https://lemire.me/blog/2020/06/26/gcc-not-nearest/
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return false;
