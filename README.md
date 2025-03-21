@@ -376,7 +376,10 @@ The fast_float library is part of:
 The fastfloat algorithm is part of the [LLVM standard
 libraries](https://github.com/llvm/llvm-project/commit/87c016078ad72c46505461e4ff8bfa04819fe7ba).
 There is a [derived implementation part of
-AdaCore](https://github.com/AdaCore/VSS).
+AdaCore](https://github.com/AdaCore/VSS). The [SerenityOS operating
+system](https://github.com/SerenityOS/serenity/commit/53b7f5e6a11e663c83df8030c3171c5945cb75ec)
+has a derived implementation that is inherited by the [Ladybird
+Browser](https://github.com/LadybirdBrowser/ladybird).
 
 The fast_float library provides a performance similar to that of the
 [fast_double_parser](https://github.com/lemire/fast_double_parser) library but
