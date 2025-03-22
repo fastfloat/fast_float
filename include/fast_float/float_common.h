@@ -35,24 +35,28 @@ namespace fast_float {
 
 enum class chars_format : uint64_t;
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 namespace detail {
 constexpr chars_format basic_json_fmt = chars_format(1 << 5);
 constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
 } // namespace detail
+#endif
 
 enum class chars_format : uint64_t {
   scientific = 1 << 0,
   fixed = 1 << 2,
+  general = fixed | scientific,
   hex = 1 << 3,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   no_infnan = 1 << 4,
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
-  json = uint64_t(detail::basic_json_fmt) | fixed | scientific | no_infnan,
+  json = uint64_t(detail::basic_json_fmt) | general | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
-  json_or_infnan = uint64_t(detail::basic_json_fmt) | fixed | scientific,
-  fortran = uint64_t(detail::basic_fortran_fmt) | fixed | scientific,
-  general = fixed | scientific,
+  json_or_infnan = uint64_t(detail::basic_json_fmt) | general,
+  fortran = uint64_t(detail::basic_fortran_fmt) | general,
   allow_leading_plus = 1 << 7,
   skip_white_space = 1 << 8,
+#endif
 };
 
 template <typename UC> struct from_chars_result_t {
@@ -63,16 +67,17 @@ template <typename UC> struct from_chars_result_t {
 using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
-  constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'), int b = 10)
-      : format(fmt), decimal_point(dot), base(b) {}
+  FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
+      chars_format fmt = chars_format::general, UC dot = UC('.'),
+      const int b = 10) noexcept
+      : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
 
   /** Which number formats are accepted */
-  chars_format format;
+  const chars_format format;
   /** The character used as decimal point */
-  UC decimal_point;
+  const UC decimal_point;
   /** The base used for integers */
-  int base;
+  const uint8_t base; /* only allowed from 2 to 36 */
 };
 
 using parse_options = parse_options_t<char>;
@@ -212,7 +217,8 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 
-fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
+fastfloat_really_inline FASTFLOAT_CONSTEVAL20 bool
+cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
   return std::is_constant_evaluated();
 #else
@@ -265,7 +271,7 @@ struct is_supported_char_type
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
-                      size_t length) {
+                      size_t length) noexcept {
   for (size_t i = 0; i < length; ++i) {
     UC const actual = actual_mixedcase[i];
     if ((actual < 256 ? actual | 32 : actual) != expected_lowercase[i]) {
@@ -300,9 +306,10 @@ struct value128 {
   uint64_t low;
   uint64_t high;
 
-  constexpr value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
+  constexpr value128(uint64_t _low, uint64_t _high) noexcept
+      : low(_low), high(_high) {}
 
-  constexpr value128() : low(0), high(0) {}
+  constexpr value128() noexcept : low(0), high(0) {}
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes */
@@ -336,8 +343,9 @@ leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
 
 /* result might be undefined when input_num is zero */
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
-leading_zeroes(uint64_t input_num) {
+leading_zeroes(uint64_t input_num) noexcept {
   assert(input_num > 0);
+  FASTFLOAT_ASSUME(input_num > 0);
   if (cpp20_and_in_constexpr()) {
     return leading_zeroes_generic(input_num);
   }
@@ -357,12 +365,13 @@ leading_zeroes(uint64_t input_num) {
 }
 
 // slow emulation routine for 32-bit
-fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) {
+fastfloat_really_inline constexpr uint64_t emulu(uint32_t x,
+                                                 uint32_t y) noexcept {
   return x * (uint64_t)y;
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
-umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) {
+umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
   uint64_t ad = emulu((uint32_t)(ab >> 32), (uint32_t)cd);
   uint64_t bd = emulu((uint32_t)ab, (uint32_t)cd);
   uint64_t adbc = ad + emulu((uint32_t)ab, (uint32_t)(cd >> 32));
@@ -388,7 +397,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t _umul128(uint64_t ab,
 
 // compute 64-bit a*b
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
-full_multiplication(uint64_t a, uint64_t b) {
+full_multiplication(uint64_t a, uint64_t b) noexcept {
   if (cpp20_and_in_constexpr()) {
     value128 answer;
     answer.low = umul128_generic(a, b, &answer.high);
@@ -416,13 +425,13 @@ full_multiplication(uint64_t a, uint64_t b) {
 struct adjusted_mantissa {
   uint64_t mantissa{0};
   int32_t power2{0}; // a negative value indicates an invalid result
-  adjusted_mantissa() = default;
+  adjusted_mantissa() noexcept = default;
 
-  constexpr bool operator==(adjusted_mantissa const &o) const {
+  constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;
   }
 
-  constexpr bool operator!=(adjusted_mantissa const &o) const {
+  constexpr bool operator!=(adjusted_mantissa const &o) const noexcept {
     return mantissa != o.mantissa || power2 != o.power2;
   }
 };
@@ -606,6 +615,8 @@ template <> inline constexpr int binary_format<float>::infinite_power() {
   return 0xFF;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <> inline constexpr int binary_format<double>::sign_index() {
   return 63;
 }
@@ -613,6 +624,8 @@ template <> inline constexpr int binary_format<double>::sign_index() {
 template <> inline constexpr int binary_format<float>::sign_index() {
   return 31;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<double>::max_exponent_fast_path() {
@@ -740,9 +753,13 @@ inline constexpr int binary_format<std::float16_t>::infinite_power() {
   return 0x1F;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <> inline constexpr int binary_format<std::float16_t>::sign_index() {
   return 15;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<std::float16_t>::largest_power_of_ten() {
@@ -863,9 +880,13 @@ inline constexpr int binary_format<std::bfloat16_t>::infinite_power() {
   return 0xFF;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <> inline constexpr int binary_format<std::bfloat16_t>::sign_index() {
   return 15;
 }
+
+#endif
 
 template <>
 inline constexpr int binary_format<std::bfloat16_t>::largest_power_of_ten() {
@@ -978,20 +999,27 @@ binary_format<double>::hidden_bit_mask() {
 }
 
 template <typename T>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-to_float(bool negative, adjusted_mantissa am, T &value) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    bool const negative,
+#endif
+    adjusted_mantissa const &am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
                                << binary_format<T>::mantissa_explicit_bits());
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   word =
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
+#endif
 #if FASTFLOAT_HAS_BIT_CAST
   value = std::bit_cast<T>(word);
 #else
   ::memcpy(&value, &word, sizeof(T));
 #endif
 }
+
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <typename = void> struct space_lut {
   static constexpr bool value[] = {
@@ -1018,6 +1046,8 @@ template <typename UC> constexpr bool is_space(UC c) {
   return c < 256 && space_lut<>::value[uint8_t(c)];
 }
 
+#endif
+
 template <typename UC> static constexpr uint64_t int_cmp_zeros() {
   static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4),
                 "Unsupported character size");
@@ -1031,6 +1061,8 @@ template <typename UC> static constexpr uint64_t int_cmp_zeros() {
 template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
+
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <typename UC> constexpr UC const *str_const_nan();
 
@@ -1072,6 +1104,8 @@ template <> constexpr char32_t const *str_const_inf<char32_t>() {
 template <> constexpr char8_t const *str_const_inf<char8_t>() {
   return u8"infinity";
 }
+#endif
+
 #endif
 
 template <typename = void> struct int_luts {
@@ -1220,20 +1254,6 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR14 chars_format &
 operator^=(chars_format &lhs, chars_format rhs) noexcept {
   return lhs = (lhs ^ rhs);
 }
-
-namespace detail {
-// adjust for deprecated feature macros
-constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
-  return fmt
-#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS
-         | chars_format::allow_leading_plus
-#endif
-#ifdef FASTFLOAT_SKIP_WHITE_SPACE
-         | chars_format::skip_white_space
-#endif
-      ;
-}
-} // namespace detail
 
 } // namespace fast_float
 

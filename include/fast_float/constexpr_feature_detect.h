@@ -27,6 +27,12 @@
 #define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 0
 #endif
 
+#if defined(__cpp_lib_byteswap)
+#define FASTFLOAT_HAS_BYTESWAP 1
+#else
+#define FASTFLOAT_HAS_BYTESWAP 0
+#endif
+
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
 #define FASTFLOAT_IF_CONSTEXPR17(x) if constexpr (x)
 #else
@@ -38,9 +44,11 @@
     defined(__cpp_lib_constexpr_algorithms) &&                                 \
     __cpp_lib_constexpr_algorithms >= 201806L /*For std::copy and std::fill*/
 #define FASTFLOAT_CONSTEXPR20 constexpr
+#define FASTFLOAT_CONSTEVAL20 consteval
 #define FASTFLOAT_IS_CONSTEXPR 1
 #else
 #define FASTFLOAT_CONSTEXPR20
+#define FASTFLOAT_CONSTEVAL20 FASTFLOAT_CONSTEXPR14
 #define FASTFLOAT_IS_CONSTEXPR 0
 #endif
 
@@ -48,6 +56,23 @@
 #define FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE 0
 #else
 #define FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE 1
+#endif
+
+// For support attribute [[assume]] is declared in P1774
+#if defined(__clang__) // needs testing
+#define FASTFLOAT_ASSUME(expr) __builtin_assume(expr)
+#elif defined(__GNUC__) && !defined(__ICC) // needs testing
+#define FASTFLOAT_ASSUME(expr)                                                 \
+  if (expr) {                                                                  \
+  } else {                                                                     \
+    __builtin_unreachable();                                                   \
+  }
+#elif defined(__ICC) // needs testing
+#define FASTFLOAT_ASSUME(expr) __assume(expr)
+#elif defined(_MSC_VER)
+/* currently disable, because MSVC is generated slower code when enabled,
+it's probably reason why MSVC doesnt have [[assume]] */
+#define FASTFLOAT_ASSUME(expr) /*__assume(expr)*/
 #endif
 
 #endif // FASTFLOAT_CONSTEXPR_FEATURE_DETECT_H

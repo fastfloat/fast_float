@@ -357,6 +357,49 @@ int main() {
 }
 ```
 
+You also can use not standard options:
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "      +456";
+  double result;
+  fast_float::parse_options options{chars_format::allow_leading_plus | chars_format::skip_white_space};
+  auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
+  if ((answer.ec != std::errc()) || ((result != 456))) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
+For special case scenarious, like mathematical or other AST like parcer that already process minus sign 
+and only pasre in FastFloat positive numbers in fixed, scientific or hex format and do not have inf or nan
+in input you can use macros FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN that significantly reduce
+the code size and improve performance:
+
+```C++
+#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "23.14069263277926900572";
+  double result;
+  fast_float::parse_options options{chars_format::allow_leading_plus | chars_format::skip_white_space};
+  auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
+  if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
+    { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
+  input = "-23.14069263277926900572";
+  if (answer.ec == std::errc()) { std::cerr << "parsing failure, should failed on any sign\n"; return EXIT_FAILURE; }
+  input = "inf";
+  if (answer.ec == std::errc()) { std::cerr << "parsing failure, should failed on infinity\n"; return EXIT_FAILURE; }
+  input = "nan";
+  if (answer.ec == std::errc()) { std::cerr << "parsing failure, should failed on nan in input\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
 ## Users and Related Work
 
 The fast_float library is part of:
