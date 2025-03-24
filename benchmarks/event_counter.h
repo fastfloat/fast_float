@@ -129,7 +129,7 @@ struct event_collector {
   LinuxEvents<PERF_TYPE_HARDWARE> linux_events;
 
   event_collector()
-      : linux_events(std::vector<int>{
+      : linux_events(std::array<unsigned long long, event_counter_types_size>{
             PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS,
             PERF_COUNT_HW_BRANCH_INSTRUCTIONS, // Retired branch instructions
             PERF_COUNT_HW_BRANCH_MISSES}) {}
