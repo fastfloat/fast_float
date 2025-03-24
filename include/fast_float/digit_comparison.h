@@ -223,8 +223,8 @@ is_truncated(span<UC const> s) noexcept {
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-parse_eight_digits(UC const *&p, limb &value, size_t &counter,
-                   size_t &count) noexcept {
+parse_eight_digits(UC const *&p, limb &value, unsigned int &counter,
+                   unsigned int &count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
   counter += 8;
@@ -233,8 +233,8 @@ parse_eight_digits(UC const *&p, limb &value, size_t &counter,
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
-parse_one_digit(UC const *&p, limb &value, size_t &counter,
-                size_t &count) noexcept {
+parse_one_digit(UC const *&p, limb &value, unsigned int &counter,
+                unsigned int &count) noexcept {
   value = value * 10 + limb(*p - UC('0'));
   p++;
   counter++;
@@ -248,7 +248,7 @@ add_native(bigint &big, limb power, limb value) noexcept {
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-round_up_bigint(bigint &big, size_t &count) noexcept {
+round_up_bigint(bigint &big, unsigned int &count) noexcept {
   // need to round-up the digits, but need to avoid rounding
   // ....9999 to ...10000, which could cause a false halfway point.
   add_native(big, 10, 1);
@@ -259,17 +259,17 @@ round_up_bigint(bigint &big, size_t &count) noexcept {
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR20 void
 parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
-               size_t max_digits, size_t &digits) noexcept {
+               unsigned int max_digits, unsigned int &digits) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
-  size_t counter = 0;
+  unsigned int counter = 0;
   digits = 0;
   limb value = 0;
 #ifdef FASTFLOAT_64BIT_LIMB
-  size_t step = 19;
+  unsigned int step = 19;
 #else
-  size_t step = 9;
+  unsigned int step = 9;
 #endif
 
   // process all integer digits.
@@ -444,8 +444,8 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   am.power2 -= invalid_am_bias;
 
   int32_t sci_exp = scientific_exponent(num);
-  size_t max_digits = binary_format<T>::max_digits();
-  size_t digits = 0;
+  unsigned int max_digits = binary_format<T>::max_digits();
+  unsigned int digits = 0;
   bigint bigmant;
   parse_mantissa(bigmant, num, max_digits, digits);
   // can't underflow, since digits is at most max_digits.

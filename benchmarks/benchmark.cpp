@@ -1,6 +1,9 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
+
+//#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
 #endif
