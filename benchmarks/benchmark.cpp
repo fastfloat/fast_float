@@ -1,51 +1,5 @@
-/*
-####
-# reading C:/Projects/fast_float/build/benchmarks/data/canada.txt
-####
-# read 111126 lines
-ASCII volume = 1.93374 MB
-fastfloat (64)                          :   188.96 MB/s (+/- 3.1 %)    10.86 Mfloat/s      92.09 ns/f
-fastfloat (32)                          :   229.56 MB/s (+/- 5.6 %)    13.19 Mfloat/s      75.80 ns/f
-UTF-16 volume = 3.86749 MB
-fastfloat (64)                          :   446.29 MB/s (+/- 5.5 %)    12.82 Mfloat/s      77.98 ns/f
-fastfloat (32)                          :   440.58 MB/s (+/- 5.4 %)    12.66 Mfloat/s      78.99 ns/f
-####
-# reading C:/Projects/fast_float/build/benchmarks/data/mesh.txt
-####
-# read 73019 lines
-ASCII volume = 0.536009 MB
-fastfloat (64)                          :   125.54 MB/s (+/- 2.6 %)    17.10 Mfloat/s      58.47 ns/f
-fastfloat (32)                          :   118.63 MB/s (+/- 2.9 %)    16.16 Mfloat/s      61.88 ns/f
-UTF-16 volume = 1.07202 MB
-fastfloat (64)                          :   246.08 MB/s (+/- 2.3 %)    16.76 Mfloat/s      59.66 ns/f
-fastfloat (32)                          :   234.03 MB/s (+/- 2.9 %)    15.94 Mfloat/s      62.73 ns/f
-*/
-
-//#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-
-/*
-####
-# reading C:/Projects/fast_float/build/benchmarks/data/canada.txt
-####
-# read 111126 lines
-ASCII volume = 1.82777 MB
-fastfloat (64)                          :   232.92 MB/s (+/- 4.3 %)    14.16 Mfloat/s      70.62 ns/f
-fastfloat (32)                          :   221.19 MB/s (+/- 3.8 %)    13.45 Mfloat/s      74.36 ns/f
-UTF-16 volume = 3.65553 MB
-fastfloat (64)                          :   460.42 MB/s (+/- 5.2 %)    14.00 Mfloat/s      71.45 ns/f
-fastfloat (32)                          :   438.06 MB/s (+/- 5.6 %)    13.32 Mfloat/s      75.09 ns/f
-####
-# reading C:/Projects/fast_float/build/benchmarks/data/mesh.txt
-####
-# read 73019 lines
-ASCII volume = 0.536009 MB
-fastfloat (64)                          :   131.35 MB/s (+/- 1.5 %)    17.89 Mfloat/s      55.89 ns/f
-fastfloat (32)                          :   123.21 MB/s (+/- 1.2 %)    16.78 Mfloat/s      59.58 ns/f
-UTF-16 volume = 1.07202 MB
-fastfloat (64)                          :   259.51 MB/s (+/- 1.7 %)    17.68 Mfloat/s      56.57 ns/f
-fastfloat (32)                          :   244.28 MB/s (+/- 2.0 %)    16.64 Mfloat/s      60.10 ns/f
-*/
-
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
@@ -88,11 +42,16 @@ Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
   Value x = 0;
 #ifdef USING_COUNTERS
     collector.start();
-#else
-    t1 = std::chrono::high_resolution_clock::now();
 #endif
   for (auto &st : s) {
+#ifndef USING_COUNTERS
+      t1 = std::chrono::high_resolution_clock::now();
+#endif
     auto [p, ec] = fast_float::from_chars(st.data(), st.data() + st.size(), x);
+#ifndef USING_COUNTERS
+      t2 = std::chrono::high_resolution_clock::now();
+      time += std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1);
+#endif
 
     if (ec != std::errc{}) {
       throw std::runtime_error("bug in findmax_fastfloat");
@@ -101,9 +60,6 @@ Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
   }
 #ifdef USING_COUNTERS
     aggregate.push_back(collector.end());
-#else
-    t2 = std::chrono::high_resolution_clock::now();
-    time += t2 - t1;
 #endif
   return answer;
 }
@@ -208,7 +164,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   return std::make_pair(min_value, average);
 }
 
-void pretty_print(double volume, size_t number_of_floats, std::string name,
+void pretty_print(double volume, size_t number_of_floats, std::string const &name,
                   std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
@@ -220,7 +176,7 @@ void pretty_print(double volume, size_t number_of_floats, std::string name,
 #endif
 
 // this is okay, all chars are ASCII
-inline std::u16string widen(std::string line) {
+inline std::u16string widen(std::string const &line) {
   std::u16string u16line;
   u16line.resize(line.size());
   for (size_t i = 0; i < line.size(); ++i) {
@@ -233,7 +189,7 @@ std::vector<std::u16string> widen(const std::vector<std::string> &lines) {
   std::vector<std::u16string> u16lines;
   u16lines.reserve(lines.size());
   for (auto const &line : lines) {
-    u16lines.push_back(widen(line));
+    u16lines.emplace_back(widen(line));
   }
   return u16lines;
 }
