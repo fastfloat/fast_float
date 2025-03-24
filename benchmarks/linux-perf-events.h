@@ -75,7 +75,7 @@ public:
     }
   }
 
-  inline void end(std::vector<unsigned long long> &results) {
+  inline void end(std::array<unsigned long long, 4> &results) {
     if (fd != -1) {
       if (ioctl(fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP) == -1) {
         report_error("ioctl(PERF_EVENT_IOC_DISABLE)");
