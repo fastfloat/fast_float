@@ -217,7 +217,7 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 
-fastfloat_really_inline FASTFLOAT_CONSTEVAL20 bool
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
 cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
   return std::is_constant_evaluated();
