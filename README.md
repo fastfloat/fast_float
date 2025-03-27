@@ -386,7 +386,7 @@ the code size and improve performance:
 int main() {
   std::string input = "23.14069263277926900572";
   double result;
-  auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result);
+  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
   if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
     { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
   input = "-23.14069263277926900572";
