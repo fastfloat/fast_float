@@ -51,10 +51,10 @@ std::vector<event_count>
 time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
            size_t repeat) {
   std::vector<event_count> aggregate;
-  collector.start();
   bool printed_bug = false;
   for (size_t i = 0; i < repeat; i++) {
-    double ts = function(lines);
+    collector.start();
+    auto const ts = function(lines);
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
@@ -134,7 +134,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   bool printed_bug = false;
   for (size_t i = 0; i < repeat; i++) {
     t1 = std::chrono::high_resolution_clock::now();
-    const auto ts = function(lines);
+    auto const ts = function(lines);
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
