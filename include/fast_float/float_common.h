@@ -73,11 +73,11 @@ template <typename UC> struct parse_options_t {
       : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
 
   /** Which number formats are accepted */
-  const chars_format format;
+  chars_format format;
   /** The character used as decimal point */
-  const UC decimal_point;
+  UC decimal_point;
   /** The base used for integers */
-  const uint8_t base; /* only allowed from 2 to 36 */
+  uint8_t base; /* only allowed from 2 to 36 */
 };
 
 using parse_options = parse_options_t<char>;
@@ -1129,7 +1129,7 @@ template <typename = void> struct int_luts {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255};
 
-  static constexpr size_t maxdigits_u64[] = {
+  static constexpr uint8_t maxdigits_u64[] = {
       64, 41, 32, 28, 25, 23, 22, 21, 20, 19, 18, 18, 17, 17, 16, 16, 16, 16,
       15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13};
 
@@ -1152,7 +1152,7 @@ template <typename = void> struct int_luts {
 
 template <typename T> constexpr uint8_t int_luts<T>::chdigit[];
 
-template <typename T> constexpr size_t int_luts<T>::maxdigits_u64[];
+template <typename T> constexpr uint8_t int_luts<T>::maxdigits_u64[];
 
 template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
@@ -1163,13 +1163,13 @@ fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
   return int_luts<>::chdigit[static_cast<unsigned char>(c)];
 }
 
-fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
+fastfloat_really_inline constexpr uint8_t max_digits_u64(uint8_t base) {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
+fastfloat_really_inline constexpr uint8_t min_safe_u64(uint8_t base) {
   return int_luts<>::min_safe_u64[base - 2];
 }
 

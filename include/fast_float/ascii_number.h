@@ -294,7 +294,9 @@ template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
                     parse_options_t<UC> const &options) noexcept {
-
+  // V2008 Cyclomatic complexity:    59.
+  // Consider refactoring the 'parse_number_string' function.
+  // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
   parsed_number_string_t<UC> answer;
   answer.valid = false;
   answer.too_many_digits = false;
@@ -541,7 +543,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
   }
   while (p != pend) {
-    const uint8_t digit = ch_to_digit(*p);
+    uint8_t const digit = ch_to_digit(*p);
     if (digit >= options.base) {
       break;
     }
@@ -550,7 +552,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     p++;
   }
 
-  size_t digit_count = size_t(p - start_digits);
+  uint8_t const digit_count = size_t(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {
@@ -567,7 +569,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   answer.ptr = p;
 
   // check u64 overflow
-  size_t const max_digits = max_digits_u64(options.base);
+  uint8_t const max_digits = max_digits_u64(options.base);
   if (digit_count > max_digits) {
     answer.ec = std::errc::result_out_of_range;
     return answer;
