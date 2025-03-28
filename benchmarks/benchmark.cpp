@@ -27,59 +27,39 @@
 
 #include "fast_float/fast_float.h"
 
-#ifdef USING_COUNTERS
-event_collector collector{};
-#else
-std::chrono::high_resolution_clock::time_point t1, t2;
-#endif
-
 template <typename CharT, typename Value>
-Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
-#ifdef USING_COUNTERS
-                        std::vector<event_count> &aggregate
-#else
-                        std::chrono::nanoseconds &time
-#endif
-) {
+Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s) {
   Value answer = 0;
   Value x = 0;
-#ifdef USING_COUNTERS
-    collector.start();
-#endif
   for (auto &st : s) {
-#ifndef USING_COUNTERS
-      t1 = std::chrono::high_resolution_clock::now();
-#endif
     auto [p, ec] = fast_float::from_chars(st.data(), st.data() + st.size(), x);
-#ifndef USING_COUNTERS
-      t2 = std::chrono::high_resolution_clock::now();
-      time += std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1);
-#endif
 
     if (p == st.data()) {
       throw std::runtime_error("bug in findmax_fastfloat");
     }
     answer = answer > x ? answer : x;
   }
-#ifdef USING_COUNTERS
-    aggregate.push_back(collector.end());
-#endif
   return answer;
 }
 
 #ifdef USING_COUNTERS
+
+event_collector collector{};
+
 template <class T, class CharT>
 std::vector<event_count>
 time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
            size_t repeat) {
   std::vector<event_count> aggregate;
+  collector.start();
   bool printed_bug = false;
   for (size_t i = 0; i < repeat; i++) {
-    double ts = function(lines, aggregate);
+    double ts = function(lines);
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
     }
+    aggregate.push_back(collector.end());
   }
   return aggregate;
 }
@@ -148,18 +128,20 @@ template <class T, class CharT>
 std::pair<double, double>
 time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
            size_t repeat) {
+  std::chrono::high_resolution_clock::time_point t1, t2;
   double average = 0;
   double min_value = DBL_MAX;
   bool printed_bug = false;
   for (size_t i = 0; i < repeat; i++) {
-    std::chrono::nanoseconds time{};
-    const auto ts = function(lines, time);
+    t1 = std::chrono::high_resolution_clock::now();
+    const auto ts = function(lines);
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
     }
+    t2 = std::chrono::high_resolution_clock::now();
     double dif =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
+        std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
     average += dif;
     min_value = min_value < dif ? min_value : dif;
   }
