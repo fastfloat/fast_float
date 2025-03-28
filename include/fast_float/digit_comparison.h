@@ -40,7 +40,7 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int32_t
-scientific_exponent(parsed_number_string_t<UC> &num) noexcept {
+scientific_exponent(const parsed_number_string_t<UC> &num) noexcept {
   uint64_t mantissa = num.mantissa;
   int32_t exponent = int32_t(num.exponent);
   while (mantissa >= 10000) {
@@ -223,8 +223,8 @@ is_truncated(span<UC const> s) noexcept {
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-parse_eight_digits(UC const *&p, limb &value, size_t &counter,
-                   size_t &count) noexcept {
+parse_eight_digits(UC const *&p, limb &value, unsigned int &counter,
+                   unsigned int &count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
   counter += 8;
@@ -233,8 +233,8 @@ parse_eight_digits(UC const *&p, limb &value, size_t &counter,
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
-parse_one_digit(UC const *&p, limb &value, size_t &counter,
-                size_t &count) noexcept {
+parse_one_digit(UC const *&p, limb &value, unsigned int &counter,
+                unsigned int &count) noexcept {
   value = value * 10 + limb(*p - UC('0'));
   p++;
   counter++;
@@ -248,7 +248,7 @@ add_native(bigint &big, limb power, limb value) noexcept {
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-round_up_bigint(bigint &big, size_t &count) noexcept {
+round_up_bigint(bigint &big, unsigned int &count) noexcept {
   // need to round-up the digits, but need to avoid rounding
   // ....9999 to ...10000, which could cause a false halfway point.
   add_native(big, 10, 1);
@@ -258,18 +258,18 @@ round_up_bigint(bigint &big, size_t &count) noexcept {
 // parse the significant digits into a big integer
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR20 void
-parse_mantissa(bigint &result, parsed_number_string_t<UC> &num,
-               size_t max_digits, size_t &digits) noexcept {
+parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
+               unsigned int max_digits, unsigned int &digits) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
-  size_t counter = 0;
+  unsigned int counter = 0;
   digits = 0;
   limb value = 0;
 #ifdef FASTFLOAT_64BIT_LIMB
-  size_t step = 19;
+  unsigned int step = 19;
 #else
-  size_t step = 9;
+  unsigned int step = 9;
 #endif
 
   // process all integer digits.
@@ -369,10 +369,11 @@ positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
 // we then need to scale by `2^(f- e)`, and then the two significant digits
 // are of the same magnitude.
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
-    bigint &bigmant, adjusted_mantissa am, int32_t exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
+negative_digit_comp(bigint &bigmant, const adjusted_mantissa &am,
+                    const int32_t exponent) noexcept {
   bigint &real_digits = bigmant;
-  int32_t real_exp = exponent;
+  const int32_t &real_exp = exponent;
 
   // get the value of `b`, rounded down, and get a bigint representation of b+h
   adjusted_mantissa am_b = am;
@@ -381,7 +382,11 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
   round<T>(am_b,
            [](adjusted_mantissa &a, int32_t shift) { round_down(a, shift); });
   T b;
-  to_float(false, am_b, b);
+  to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      false,
+#endif
+      am_b, b);
   adjusted_mantissa theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
   int32_t theor_exp = theor.power2;
@@ -433,14 +438,14 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
 // the actual digits. we then compare the big integer representations
 // of both, and use that to direct rounding.
 template <typename T, typename UC>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-digit_comp(parsed_number_string_t<UC> &num, adjusted_mantissa am) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
+    const parsed_number_string_t<UC> &num, adjusted_mantissa &am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
   int32_t sci_exp = scientific_exponent(num);
-  size_t max_digits = binary_format<T>::max_digits();
-  size_t digits = 0;
+  unsigned int max_digits = binary_format<T>::max_digits();
+  unsigned int digits = 0;
   bigint bigmant;
   parse_mantissa(bigmant, num, max_digits, digits);
   // can't underflow, since digits is at most max_digits.
