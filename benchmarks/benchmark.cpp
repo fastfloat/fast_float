@@ -56,7 +56,7 @@ Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s,
       time += std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1);
 #endif
 
-    if (ec != std::errc{}) {
+    if (p == st.data()) {
       throw std::runtime_error("bug in findmax_fastfloat");
     }
     answer = answer > x ? answer : x;
@@ -171,7 +171,7 @@ void pretty_print(double volume, size_t number_of_floats, std::string const &nam
                   std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
-         volumeMB * 1'000'000'000 / result.first,
+         volumeMB * 1000000000 / result.first,
          (result.second - result.first) * 100.0 / result.second);
   printf("%8.2f Mfloat/s  ", number_of_floats * 1000 / result.first);
   printf(" %8.2f ns/f \n", double(result.first) / number_of_floats);
@@ -198,7 +198,7 @@ std::vector<std::u16string> widen(const std::vector<std::string> &lines) {
 }
 
 void process(std::vector<std::string> &lines, size_t volume) {
-  size_t repeat = 1000;
+  size_t const repeat = 1000;
   double volumeMB = volume / (1024. * 1024.);
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
@@ -232,44 +232,20 @@ void fileload(std::string filename) {
   size_t volume = 0;
   while (getline(inputfile, line)) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    /* This code is a simple parser emulator */
-    for (size_t n = 0; n < line.size(); ++n) {
-      if ((line[n] >= '0' && line[n] <= '9')) {
-        /* in the real parser we don't check anything else
-         and call the from_chars function immediately */
-        const auto s = n;
-        for (++n; n < line.size() &&
-                  ((line[n] >= '0' && line[n] <= '9') || line[n] == 'e' ||
-                   line[n] == 'E' || line[n] == '.' || line[n] == '-' ||
-                   line[n] == '+'
-                   /* last line for exponent sign*/
-                  );
-             ++n) {
-        }
-        /*~ in the real parser we don't check anything else
-           and call the from_chars function immediately */
-
-        volume += lines.emplace_back(line.substr(s, n)).size();
-      } else {
-        /* for the test we simplify skipped all other symbols,
-           in real application this should be a full parser,
-           that parse also any mathematical operations like + and -
-           and this is the reason why we don't need to check a sign
-           when FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled. */
-        ++n;
-        continue;
-      }
+    if (line[0] == '-') {
+      line.erase(0, 1);
     }
-    // in the real parser this part of code should return end token
-#else
-    volume += lines.emplace_back(line).size();
 #endif
+    volume += lines.emplace_back(line).size();
   }
   std::cout << "# read " << lines.size() << " lines " << std::endl;
   process(lines, volume);
 }
 
 int main(int argc, char **argv) {
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  std::cout << "# FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled" << std::endl;
+#endif
 #ifdef USING_COUNTERS
   if (collector.has_events()) {
     std::cout << "# Using hardware counters" << std::endl;
@@ -285,6 +261,8 @@ int main(int argc, char **argv) {
     fileload(argv[1]);
     return EXIT_SUCCESS;
   }
+  fileload(std::string(BENCHMARK_DATA_DIR) + "/contrived.txt");
+  fileload(std::string(BENCHMARK_DATA_DIR) + "/canada_short.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
   return EXIT_SUCCESS;
