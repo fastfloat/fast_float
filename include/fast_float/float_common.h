@@ -427,10 +427,12 @@ struct adjusted_mantissa {
   int32_t power2; // a negative value indicates an invalid result
   adjusted_mantissa() noexcept = default;
 
+  fastfloat_really_inline
   constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;
   }
 
+  fastfloat_really_inline
   constexpr bool operator!=(adjusted_mantissa const &o) const noexcept {
     return mantissa != o.mantissa || power2 != o.power2;
   }
@@ -447,10 +449,10 @@ template <typename T, typename U = void> struct binary_format_lookup_tables;
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   using equiv_uint = equiv_uint_t<T>;
 
-  static constexpr int mantissa_explicit_bits();
+  static constexpr unsigned int mantissa_explicit_bits();
   static constexpr int minimum_exponent();
   static constexpr int infinite_power();
-  static constexpr int sign_index();
+  static constexpr unsigned int sign_index();
   static constexpr int
   min_exponent_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr int max_exponent_fast_path();
@@ -462,7 +464,7 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr int largest_power_of_ten();
   static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
-  static constexpr size_t max_digits();
+  static constexpr unsigned int max_digits();
   static constexpr equiv_uint exponent_mask();
   static constexpr equiv_uint mantissa_mask();
   static constexpr equiv_uint hidden_bit_mask();
@@ -570,12 +572,12 @@ inline constexpr int binary_format<float>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr int binary_format<double>::mantissa_explicit_bits() {
+inline constexpr unsigned int binary_format<double>::mantissa_explicit_bits() {
   return 52;
 }
 
 template <>
-inline constexpr int binary_format<float>::mantissa_explicit_bits() {
+inline constexpr unsigned int binary_format<float>::mantissa_explicit_bits() {
   return 23;
 }
 
@@ -617,11 +619,11 @@ template <> inline constexpr int binary_format<float>::infinite_power() {
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
-template <> inline constexpr int binary_format<double>::sign_index() {
+template <> inline constexpr unsigned int binary_format<double>::sign_index() {
   return 63;
 }
 
-template <> inline constexpr int binary_format<float>::sign_index() {
+template <> inline constexpr unsigned int binary_format<float>::sign_index() {
   return 31;
 }
 
@@ -706,7 +708,7 @@ inline constexpr int binary_format<std::float16_t>::max_exponent_fast_path() {
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::mantissa_explicit_bits() {
+inline constexpr unsigned int binary_format<std::float16_t>::mantissa_explicit_bits() {
   return 10;
 }
 
@@ -755,7 +757,7 @@ inline constexpr int binary_format<std::float16_t>::infinite_power() {
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
-template <> inline constexpr int binary_format<std::float16_t>::sign_index() {
+template <> inline constexpr unsigned int binary_format<std::float16_t>::sign_index() {
   return 15;
 }
 
@@ -772,7 +774,7 @@ inline constexpr int binary_format<std::float16_t>::smallest_power_of_ten() {
 }
 
 template <>
-inline constexpr size_t binary_format<std::float16_t>::max_digits() {
+inline constexpr unsigned int binary_format<std::float16_t>::max_digits() {
   return 22;
 }
 #endif // __STDCPP_FLOAT16_T__
@@ -833,7 +835,7 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
+inline constexpr unsigned int binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
   return 7;
 }
 
@@ -899,7 +901,7 @@ inline constexpr int binary_format<std::bfloat16_t>::smallest_power_of_ten() {
 }
 
 template <>
-inline constexpr size_t binary_format<std::bfloat16_t>::max_digits() {
+inline constexpr unsigned int binary_format<std::bfloat16_t>::max_digits() {
   return 98;
 }
 #endif // __STDCPP_BFLOAT16_T__
@@ -954,11 +956,11 @@ template <> inline constexpr int binary_format<float>::smallest_power_of_ten() {
   return -64;
 }
 
-template <> inline constexpr size_t binary_format<double>::max_digits() {
+template <> inline constexpr unsigned int binary_format<double>::max_digits() {
   return 769;
 }
 
-template <> inline constexpr size_t binary_format<float>::max_digits() {
+template <> inline constexpr unsigned int binary_format<float>::max_digits() {
   return 114;
 }
 
