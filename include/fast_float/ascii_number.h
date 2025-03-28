@@ -208,8 +208,7 @@ template <typename UC>
 template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>()) = 0>
 #endif
 // dummy for compile
-FASTFLOAT_CONSTEVAL20 bool simd_parse_if_eight_digits_unrolled(UC const *,
-                                                               uint64_t &) {
+bool simd_parse_if_eight_digits_unrolled(UC const *, uint64_t &) {
   return 0;
 }
 
@@ -304,9 +303,8 @@ parse_number_string(UC const *p, UC const *pend,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if (*p == UC('-') ||
-      (uint64_t(options.format & chars_format::allow_leading_plus) &&
-       *p == UC('+'))) {
+  if ((*p == UC('-')) || (uint64_t(options.format & chars_format::allow_leading_plus) &&
+                          !basic_json_fmt && *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -320,8 +318,8 @@ parse_number_string(UC const *p, UC const *pend,
     }
     else {
       if (!is_integer(*p) &&
-          (*p != options.decimal_point)) { // a sign must be followed by an
-                                           // integer or the dot
+          (*p !=
+                 options.decimal_point)) { // a sign must be followed by an integer or the dot
         return report_parse_error<UC>(
             p, parse_error::missing_integer_or_dot_after_sign);
       }
