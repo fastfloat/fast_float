@@ -297,8 +297,6 @@ parse_number_string(UC const *p, UC const *pend,
   // Consider refactoring the 'parse_number_string' function.
   // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
   parsed_number_string_t<UC> answer;
-  answer.valid = false;
-  answer.too_many_digits = false;
   FASTFLOAT_ASSUME(p < pend); // assume p < pend, so dereference without checks;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
