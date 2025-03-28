@@ -423,8 +423,8 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 }
 
 struct adjusted_mantissa {
-  uint64_t mantissa{0};
-  int32_t power2{0}; // a negative value indicates an invalid result
+  uint64_t mantissa;
+  int32_t power2; // a negative value indicates an invalid result
   adjusted_mantissa() noexcept = default;
 
   constexpr bool operator==(adjusted_mantissa const &o) const noexcept {

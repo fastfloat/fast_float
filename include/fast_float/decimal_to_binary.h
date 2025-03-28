@@ -103,15 +103,15 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_float(int64_t q, uint64_t w) noexcept {
   adjusted_mantissa answer;
   if ((w == 0) || (q < binary::smallest_power_of_ten())) {
-    // answer.power2 = 0; already set
-    // answer.mantissa = 0; already set
+    answer.power2 = 0;
+    answer.mantissa = 0;
     // result should be zero
     return answer;
   }
   if (q > binary::largest_power_of_ten()) {
     // we want to get infinity:
     answer.power2 = binary::infinite_power();
-    // answer.mantissa = 0; already set
+    answer.mantissa = 0;
     return answer;
   }
   // At this point in time q is in [powers::smallest_power_of_five,
