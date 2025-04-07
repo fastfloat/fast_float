@@ -39,10 +39,10 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int32_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int16_t
 scientific_exponent(const parsed_number_string_t<UC> &num) noexcept {
   uint64_t mantissa = num.mantissa;
-  int32_t exponent = int32_t(num.exponent);
+  int16_t exponent = num.exponent;
   while (mantissa >= 10000) {
     mantissa /= 10000;
     exponent += 4;
@@ -223,8 +223,8 @@ is_truncated(span<UC const> s) noexcept {
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-parse_eight_digits(UC const *&p, limb &value, unsigned int &counter,
-                   unsigned int &count) noexcept {
+parse_eight_digits(UC const *&p, limb &value, uint16_t &counter,
+                   uint16_t &count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
   counter += 8;
@@ -233,8 +233,8 @@ parse_eight_digits(UC const *&p, limb &value, unsigned int &counter,
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
-parse_one_digit(UC const *&p, limb &value, unsigned int &counter,
-                unsigned int &count) noexcept {
+parse_one_digit(UC const *&p, limb &value, uint16_t &counter,
+                uint16_t &count) noexcept {
   value = value * 10 + limb(*p - UC('0'));
   p++;
   counter++;
@@ -248,7 +248,7 @@ add_native(bigint &big, limb power, limb value) noexcept {
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-round_up_bigint(bigint &big, unsigned int &count) noexcept {
+round_up_bigint(bigint &big, uint16_t &count) noexcept {
   // need to round-up the digits, but need to avoid rounding
   // ....9999 to ...10000, which could cause a false halfway point.
   add_native(big, 10, 1);
@@ -259,17 +259,17 @@ round_up_bigint(bigint &big, unsigned int &count) noexcept {
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR20 void
 parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
-               unsigned int max_digits, unsigned int &digits) noexcept {
+               uint16_t const max_digits, uint16_t &digits) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
-  unsigned int counter = 0;
+  uint16_t counter = 0;
   digits = 0;
   limb value = 0;
 #ifdef FASTFLOAT_64BIT_LIMB
-  unsigned int step = 19;
+  uint16_t const step = 19;
 #else
-  unsigned int step = 9;
+  uint16_t const step = 9;
 #endif
 
   // process all integer digits.
@@ -370,7 +370,7 @@ positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
 // are of the same magnitude.
 template <typename T>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-negative_digit_comp(bigint &bigmant, const adjusted_mantissa &am,
+negative_digit_comp(bigint &bigmant, const adjusted_mantissa am,
                     const int32_t exponent) noexcept {
   bigint &real_digits = bigmant;
   const int32_t &real_exp = exponent;
@@ -443,13 +443,13 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
-  int32_t sci_exp = scientific_exponent(num);
-  unsigned int max_digits = binary_format<T>::max_digits();
-  unsigned int digits = 0;
+  int16_t sci_exp = scientific_exponent(num);
+  uint16_t const max_digits = static_cast<uint16_t>(binary_format<T>::max_digits());
+  uint16_t digits = 0;
   bigint bigmant;
   parse_mantissa(bigmant, num, max_digits, digits);
   // can't underflow, since digits is at most max_digits.
-  int32_t exponent = sci_exp + 1 - int32_t(digits);
+  int16_t exponent = sci_exp + 1 - digits;
   if (exponent >= 0) {
     return positive_digit_comp<T>(bigmant, exponent);
   } else {

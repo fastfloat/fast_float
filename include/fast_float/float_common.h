@@ -69,7 +69,7 @@ using from_chars_result = from_chars_result_t<char>;
 template <typename UC> struct parse_options_t {
   FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
       chars_format fmt = chars_format::general, UC dot = UC('.'),
-      const int b = 10) noexcept
+      int const b = 10) noexcept
       : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
 
   /** Which number formats are accepted */
@@ -427,12 +427,10 @@ struct adjusted_mantissa {
   int32_t power2; // a negative value indicates an invalid result
   adjusted_mantissa() noexcept = default;
 
-  fastfloat_really_inline
   constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;
   }
 
-  fastfloat_really_inline
   constexpr bool operator!=(adjusted_mantissa const &o) const noexcept {
     return mantissa != o.mantissa || power2 != o.power2;
   }
@@ -449,10 +447,10 @@ template <typename T, typename U = void> struct binary_format_lookup_tables;
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   using equiv_uint = equiv_uint_t<T>;
 
-  static constexpr unsigned int mantissa_explicit_bits();
+  static constexpr int mantissa_explicit_bits();
   static constexpr int minimum_exponent();
   static constexpr int infinite_power();
-  static constexpr unsigned int sign_index();
+  static constexpr int sign_index();
   static constexpr int
   min_exponent_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr int max_exponent_fast_path();
@@ -464,7 +462,7 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr int largest_power_of_ten();
   static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
-  static constexpr unsigned int max_digits();
+  static constexpr size_t max_digits();
   static constexpr equiv_uint exponent_mask();
   static constexpr equiv_uint mantissa_mask();
   static constexpr equiv_uint hidden_bit_mask();
@@ -572,12 +570,12 @@ inline constexpr int binary_format<float>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr unsigned int binary_format<double>::mantissa_explicit_bits() {
+inline constexpr int binary_format<double>::mantissa_explicit_bits() {
   return 52;
 }
 
 template <>
-inline constexpr unsigned int binary_format<float>::mantissa_explicit_bits() {
+inline constexpr int binary_format<float>::mantissa_explicit_bits() {
   return 23;
 }
 
@@ -619,11 +617,11 @@ template <> inline constexpr int binary_format<float>::infinite_power() {
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
-template <> inline constexpr unsigned int binary_format<double>::sign_index() {
+template <> inline constexpr int binary_format<double>::sign_index() {
   return 63;
 }
 
-template <> inline constexpr unsigned int binary_format<float>::sign_index() {
+template <> inline constexpr int binary_format<float>::sign_index() {
   return 31;
 }
 
@@ -708,7 +706,7 @@ inline constexpr int binary_format<std::float16_t>::max_exponent_fast_path() {
 }
 
 template <>
-inline constexpr unsigned int binary_format<std::float16_t>::mantissa_explicit_bits() {
+inline constexpr int binary_format<std::float16_t>::mantissa_explicit_bits() {
   return 10;
 }
 
@@ -835,7 +833,7 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr unsigned int binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
+inline constexpr int binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
   return 7;
 }
 
@@ -910,7 +908,7 @@ template <>
 inline constexpr uint64_t
 binary_format<double>::max_mantissa_fast_path(int64_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 22
+  FASTFLOAT_ASSUME(power >= 0 && power <= 22);
   //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
@@ -920,7 +918,7 @@ template <>
 inline constexpr uint64_t
 binary_format<float>::max_mantissa_fast_path(int64_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 10
+  FASTFLOAT_ASSUME(power >= 0 && power <= 10);
   //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
@@ -929,12 +927,18 @@ binary_format<float>::max_mantissa_fast_path(int64_t power) {
 template <>
 inline constexpr double
 binary_format<double>::exact_power_of_ten(int64_t power) {
+  // caller is responsible to ensure that
+  FASTFLOAT_ASSUME(power >= 0 && power <= 22);
+  //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)powers_of_ten[0], powers_of_ten[power];
 }
 
 template <>
 inline constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
+  // caller is responsible to ensure that
+  FASTFLOAT_ASSUME(power >= 0 && power <= 10);
+  //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)powers_of_ten[0], powers_of_ten[power];
 }
@@ -956,11 +960,11 @@ template <> inline constexpr int binary_format<float>::smallest_power_of_ten() {
   return -64;
 }
 
-template <> inline constexpr unsigned int binary_format<double>::max_digits() {
+template <> inline constexpr size_t binary_format<double>::max_digits() {
   return 769;
 }
 
-template <> inline constexpr unsigned int binary_format<float>::max_digits() {
+template <> inline constexpr size_t binary_format<float>::max_digits() {
   return 114;
 }
 
@@ -1005,7 +1009,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     bool const negative,
 #endif
-    adjusted_mantissa const &am, T &value) noexcept {
+    adjusted_mantissa const am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
