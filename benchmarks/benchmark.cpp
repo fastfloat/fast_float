@@ -61,7 +61,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   return aggregate;
 }
 
-void pretty_print(double volume, size_t number_of_floats, std::string name,
+void pretty_print(size_t volume, size_t number_of_floats, std::string name,
                   std::vector<event_count> events) {
   double volumeMB = volume / (1024. * 1024.);
   double average_ns{0};
@@ -137,8 +137,8 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
       printed_bug = true;
     }
     t2 = std::chrono::high_resolution_clock::now();
-    double dif =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
+    double const dif = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count());
     average += dif;
     min_value = min_value < dif ? min_value : dif;
   }
@@ -146,7 +146,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   return std::make_pair(min_value, average);
 }
 
-void pretty_print(double volume, size_t number_of_floats, std::string const &name,
+void pretty_print(size_t volume, size_t number_of_floats, std::string const &name,
                   std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
