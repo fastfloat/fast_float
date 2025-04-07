@@ -772,7 +772,7 @@ inline constexpr int binary_format<std::float16_t>::smallest_power_of_ten() {
 }
 
 template <>
-inline constexpr unsigned int binary_format<std::float16_t>::max_digits() {
+inline constexpr size_t binary_format<std::float16_t>::max_digits() {
   return 22;
 }
 #endif // __STDCPP_FLOAT16_T__
@@ -899,7 +899,7 @@ inline constexpr int binary_format<std::bfloat16_t>::smallest_power_of_ten() {
 }
 
 template <>
-inline constexpr unsigned int binary_format<std::bfloat16_t>::max_digits() {
+inline constexpr size_t binary_format<std::bfloat16_t>::max_digits() {
   return 98;
 }
 #endif // __STDCPP_BFLOAT16_T__
@@ -1009,7 +1009,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     bool const negative,
 #endif
-    adjusted_mantissa const am, T &value) noexcept {
+    adjusted_mantissa const &am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)

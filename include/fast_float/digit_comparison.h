@@ -40,7 +40,7 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int16_t
-scientific_exponent(const parsed_number_string_t<UC> &num) noexcept {
+scientific_exponent(parsed_number_string_t<UC> const &num) noexcept {
   uint64_t mantissa = num.mantissa;
   int16_t exponent = num.exponent;
   while (mantissa >= 10000) {
@@ -61,7 +61,7 @@ scientific_exponent(const parsed_number_string_t<UC> &num) noexcept {
 // this converts a native floating-point number to an extended-precision float.
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-to_extended(T value) noexcept {
+to_extended(T const &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   constexpr equiv_uint exponent_mask = binary_format<T>::exponent_mask();
   constexpr equiv_uint mantissa_mask = binary_format<T>::mantissa_mask();
@@ -96,7 +96,7 @@ to_extended(T value) noexcept {
 // halfway between b and b+u.
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-to_extended_halfway(T value) noexcept {
+to_extended_halfway(T const &value) noexcept {
   adjusted_mantissa am = to_extended(value);
   am.mantissa <<= 1;
   am.mantissa += 1;
@@ -341,17 +341,17 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
 }
 
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 void
+positive_digit_comp(bigint &bigmant, adjusted_mantissa &am,
+                    int32_t const exponent) noexcept {
   FASTFLOAT_ASSERT(bigmant.pow10(uint32_t(exponent)));
-  adjusted_mantissa answer;
   bool truncated;
-  answer.mantissa = bigmant.hi64(truncated);
-  int bias = binary_format<T>::mantissa_explicit_bits() -
+  am.mantissa = bigmant.hi64(truncated);
+  int32_t bias = binary_format<T>::mantissa_explicit_bits() -
              binary_format<T>::minimum_exponent();
-  answer.power2 = bigmant.bit_length() - 64 + bias;
+  am.power2 = bigmant.bit_length() - 64 + bias;
 
-  round<T>(answer, [truncated](adjusted_mantissa &a, int32_t shift) {
+  round<T>(am, [truncated](adjusted_mantissa &a, int32_t shift) {
     round_nearest_tie_even(
         a, shift,
         [truncated](bool is_odd, bool is_halfway, bool is_above) -> bool {
@@ -359,8 +359,6 @@ positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
                  (is_odd && is_halfway);
         });
   });
-
-  return answer;
 }
 
 // the scaling here is quite simple: we have, for the real digits `m * 10^e`,
@@ -369,24 +367,26 @@ positive_digit_comp(bigint &bigmant, int32_t exponent) noexcept {
 // we then need to scale by `2^(f- e)`, and then the two significant digits
 // are of the same magnitude.
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-negative_digit_comp(bigint &bigmant, const adjusted_mantissa am,
-                    const int32_t exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 void
+negative_digit_comp(bigint &bigmant, adjusted_mantissa &am,
+                    int32_t const exponent) noexcept {
   bigint &real_digits = bigmant;
   const int32_t &real_exp = exponent;
 
-  // get the value of `b`, rounded down, and get a bigint representation of b+h
-  adjusted_mantissa am_b = am;
-  // gcc7 buf: use a lambda to remove the noexcept qualifier bug with
-  // -Wnoexcept-type.
-  round<T>(am_b,
-           [](adjusted_mantissa &a, int32_t shift) { round_down(a, shift); });
   T b;
-  to_float(
+  {
+    // get the value of `b`, rounded down, and get a bigint representation of b+h
+    adjusted_mantissa am_b = am;
+    // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
+    // -Wnoexcept-type.
+    round<T>(am_b,
+             [](adjusted_mantissa &a, int32_t shift) { round_down(a, shift); });
+    to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      false,
+            false,
 #endif
-      am_b, b);
+            am_b, b);
+  }
   adjusted_mantissa theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
   int32_t theor_exp = theor.power2;
@@ -405,8 +405,7 @@ negative_digit_comp(bigint &bigmant, const adjusted_mantissa am,
 
   // compare digits, and use it to director rounding
   int ord = real_digits.compare(theor_digits);
-  adjusted_mantissa answer = am;
-  round<T>(answer, [ord](adjusted_mantissa &a, int32_t shift) {
+  round<T>(am, [ord](adjusted_mantissa &a, int32_t shift) {
     round_nearest_tie_even(
         a, shift, [ord](bool is_odd, bool _, bool __) -> bool {
           (void)_;  // not needed, since we've done our comparison
@@ -420,8 +419,6 @@ negative_digit_comp(bigint &bigmant, const adjusted_mantissa am,
           }
         });
   });
-
-  return answer;
 }
 
 // parse the significant digits as a big integer to unambiguously round the
@@ -438,8 +435,8 @@ negative_digit_comp(bigint &bigmant, const adjusted_mantissa am,
 // the actual digits. we then compare the big integer representations
 // of both, and use that to direct rounding.
 template <typename T, typename UC>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
-    const parsed_number_string_t<UC> &num, adjusted_mantissa &am) noexcept {
+inline FASTFLOAT_CONSTEXPR20 void digit_comp(
+    parsed_number_string_t<UC> const &num, adjusted_mantissa &am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
@@ -451,9 +448,9 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   // can't underflow, since digits is at most max_digits.
   int16_t exponent = sci_exp + 1 - digits;
   if (exponent >= 0) {
-    return positive_digit_comp<T>(bigmant, exponent);
+    positive_digit_comp<T>(bigmant, am, exponent);
   } else {
-    return negative_digit_comp<T>(bigmant, am, exponent);
+    negative_digit_comp<T>(bigmant, am, exponent);
   }
 }
 
