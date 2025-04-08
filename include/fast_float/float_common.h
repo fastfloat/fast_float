@@ -197,12 +197,12 @@ using parse_options = parse_options_t<char>;
 
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
-  { ((void)(x)); }
+  { ((void)(x)); FASTFLOAT_ASSUME(x); }
 #endif
 
 #ifndef FASTFLOAT_DEBUG_ASSERT
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
-  { ((void)(x)); }
+  { ((void)(x)); FASTFLOAT_ASSUME(x); }
 #endif
 
 // rust style `try!()` macro, or `?` operator
