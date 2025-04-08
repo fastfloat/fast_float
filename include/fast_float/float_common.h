@@ -70,14 +70,15 @@ template <typename UC> struct parse_options_t {
   FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
       chars_format fmt = chars_format::general, UC dot = UC('.'),
       int const b = 10) noexcept
-      : format(fmt), decimal_point(dot), base(static_cast<uint8_t>(b)) {}
+      : format(fmt), decimal_point(dot), base(b) {}
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
   UC decimal_point;
   /** The base used for integers */
-  uint8_t base; /* only allowed from 2 to 36 */
+  uint32_t base; /* only allowed from 2 to 36 */
+  FASTFLOAT_ASSUME(base >= 2 && base <= 36);
 };
 
 using parse_options = parse_options_t<char>;
@@ -288,15 +289,15 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 // a pointer and a length to a contiguous block of memory
 template <typename T> struct span {
   T const *ptr;
-  size_t length;
+  uint32_t length;
 
-  constexpr span(T const *_ptr, size_t _length) : ptr(_ptr), length(_length) {}
+  constexpr span(T const *_ptr, uint32_t _length) : ptr(_ptr), length(_length) {}
 
   constexpr span() : ptr(nullptr), length(0) {}
 
-  constexpr size_t len() const noexcept { return length; }
+  constexpr uint32_t len() const noexcept { return length; }
 
-  FASTFLOAT_CONSTEXPR14 const T &operator[](size_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const T &operator[](uint32_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -1169,13 +1170,13 @@ fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
   return int_luts<>::chdigit[static_cast<unsigned char>(c)];
 }
 
-fastfloat_really_inline constexpr uint8_t max_digits_u64(uint8_t base) {
+fastfloat_really_inline constexpr uint8_t max_digits_u64(uint32_t base) {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t min_safe_u64(uint8_t base) {
+fastfloat_really_inline constexpr uint64_t min_safe_u64(uint32_t base) {
   return int_luts<>::min_safe_u64[base - 2];
 }
 

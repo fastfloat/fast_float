@@ -261,7 +261,7 @@ enum class parse_error {
 
 template <typename UC> struct parsed_number_string_t {
   uint64_t mantissa{0};
-  int16_t exponent{0};
+  int32_t exponent{0};
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
@@ -338,8 +338,8 @@ parse_number_string(UC const *p, UC const *pend,
     ++p;
   }
   UC const *const end_of_integer_part = p;
-  uint16_t digit_count = uint16_t(end_of_integer_part - start_digits);
-  answer.integer = span<UC const>(start_digits, size_t(digit_count));
+  uint32_t digit_count = uint32_t(end_of_integer_part - start_digits);
+  answer.integer = span<UC const>(start_digits, digit_count);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in integer part, without leading zeros
@@ -353,7 +353,7 @@ parse_number_string(UC const *p, UC const *pend,
   }
 #endif
 
-  int16_t exponent = 0;
+  int32_t exponent = 0;
   bool const has_decimal_point = (p != pend) && (*p == options.decimal_point);
   if (has_decimal_point) {
     ++p;
@@ -367,8 +367,8 @@ parse_number_string(UC const *p, UC const *pend,
       i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
       ++p;
     }
-    exponent = int16_t(before - p);
-    answer.fraction = span<UC const>(before, size_t(p - before));
+    exponent = int32_t(before - p);
+    answer.fraction = span<UC const>(before, uint32_t(p - before));
     digit_count -= exponent;
   }
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -383,7 +383,7 @@ parse_number_string(UC const *p, UC const *pend,
   else if (digit_count == 0) { // we must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
-  int16_t exp_number = 0; // explicit exponential part
+  int32_t exp_number = 0; // explicit exponential part
   if (p != pend &&
       (uint64_t(options.format & chars_format::scientific) &&
        ((UC('e') == *p) || (UC('E') == *p)))
@@ -468,7 +468,7 @@ parse_number_string(UC const *p, UC const *pend,
         ++p;
       }
       if (i >= minimal_nineteen_digit_integer) { // We have a big integers
-        exponent = uint16_t(end_of_integer_part - p) + exp_number;
+        exponent = uint32_t(end_of_integer_part - p) + exp_number;
       } else { // We have a value with a fractional component.
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
@@ -476,7 +476,7 @@ parse_number_string(UC const *p, UC const *pend,
           i = i * 10 + uint64_t(*p - UC('0'));
           ++p;
         }
-        exponent = uint16_t(answer.fraction.ptr - p) + exp_number;
+        exponent = uint32_t(answer.fraction.ptr - p) + exp_number;
       }
       // We have now corrected both exponent and i, to a truncated value
     }
@@ -541,7 +541,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     p++;
   }
 
-  uint8_t const digit_count = uint8_t(p - start_digits);
+  uint32_t const digit_count = uint32_t(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {
