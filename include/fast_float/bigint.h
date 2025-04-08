@@ -37,10 +37,10 @@ constexpr size_t bigint_limbs = bigint_bits / limb_bits;
 
 // vector-like type that is allocated on the stack. the entire
 // buffer is pre-allocated, and only the length changes.
-template <uint16_t size> struct stackvec {
+template <uint8_t size> struct stackvec {
   limb data[size];
   // we never need more than 150 limbs
-  uint16_t length{0};
+  uint8_t length{0};
 
   FASTFLOAT_CONSTEXPR20 stackvec() noexcept = default;
   stackvec(stackvec const &) = delete;
@@ -72,14 +72,14 @@ template <uint16_t size> struct stackvec {
 
   // set the length, without bounds checking.
   FASTFLOAT_CONSTEXPR14 void set_len(size_t len) noexcept {
-    length = uint16_t(len);
+    length = uint8_t(len);
   }
 
-  constexpr size_t len() const noexcept { return length; }
+  constexpr uint8_t len() const noexcept { return length; }
 
   constexpr bool is_empty() const noexcept { return length == 0; }
 
-  constexpr size_t capacity() const noexcept { return size; }
+  constexpr uint8_t capacity() const noexcept { return size; }
 
   // append item to vector, without bounds checking
   FASTFLOAT_CONSTEXPR14 void push_unchecked(limb value) noexcept {
@@ -375,7 +375,7 @@ FASTFLOAT_CONSTEXPR20 bool large_mul(stackvec<size> &x, limb_span y) noexcept {
 }
 
 template <typename = void> struct pow5_tables {
-  static constexpr uint32_t large_step = 135;
+  static constexpr uint8_t large_step = 135;
   static constexpr uint64_t small_power_of_5[] = {
       1UL,
       5UL,
@@ -419,7 +419,7 @@ template <typename = void> struct pow5_tables {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint32_t pow5_tables<T>::large_step;
+template <typename T> constexpr uint8_t pow5_tables<T>::large_step;
 
 template <typename T> constexpr uint64_t pow5_tables<T>::small_power_of_5[];
 
@@ -605,10 +605,10 @@ struct bigint : pow5_tables<> {
       exp -= large_step;
     }
 #ifdef FASTFLOAT_64BIT_LIMB
-    uint32_t small_step = 27;
+    uint8_t small_step = 27;
     limb max_native = 7450580596923828125UL;
 #else
-    uint32_t small_step = 13;
+    uint8_t small_step = 13;
     limb max_native = 1220703125U;
 #endif
     while (exp >= small_step) {
