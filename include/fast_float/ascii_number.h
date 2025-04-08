@@ -260,9 +260,8 @@ enum class parse_error {
 };
 
 template <typename UC> struct parsed_number_string_t {
-  int16_t exponent{0};
   uint64_t mantissa{0};
-  UC const *lastmatch{nullptr};
+  int16_t exponent{0};
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
@@ -271,6 +270,7 @@ template <typename UC> struct parsed_number_string_t {
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
   span<UC const> fraction{}; // nullable
+  UC const *lastmatch{nullptr};
   parse_error error{parse_error::no_error};
 };
 
@@ -338,7 +338,7 @@ parse_number_string(UC const *p, UC const *pend,
     ++p;
   }
   UC const *const end_of_integer_part = p;
-  int16_t digit_count = static_cast<int16_t>(end_of_integer_part - start_digits);
+  uint16_t digit_count = uint16_t(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, size_t(digit_count));
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
@@ -384,30 +384,24 @@ parse_number_string(UC const *p, UC const *pend,
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   int16_t exp_number = 0; // explicit exponential part
-  if ((uint64_t(options.format & chars_format::scientific) && (p != pend) &&
+  if (p != pend &&
+      (uint64_t(options.format & chars_format::scientific) &&
        ((UC('e') == *p) || (UC('E') == *p)))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      || (uint64_t(options.format & chars_format::fortran) &&
-          ((UC('+') == *p) || (UC('-') == *p)
-        || (UC('d') == *p) || (UC('D') == *p)))
+   || (uint64_t(options.format & detail::basic_fortran_fmt) &&
+        (UC('d') == *p) || (UC('D') == *p))
 #endif
   ) {
     UC const *location_of_e = p;
-    if (((UC('e') == *p) || (UC('E') == *p))
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-        || (uint64_t(options.format & chars_format::fortran) &&
-           ((UC('d') == *p) || (UC('D') == *p)))
-#endif
-    ) {
-      ++p;
-    }
+    ++p;
+   
     bool neg_exp = false;
     if (p != pend) {
       if (UC('-') == *p) {
         neg_exp = true;
         ++p;
-      } else if (UC('+') ==
-                 *p) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+      } else if (UC('+') == *p) {
+        // '+' on exponent is allowed by C++17 20.19.3.(7.1)
         ++p;
       }
     }
@@ -455,9 +449,9 @@ parse_number_string(UC const *p, UC const *pend,
     while ((start != pend) &&
            (*start == UC('0') || *start == options.decimal_point)) {
       if (*start == UC('0')) {
-        digit_count--;
+        --digit_count;
       }
-      start++;
+      ++start;
     }
 
     if (digit_count > 19) {
@@ -524,7 +518,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_num = p;
 
-  // use SIMD if possible
+  // use SIMD here?
   while (p != pend && *p == UC('0')) {
     ++p;
   }
@@ -542,12 +536,12 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     if (digit >= options.base) {
       break;
     }
-    i = static_cast<uint64_t>(options.base) * i +
+    i = uint64_t(options.base) * i +
         digit; // might overflow, check this later
     p++;
   }
 
-  uint8_t const digit_count = static_cast<uint8_t>(p - start_digits);
+  uint8_t const digit_count = uint8_t(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {
