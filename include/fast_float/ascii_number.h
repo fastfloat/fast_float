@@ -468,7 +468,7 @@ parse_number_string(UC const *p, UC const *pend,
         ++p;
       }
       if (i >= minimal_nineteen_digit_integer) { // We have a big integers
-        exponent = static_cast<uint16_t>(end_of_integer_part - p) + exp_number;
+        exponent = uint16_t(end_of_integer_part - p) + exp_number;
       } else { // We have a value with a fractional component.
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
@@ -476,7 +476,7 @@ parse_number_string(UC const *p, UC const *pend,
           i = i * 10 + uint64_t(*p - UC('0'));
           ++p;
         }
-        exponent = static_cast<uint16_t>(answer.fraction.ptr - p) + exp_number;
+        exponent = uint16_t(answer.fraction.ptr - p) + exp_number;
       }
       // We have now corrected both exponent and i, to a truncated value
     }
