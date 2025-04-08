@@ -367,7 +367,7 @@ parse_number_string(UC const *p, UC const *pend,
       i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
       ++p;
     }
-    exponent = static_cast<int16_t>(before - p);
+    exponent = int16_t(before - p);
     answer.fraction = span<UC const>(before, size_t(p - before));
     digit_count -= exponent;
   }
