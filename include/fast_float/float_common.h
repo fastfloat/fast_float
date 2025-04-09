@@ -1174,13 +1174,13 @@ fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
   return int_luts<>::chdigit[static_cast<unsigned char>(c)];
 }
 
-fastfloat_really_inline constexpr uint8_t max_digits_u64(uint32_t base) {
+fastfloat_really_inline constexpr uint8_t max_digits_u64(uint8_t base) {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t min_safe_u64(uint32_t base) {
+fastfloat_really_inline constexpr uint64_t min_safe_u64(uint8_t base) {
   return int_luts<>::min_safe_u64[base - 2];
 }
 
