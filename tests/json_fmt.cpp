@@ -7,11 +7,12 @@
 int main_readme() {
   std::string const input = "+.1"; // not valid
   double result;
-  fast_float::parse_options options{
-      fast_float::chars_format::json |
-      fast_float::chars_format::allow_leading_plus}; // should be ignored
   auto answer = fast_float::from_chars_advanced(
-      input.data(), input.data() + input.size(), result, options);
+      input.data(), input.data() + input.size(), result,
+      fast_float::parse_options options{
+      fast_float::chars_format::json |
+      fast_float::chars_format::allow_leading_plus} // should be ignored
+      );
   if (answer.ec == std::errc()) {
     std::cerr << "should have failed\n";
     return EXIT_FAILURE;
@@ -22,11 +23,12 @@ int main_readme() {
 int main_readme2() {
   std::string const input = "inf"; // not valid in JSON
   double result;
-  fast_float::parse_options options{
-      fast_float::chars_format::json |
-      fast_float::chars_format::allow_leading_plus}; // should be ignored
   auto answer = fast_float::from_chars_advanced(
-      input.data(), input.data() + input.size(), result, options);
+      input.data(), input.data() + input.size(), result,
+      fast_float::parse_options options{
+      fast_float::chars_format::json |
+      fast_float::chars_format::allow_leading_plus} // should be ignored
+      );
   if (answer.ec == std::errc()) {
     std::cerr << "should have failed\n";
     return EXIT_FAILURE;
@@ -38,11 +40,12 @@ int main_readme3() {
   std::string const input =
       "inf"; // not valid in JSON but we allow it with json_or_infnan
   double result;
-  fast_float::parse_options options{
+  auto answer = fast_float::from_chars_advanced(
+      input.data(), input.data() + input.size(), result,
+      fast_float::parse_options options{
       fast_float::chars_format::json_or_infnan |
       fast_float::chars_format::allow_leading_plus}; // should be ignored
-  auto answer = fast_float::from_chars_advanced(
-      input.data(), input.data() + input.size(), result, options);
+      );
   if (answer.ec != std::errc() || (!std::isinf(result))) {
     std::cerr << "should have parsed infinity\n";
     return EXIT_FAILURE;
