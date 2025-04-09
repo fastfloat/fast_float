@@ -292,7 +292,7 @@ report_parse_error(UC const *p, parse_error error) noexcept {
 template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
-                    parse_options_t<UC> const &options) noexcept {
+                    parse_options_t<UC> const options) noexcept {
   // Cyclomatic complexity https://en.wikipedia.org/wiki/Cyclomatic_complexity
   // Consider refactoring the 'parse_number_string' function.
   // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
@@ -489,7 +489,7 @@ parse_number_string(UC const *p, UC const *pend,
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
-                 parse_options_t<UC> const &options) noexcept {
+                 parse_options_t<UC> const options) noexcept {
 
   from_chars_result_t<UC> answer;
 
@@ -582,7 +582,9 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
   }
 
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  value = T(i);
+#else
   if (negative) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -600,9 +602,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #pragma warning(pop)
 #endif
   } else {
-#endif
     value = T(i);
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   }
 #endif
 

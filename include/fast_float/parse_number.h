@@ -146,7 +146,7 @@ template <typename T> struct from_chars_caller {
   template <typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     return from_chars_advanced(first, last, value, options);
   }
 };
@@ -156,7 +156,7 @@ template <> struct from_chars_caller<std::float32_t> {
   template <typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, std::float32_t &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     // if std::float32_t is defined, and we are in C++23 mode; macro set for
     // float32; set value to float due to equivalence between float and
     // float32_t
@@ -173,7 +173,7 @@ template <> struct from_chars_caller<std::float64_t> {
   template <typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, std::float64_t &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     // if std::float64_t is defined, and we are in C++23 mode; macro set for
     // float64; set value as double due to equivalence between double and
     // float64_t
@@ -301,7 +301,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
-                          parse_options_t<UC> const &options) noexcept {
+                          parse_options_t<UC> const options) noexcept {
 
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
@@ -365,7 +365,7 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_int_advanced(UC const *first, UC const *last, T &value,
-                        parse_options_t<UC> const &options) noexcept {
+                        parse_options_t<UC> const options) noexcept {
 
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
@@ -378,20 +378,16 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
       first++;
     }
   }
-#else
-  // We are in parser code with external loop that checks bounds.
-  FASTFLOAT_ASSUME(first < last);
-#endif
-  if (
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      first == last ||
-#endif
-      options.base < 2 || options.base > 36) {
+  if (first == last || options.base < 2 || options.base > 36) {
     from_chars_result_t<UC> answer;
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
   }
+#else
+  // We are in parser code with external loop that checks bounds.
+  FASTFLOAT_ASSUME(first < last);
+#endif
 
   return parse_int_string(first, last, value, options);
 }
@@ -404,7 +400,7 @@ template <> struct from_chars_advanced_caller<1> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     return from_chars_float_advanced(first, last, value, options);
   }
 };
@@ -413,7 +409,7 @@ template <> struct from_chars_advanced_caller<2> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     return from_chars_int_advanced(first, last, value, options);
   }
 };
@@ -421,7 +417,7 @@ template <> struct from_chars_advanced_caller<2> {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
-                    parse_options_t<UC> const &options) noexcept {
+                    parse_options_t<UC> const options) noexcept {
   return from_chars_advanced_caller<
       size_t(is_supported_float_type<T>::value) +
       2 * size_t(is_supported_integer_type<T>::value)>::call(first, last, value,
