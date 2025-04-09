@@ -310,7 +310,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 
   from_chars_result_t<UC> answer;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if (uint64_t(options.format & chars_format::skip_white_space)) {
+  if (uint8_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
@@ -326,14 +326,14 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 #endif
   parsed_number_string_t<UC> const pns =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      uint64_t(options.format & detail::basic_json_fmt)
+      uint8_t(options.format & detail::basic_json_fmt)
           ? parse_number_string<true, UC>(first, last, options)
           :
 #endif
           parse_number_string<false, UC>(first, last, options);
   if (!pns.valid) {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    if (uint64_t(options.format & chars_format::no_infnan)) {
+    if (uint8_t(options.format & chars_format::no_infnan)) {
 #endif
       answer.ec = std::errc::invalid_argument;
       answer.ptr = first;
@@ -373,7 +373,7 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if (uint64_t(options.format & chars_format::skip_white_space)) {
+  if (uint8_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
@@ -387,6 +387,7 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
 #else
   // We are in parser code with external loop that checks bounds.
   FASTFLOAT_ASSUME(first < last);
+  // base is already checked in the parse_options_t constructor.
 #endif
 
   return parse_int_string(first, last, value, options);

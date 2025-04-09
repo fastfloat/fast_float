@@ -301,7 +301,7 @@ parse_number_string(UC const *p, UC const *pend,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) || (uint64_t(options.format & chars_format::allow_leading_plus) &&
+  if ((*p == UC('-')) || (uint8_t(options.format & chars_format::allow_leading_plus) &&
                           !basic_json_fmt && *p == UC('+'))) {
     ++p;
     if (p == pend) {
@@ -385,10 +385,10 @@ parse_number_string(UC const *p, UC const *pend,
   }
   int32_t exp_number = 0; // explicit exponential part
   if (p != pend &&
-      (uint64_t(options.format & chars_format::scientific) &&
+      (uint8_t(options.format & chars_format::scientific) &&
        ((UC('e') == *p) || (UC('E') == *p)))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-   || (uint64_t(options.format & detail::basic_fortran_fmt) &&
+   || (uint8_t(options.format & detail::basic_fortran_fmt) &&
         (UC('d') == *p) || (UC('D') == *p))
 #endif
   ) {
@@ -406,7 +406,7 @@ parse_number_string(UC const *p, UC const *pend,
       }
     }
     if ((p == pend) || !is_integer(*p)) {
-      if (!uint64_t(options.format & chars_format::fixed)) {
+      if (!uint8_t(options.format & chars_format::fixed)) {
         // The exponential part is invalid for scientific notation, so it must
         // be a trailing token for fixed notation. However, fixed notation is
         // disabled, so report a scientific notation error.
@@ -427,8 +427,8 @@ parse_number_string(UC const *p, UC const *pend,
     }
   } else {
     // If it scientific and not fixed, we have to bail out.
-    if (uint64_t(options.format & chars_format::scientific) &&
-        !uint64_t(options.format & chars_format::fixed)) {
+    if (uint8_t(options.format & chars_format::scientific) &&
+        !uint8_t(options.format & chars_format::fixed)) {
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
   }
@@ -510,7 +510,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     return answer;
   }
   if ((*p == UC('-')) ||
-      (uint64_t(options.format & chars_format::allow_leading_plus) &&
+      (uint8_t(options.format & chars_format::allow_leading_plus) &&
        (*p == UC('+')))) {
     ++p;
   }
