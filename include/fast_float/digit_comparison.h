@@ -223,8 +223,8 @@ is_truncated(span<UC const> s) noexcept {
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-parse_eight_digits(UC const *&p, limb &value, uint32_t &counter,
-                   uint32_t &count) noexcept {
+parse_eight_digits(UC const *&p, limb &value, uint16_t &counter,
+                   uint16_t &count) noexcept {
   value = value * 100000000 + parse_eight_digits_unrolled(p);
   p += 8;
   counter += 8;
@@ -233,12 +233,12 @@ parse_eight_digits(UC const *&p, limb &value, uint32_t &counter,
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
-parse_one_digit(UC const *&p, limb &value, uint32_t &counter,
-                uint32_t &count) noexcept {
+parse_one_digit(UC const *&p, limb &value, uint16_t &counter,
+                uint16_t &count) noexcept {
   value = value * 10 + limb(*p - UC('0'));
-  p++;
-  counter++;
-  count++;
+  ++p;
+  ++counter;
+  ++count;
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
@@ -248,28 +248,28 @@ add_native(bigint &big, limb power, limb value) noexcept {
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-round_up_bigint(bigint &big, uint32_t &count) noexcept {
+round_up_bigint(bigint &big, uint16_t &count) noexcept {
   // need to round-up the digits, but need to avoid rounding
   // ....9999 to ...10000, which could cause a false halfway point.
   add_native(big, 10, 1);
-  count++;
+  ++count;
 }
 
 // parse the significant digits into a big integer
-template <typename UC>
-inline FASTFLOAT_CONSTEXPR20 void
-parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
-               uint32_t const max_digits, uint32_t &digits) noexcept {
+template <typename T, typename UC>
+inline FASTFLOAT_CONSTEXPR20 uint16_t
+parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
-  uint32_t counter = 0;
-  digits = 0;
+  uint16_t const max_digits = uint16_t(binary_format<T>::max_digits());
+  uint16_t counter = 0;
+  uint16_t digits = 0;
   limb value = 0;
 #ifdef FASTFLOAT_64BIT_LIMB
-  uint32_t const step = 19;
+  uint16_t const step = 19;
 #else
-  uint32_t const step = 9;
+  uint16_t const step = 9;
 #endif
 
   // process all integer digits.
@@ -280,10 +280,10 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
   while (p != pend) {
     while ((std::distance(p, pend) >= 8) && (step - counter >= 8) &&
            (max_digits - digits >= 8)) {
-      parse_eight_digits(p, value, counter, digits);
+      parse_eight_digits<UC>(p, value, counter, digits);
     }
     while (counter < step && p != pend && digits < max_digits) {
-      parse_one_digit(p, value, counter, digits);
+      parse_one_digit<UC>(p, value, counter, digits);
     }
     if (digits == max_digits) {
       // add the temporary value, then check if we've truncated any digits
@@ -295,7 +295,7 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
       if (truncated) {
         round_up_bigint(result, digits);
       }
-      return;
+      return digits;
     } else {
       add_native(result, limb(powers_of_ten_uint64[counter]), value);
       counter = 0;
@@ -314,10 +314,10 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
     while (p != pend) {
       while ((std::distance(p, pend) >= 8) && (step - counter >= 8) &&
              (max_digits - digits >= 8)) {
-        parse_eight_digits(p, value, counter, digits);
+        parse_eight_digits<UC>(p, value, counter, digits);
       }
       while (counter < step && p != pend && digits < max_digits) {
-        parse_one_digit(p, value, counter, digits);
+        parse_one_digit<UC>(p, value, counter, digits);
       }
       if (digits == max_digits) {
         // add the temporary value, then check if we've truncated any digits
@@ -326,7 +326,7 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
         if (truncated) {
           round_up_bigint(result, digits);
         }
-        return;
+        return digits;
       } else {
         add_native(result, limb(powers_of_ten_uint64[counter]), value);
         counter = 0;
@@ -338,6 +338,7 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num,
   if (counter != 0) {
     add_native(result, limb(powers_of_ten_uint64[counter]), value);
   }
+  return digits;
 }
 
 template <typename T>
@@ -440,13 +441,12 @@ inline FASTFLOAT_CONSTEXPR20 void digit_comp(
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
-  int32_t sci_exp = scientific_exponent(num);
-  uint32_t const max_digits = uint32_t(binary_format<T>::max_digits());
-  uint32_t digits = 0;
   bigint bigmant;
-  parse_mantissa(bigmant, num, max_digits, digits);
+  int32_t const sci_exp = scientific_exponent(num);
+  
+  uint16_t const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
-  int32_t exponent = sci_exp + 1 - digits;
+  int32_t const exponent = sci_exp + 1 - digits;
   if (exponent >= 0) {
     positive_digit_comp<T>(bigmant, am, exponent);
   } else {
