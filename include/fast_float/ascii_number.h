@@ -582,7 +582,9 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
   }
 
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  value = T(i);
+#else
   if (negative) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -600,9 +602,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #pragma warning(pop)
 #endif
   } else {
-#endif
     value = T(i);
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   }
 #endif
 

@@ -33,29 +33,29 @@
 
 namespace fast_float {
 
-enum class chars_format : uint64_t;
+enum class chars_format : uint8_t;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 namespace detail {
-constexpr chars_format basic_json_fmt = chars_format(1 << 5);
-constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
+constexpr chars_format basic_json_fmt = chars_format(1 << 4);
+constexpr chars_format basic_fortran_fmt = chars_format(1 << 5);
 } // namespace detail
 #endif
 
-enum class chars_format : uint64_t {
+enum class chars_format : uint8_t {
   scientific = 1 << 0,
-  fixed = 1 << 2,
+  fixed = 1 << 1,
   general = fixed | scientific,
-  hex = 1 << 3,
+  hex = 1 << 2,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  no_infnan = 1 << 4,
+  no_infnan = 1 << 3,
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
   json = uint64_t(detail::basic_json_fmt) | general | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
   json_or_infnan = uint64_t(detail::basic_json_fmt) | general,
   fortran = uint64_t(detail::basic_fortran_fmt) | general,
-  allow_leading_plus = 1 << 7,
-  skip_white_space = 1 << 8,
+  allow_leading_plus = 1 << 6,
+  skip_white_space = 1 << 7,
 #endif
 };
 
@@ -70,14 +70,18 @@ template <typename UC> struct parse_options_t {
   FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
       chars_format fmt = chars_format::general, UC dot = UC('.'),
       int const b = 10) noexcept
-      : format(fmt), decimal_point(dot), base(b) {}
+      : format(fmt), decimal_point(dot), base(uint8_t(b)) {
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    assert(b >= 2 && b <= 36);
+#endif
+  }
 
   /** Which number formats are accepted */
   chars_format format;
   /** The character used as decimal point */
   UC decimal_point;
   /** The base used for integers */
-  uint32_t base; /* only allowed from 2 to 36 */
+  uint8_t base; /* only allowed from 2 to 36 */
   FASTFLOAT_ASSUME(base >= 2 && base <= 36);
 };
 

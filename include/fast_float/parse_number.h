@@ -378,20 +378,16 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
       first++;
     }
   }
-#else
-  // We are in parser code with external loop that checks bounds.
-  FASTFLOAT_ASSUME(first < last);
-#endif
-  if (
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      first == last ||
-#endif
-      options.base < 2 || options.base > 36) {
+  if (first == last || options.base < 2 || options.base > 36) {
     from_chars_result_t<UC> answer;
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
   }
+#else
+  // We are in parser code with external loop that checks bounds.
+  FASTFLOAT_ASSUME(first < last);
+#endif
 
   return parse_int_string(first, last, value, options);
 }
