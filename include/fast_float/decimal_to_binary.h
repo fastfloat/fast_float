@@ -71,12 +71,12 @@ constexpr fastfloat_really_inline int32_t power(int32_t q) noexcept {
 // for significant digits already multiplied by 10 ** q.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
-compute_error_scaled(int64_t q, uint64_t w, int lz) noexcept {
-  int hilz = int(w >> 63) ^ 1;
+compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
+  int32_t hilz = int32_t(w >> 63) ^ 1;
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
-  int bias = binary::mantissa_explicit_bits() - binary::minimum_exponent();
-  answer.power2 = int32_t(detail::power(int32_t(q)) + bias - hilz - lz - 62 +
+  int32_t bias = binary::mantissa_explicit_bits() - binary::minimum_exponent();
+  answer.power2 = int16_t(detail::power(int32_t(q)) + bias - hilz - lz - 62 +
                           invalid_am_bias);
   return answer;
 }
@@ -143,7 +143,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
 
   answer.mantissa = product.high >> shift;
 
-  answer.power2 = int32_t(detail::power(int32_t(q)) + upperbit - lz -
+  answer.power2 = int16_t(detail::power(int32_t(q)) + upperbit - lz -
                           binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal?
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
@@ -196,7 +196,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   answer.mantissa >>= 1;
   if (answer.mantissa >= (uint64_t(2) << binary::mantissa_explicit_bits())) {
     answer.mantissa = (uint64_t(1) << binary::mantissa_explicit_bits());
-    answer.power2++; // undo previous addition
+    ++answer.power2; // undo previous addition
   }
 
   answer.mantissa &= ~(uint64_t(1) << binary::mantissa_explicit_bits());

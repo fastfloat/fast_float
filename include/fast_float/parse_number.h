@@ -283,7 +283,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
   // and we have an invalid power (am.power2 < 0), then we need to go the long
   // way around again. This is very uncommon.
   if (am.power2 < 0) {
-    digit_comp<T>(pns, am);
+    am = digit_comp<T>(pns, am);
   }
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN

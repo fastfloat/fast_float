@@ -293,15 +293,15 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 // a pointer and a length to a contiguous block of memory
 template <typename T> struct span {
   T const *ptr;
-  uint32_t length;
+  uint16_t length;
 
-  constexpr span(T const *_ptr, uint32_t _length) : ptr(_ptr), length(_length) {}
+  constexpr span(T const *_ptr, uint16_t _length) : ptr(_ptr), length(_length) {}
 
   constexpr span() : ptr(nullptr), length(0) {}
 
-  constexpr uint32_t len() const noexcept { return length; }
+  constexpr uint16_t len() const noexcept { return length; }
 
-  FASTFLOAT_CONSTEXPR14 const T &operator[](uint32_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const T &operator[](uint16_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -318,8 +318,8 @@ struct value128 {
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int
-leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint8_t
+leading_zeroes_generic(uint64_t input_num, uint64_t last_bit = 0) {
   if (input_num & uint64_t(0xffffffff00000000)) {
     input_num >>= 32;
     last_bit |= 32;
@@ -343,11 +343,11 @@ leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
   if (input_num & uint64_t(0x2)) { /* input_num >>=  1; */
     last_bit |= 1;
   }
-  return 63 - last_bit;
+  return 63 - (uint8_t)last_bit;
 }
 
 /* result might be undefined when input_num is zero */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint8_t
 leading_zeroes(uint64_t input_num) noexcept {
   assert(input_num > 0);
   FASTFLOAT_ASSUME(input_num > 0);
@@ -360,12 +360,12 @@ leading_zeroes(uint64_t input_num) noexcept {
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
   _BitScanReverse64(&leading_zero, input_num);
-  return (int)(63 - leading_zero);
+  return (uint8_t)(63 - leading_zero);
 #else
-  return leading_zeroes_generic(input_num);
+  return (uint8_t)leading_zeroes_generic(input_num);
 #endif
 #else
-  return __builtin_clzll(input_num);
+  return (uint8_t)__builtin_clzll(input_num);
 #endif
 }
 
@@ -429,7 +429,7 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 
 struct adjusted_mantissa {
   uint64_t mantissa;
-  int32_t power2; // a negative value indicates an invalid result
+  int16_t power2; // a negative value indicates an invalid result
   adjusted_mantissa() noexcept = default;
 
   constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
