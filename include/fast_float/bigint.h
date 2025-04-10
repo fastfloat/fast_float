@@ -101,7 +101,7 @@ template <uint8_t size> struct stackvec {
   FASTFLOAT_CONSTEXPR20 void extend_unchecked(limb_span s) noexcept {
     limb *ptr = data + length;
     std::copy_n(s.ptr, s.len(), ptr);
-    set_len(len() + s.len());
+    set_len(uint8_t(len() + s.len()));
   }
 
   // try to add items to the vector, returning if items were added
@@ -304,7 +304,7 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
   // the effective x buffer is from `xstart..x.len()`, so exit early
   // if we can't get that current range.
   if (x.len() < start || y.len() > x.len() - start) {
-    FASTFLOAT_TRY(x.try_resize(y.len() + start, 0));
+    FASTFLOAT_TRY(x.try_resize(uint8_t(y.len() + start), 0));
   }
 
   bool carry = false;
@@ -547,7 +547,7 @@ struct bigint : pow5_tables<> {
       limb *first = vec.data;
       limb *last = first + n;
       ::std::fill(first, last, 0);
-      vec.set_len(n + vec.len());
+      vec.set_len(uint8_t(n + vec.len()));
       return true;
     } else {
       return true;
