@@ -301,8 +301,9 @@ parse_number_string(UC const *p, UC const *pend,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) || (uint8_t(options.format & chars_format::allow_leading_plus) &&
-                          !basic_json_fmt && *p == UC('+'))) {
+  if ((*p == UC('-')) ||
+      (uint8_t(options.format & chars_format::allow_leading_plus) &&
+       !basic_json_fmt && *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -316,8 +317,8 @@ parse_number_string(UC const *p, UC const *pend,
     }
     else {
       if (!is_integer(*p) &&
-          (*p !=
-                 options.decimal_point)) { // a sign must be followed by an integer or the dot
+          (*p != options.decimal_point)) { // a sign must be followed by an
+                                           // integer or the dot
         return report_parse_error<UC>(
             p, parse_error::missing_integer_or_dot_after_sign);
       }
@@ -331,13 +332,15 @@ parse_number_string(UC const *p, UC const *pend,
   while ((p != pend) && is_integer(*p)) {
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
-    answer.mantissa = 10 * answer.mantissa +
+    answer.mantissa =
+        10 * answer.mantissa +
         uint64_t(*p -
                  UC('0')); // might overflow, we will handle the overflow later
     ++p;
   }
   UC const *const end_of_integer_part = p;
-  uint16_t digit_count = uint16_t(end_of_integer_part - start_digits);
+  uint16_t digit_count =
+      static_cast<uint16_t>(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, digit_count);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
@@ -363,40 +366,42 @@ parse_number_string(UC const *p, UC const *pend,
 
     while ((p != pend) && is_integer(*p)) {
       uint8_t const digit = uint8_t(*p - UC('0'));
-      answer.mantissa = answer.mantissa * 10 + digit; // in rare cases, this will overflow, but that's ok
+      answer.mantissa =
+          answer.mantissa * 10 +
+          digit; // in rare cases, this will overflow, but that's ok
       ++p;
     }
-    fraction = uint16_t(before - p);
-    answer.fraction = span<UC const>(before, uint16_t(p - before));
+    fraction = static_cast<uint16_t>(before - p);
+    answer.fraction = span<UC const>(before, static_cast<uint16_t>(p - before));
     digit_count -= fraction;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
       // at least 1 digit in fractional part
       if (has_decimal_point && fraction == 0) {
-        return report_parse_error<UC>(p,
-                                    parse_error::no_digits_in_fractional_part);
+        return report_parse_error<UC>(
+            p, parse_error::no_digits_in_fractional_part);
       }
     }
 #endif
-  }
-  else if (digit_count == 0) { // we must have encountered at least one integer!
+  } else if (digit_count ==
+             0) { // we must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   // We have now parsed the integer and the fraction part of the mantissa.
-  
+
   // Now we can parse the exponent part.
-  if (p != pend &&
-      (uint8_t(options.format & chars_format::scientific) &&
-       (UC('e') == *p) || (UC('E') == *p))
+  if ((p != pend) && (uint8_t(options.format & chars_format::scientific) &&
+                          (UC('e') == *p) ||
+                      (UC('E') == *p))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-   || (uint8_t(options.format & detail::basic_fortran_fmt) &&
-      ((UC('+') == *p) || (UC('-') == *p) ||
-       (UC('d') == *p) || (UC('D') == *p)))
+      || (uint8_t(options.format & detail::basic_fortran_fmt) &&
+          ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
+           (UC('D') == *p)))
 #endif
   ) {
     UC const *location_of_e = p;
     ++p;
-   
+
     bool neg_exp = false;
     if (p != pend) {
       if (UC('-') == *p) {
@@ -467,16 +472,19 @@ parse_number_string(UC const *p, UC const *pend,
       p = answer.integer.ptr;
       UC const *int_end = p + answer.integer.len();
       uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
-      while ((answer.mantissa < minimal_nineteen_digit_integer) && (p != int_end)) {
+      while ((answer.mantissa < minimal_nineteen_digit_integer) &&
+             (p != int_end)) {
         answer.mantissa = answer.mantissa * 10 + uint64_t(*p - UC('0'));
         ++p;
       }
-      if (answer.mantissa >= minimal_nineteen_digit_integer) { // We have a big integers
+      if (answer.mantissa >=
+          minimal_nineteen_digit_integer) { // We have a big integers
         answer.exponent += int16_t(end_of_integer_part - p);
       } else { // We have a value with a fractional component.
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
-        while ((answer.mantissa < minimal_nineteen_digit_integer) && (p != frac_end)) {
+        while ((answer.mantissa < minimal_nineteen_digit_integer) &&
+               (p != frac_end)) {
           answer.mantissa = answer.mantissa * 10 + uint64_t(*p - UC('0'));
           ++p;
         }
@@ -537,12 +545,11 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     if (digit >= options.base) {
       break;
     }
-    i = uint64_t(options.base) * i +
-        digit; // might overflow, check this later
+    i = uint64_t(options.base) * i + digit; // might overflow, check this later
     p++;
   }
 
-  uint16_t const digit_count = uint16_t(p - start_digits);
+  uint16_t const digit_count = static_cast<uint16_t>(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {

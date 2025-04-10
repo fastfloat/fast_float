@@ -262,7 +262,7 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
-  uint16_t const max_digits = uint16_t(binary_format<T>::max_digits());
+  uint16_t const max_digits = binary_format<T>::max_digits();
   uint16_t counter = 0;
   uint16_t digits = 0;
   limb value = 0;
@@ -342,14 +342,13 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
 }
 
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-positive_digit_comp(bigint &bigmant, adjusted_mantissa am,
-                    int16_t const exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
+    bigint &bigmant, adjusted_mantissa am, int16_t const exponent) noexcept {
   FASTFLOAT_ASSERT(bigmant.pow10(exponent));
   bool truncated;
   am.mantissa = bigmant.hi64(truncated);
   int16_t bias = binary_format<T>::mantissa_explicit_bits() -
-             binary_format<T>::minimum_exponent();
+                 binary_format<T>::minimum_exponent();
   am.power2 = bigmant.bit_length() - 64 + bias;
 
   round<T>(am, [truncated](adjusted_mantissa &a, int16_t shift) {
@@ -370,15 +369,15 @@ positive_digit_comp(bigint &bigmant, adjusted_mantissa am,
 // we then need to scale by `2^(f- e)`, and then the two significant digits
 // are of the same magnitude.
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-negative_digit_comp(bigint &bigmant, adjusted_mantissa am,
-                    int16_t const exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
+    bigint &bigmant, adjusted_mantissa am, int16_t const exponent) noexcept {
   bigint &real_digits = bigmant;
   int16_t const &real_exp = exponent;
 
   T b;
   {
-    // get the value of `b`, rounded down, and get a bigint representation of b+h
+    // get the value of `b`, rounded down, and get a bigint representation of
+    // b+h
     adjusted_mantissa am_b = am;
     // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
     // -Wnoexcept-type.
@@ -386,9 +385,9 @@ negative_digit_comp(bigint &bigmant, adjusted_mantissa am,
              [](adjusted_mantissa &a, int16_t shift) { round_down(a, shift); });
     to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-            false,
+        false,
 #endif
-            am_b, b);
+        am_b, b);
   }
   adjusted_mantissa theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
@@ -396,7 +395,7 @@ negative_digit_comp(bigint &bigmant, adjusted_mantissa am,
 
   // scale real digits and theor digits to be same power.
   int16_t pow2_exp = theor_exp - real_exp;
-  uint16_t pow5_exp = uint16_t(-real_exp);
+  uint16_t pow5_exp = -real_exp;
   if (pow5_exp != 0) {
     FASTFLOAT_ASSERT(theor_digits.pow5(pow5_exp));
   }
@@ -447,7 +446,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
 
   bigint bigmant;
   int16_t const sci_exp = scientific_exponent(num);
-  
+
   uint16_t const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
   int16_t const exponent = sci_exp + 1 - digits;

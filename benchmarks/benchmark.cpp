@@ -1,5 +1,5 @@
 
-//#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+// #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
@@ -146,8 +146,8 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   return std::make_pair(min_value, average);
 }
 
-void pretty_print(size_t volume, size_t number_of_floats, std::string const &name,
-                  std::pair<double, double> result) {
+void pretty_print(size_t volume, size_t number_of_floats,
+                  std::string const &name, std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
          volumeMB * 1000000000 / result.first,
@@ -223,7 +223,8 @@ void fileload(std::string filename) {
 
 int main(int argc, char **argv) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  std::cout << "# FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled" << std::endl;
+  std::cout << "# FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled"
+            << std::endl;
 #endif
 #ifdef USING_COUNTERS
   if (collector.has_events()) {

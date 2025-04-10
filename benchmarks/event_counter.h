@@ -37,7 +37,8 @@ struct event_count {
   event_count() : elapsed(0), event_counts{0, 0, 0, 0} {}
 
   event_count(const std::chrono::duration<double> &_elapsed,
-              const std::array<unsigned long long, event_counter_types_size> &_event_counts)
+              const std::array<unsigned long long, event_counter_types_size>
+                  &_event_counts)
       : elapsed(_elapsed), event_counts(_event_counts) {}
 
   event_count(const event_count &other)

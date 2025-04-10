@@ -11,9 +11,9 @@ int main_readme() {
   double result;
   auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result,
-      fast_float::parse_options ({
-      fast_float::chars_format::fortran |
-      fast_float::chars_format::allow_leading_plus}));
+      fast_float::parse_options(
+          {fast_float::chars_format::fortran |
+           fast_float::chars_format::allow_leading_plus}));
   if ((answer.ec != std::errc()) || ((result != 10000))) {
     std::cerr << "parsing failure\n" << result << "\n";
     return EXIT_FAILURE;
@@ -35,11 +35,11 @@ int main() {
   for (auto const &f : fmt1) {
     auto d{std::distance(&fmt1[0], &f)};
     double result;
-    auto answer{fast_float::from_chars_advanced(f.data(), f.data() + f.size(),
-                                                result,
-      fast_float::parse_options ({
-      fast_float::chars_format::fortran |
-      fast_float::chars_format::allow_leading_plus}))};
+    auto answer{fast_float::from_chars_advanced(
+        f.data(), f.data() + f.size(), result,
+        fast_float::parse_options(
+            {fast_float::chars_format::fortran |
+             fast_float::chars_format::allow_leading_plus}))};
     if (answer.ec != std::errc() || result != expected[std::size_t(d)]) {
       std::cerr << "parsing failure on " << f << std::endl;
       return EXIT_FAILURE;
@@ -49,11 +49,11 @@ int main() {
   for (auto const &f : fmt2) {
     auto d{std::distance(&fmt2[0], &f)};
     double result;
-    auto answer{fast_float::from_chars_advanced(f.data(), f.data() + f.size(),
-                                                result,
-      fast_float::parse_options ({
-      fast_float::chars_format::fortran |
-      fast_float::chars_format::allow_leading_plus}))};
+    auto answer{fast_float::from_chars_advanced(
+        f.data(), f.data() + f.size(), result,
+        fast_float::parse_options(
+            {fast_float::chars_format::fortran |
+             fast_float::chars_format::allow_leading_plus}))};
     if (answer.ec != std::errc() || result != expected[std::size_t(d)]) {
       std::cerr << "parsing failure on " << f << std::endl;
       return EXIT_FAILURE;
@@ -63,11 +63,11 @@ int main() {
   for (auto const &f : fmt3) {
     auto d{std::distance(&fmt3[0], &f)};
     double result;
-    auto answer{fast_float::from_chars_advanced(f.data(), f.data() + f.size(),
-                                                result,
-      fast_float::parse_options ({
-      fast_float::chars_format::fortran |
-      fast_float::chars_format::allow_leading_plus}))};
+    auto answer{fast_float::from_chars_advanced(
+        f.data(), f.data() + f.size(), result,
+        fast_float::parse_options(
+            {fast_float::chars_format::fortran |
+             fast_float::chars_format::allow_leading_plus}))};
     if (answer.ec != std::errc() || result != expected[std::size_t(d)]) {
       std::cerr << "parsing failure on " << f << std::endl;
       return EXIT_FAILURE;

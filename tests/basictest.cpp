@@ -656,7 +656,8 @@ TEST_CASE("decimal_point_parsing") {
 
     answer = fast_float::from_chars_advanced(
         input.data(), input.data() + input.size(), result,
-        fast_float::parse_options({fast_float::chars_format::general, ',', 10}));
+        fast_float::parse_options(
+            {fast_float::chars_format::general, ',', 10}));
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
     CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
                   "Parsing should have stopped at end");
@@ -666,8 +667,8 @@ TEST_CASE("decimal_point_parsing") {
     std::string const input = "1.25";
     auto answer = fast_float::from_chars_advanced(
         input.data(), input.data() + input.size(), result,
-        fast_float::parse_options({fast_float::chars_format::general, ',',
-                                    10}));
+        fast_float::parse_options(
+            {fast_float::chars_format::general, ',', 10}));
     CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
     CHECK_MESSAGE(answer.ptr == input.data() + 1,
                   "Parsing should have stopped at dot");
@@ -1324,8 +1325,8 @@ TEST_CASE("double.general") {
 
 TEST_CASE("double.decimal_point") {
   constexpr auto options = [] {
-    return fast_float::parse_options({fast_float::chars_format::general, ',',
-                                     10});
+    return fast_float::parse_options(
+        {fast_float::chars_format::general, ',', 10});
   }();
 
   // infinities
@@ -1642,8 +1643,8 @@ TEST_CASE("float.general") {
 
 TEST_CASE("float.decimal_point") {
   constexpr auto options = [] {
-    return fast_float::parse_options({fast_float::chars_format::general, ',',
-                                     10});
+    return fast_float::parse_options(
+        {fast_float::chars_format::general, ',', 10});
   }();
 
   // infinity

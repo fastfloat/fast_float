@@ -22,7 +22,8 @@ template <int TYPE = PERF_TYPE_HARDWARE> class LinuxEvents {
   std::vector<uint64_t> ids{};
 
 public:
-  explicit LinuxEvents(std::array<unsigned long long, 4> config_vec) : fd(0), working(true) {
+  explicit LinuxEvents(std::array<unsigned long long, 4> config_vec)
+      : fd(0), working(true) {
     memset(&attribs, 0, sizeof(attribs));
     attribs.type = TYPE;
     attribs.size = sizeof(attribs);

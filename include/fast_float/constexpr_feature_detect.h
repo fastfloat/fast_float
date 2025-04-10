@@ -58,7 +58,6 @@
 #define FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE 1
 #endif
 
-
 // For support attribute [[assume]] is declared in P1774
 #if defined(__cpp_attrubute_assume)
 #define FASTFLOAT_ASSUME(expr) [[assume(expr)]]
