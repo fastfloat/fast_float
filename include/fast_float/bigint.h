@@ -19,11 +19,11 @@ namespace fast_float {
 #if defined(FASTFLOAT_64BIT) && !defined(__sparc)
 #define FASTFLOAT_64BIT_LIMB 1
 typedef uint64_t limb;
-constexpr uint16_t limb_bits = 64;
+constexpr uint8_t limb_bits = 64;
 #else
 #define FASTFLOAT_32BIT_LIMB
 typedef uint32_t limb;
-constexpr uint16_t limb_bits = 32;
+constexpr uint8_t limb_bits = 32;
 #endif
 
 typedef span<limb> limb_span;
@@ -33,7 +33,7 @@ typedef span<limb> limb_span;
 // `log2(10**(digits + max_exp))`, or `log2(10**(767 + 342))`, or
 // ~3600 bits, so we round to 4000.
 constexpr uint16_t bigint_bits = 4000;
-constexpr uint16_t bigint_limbs = bigint_bits / limb_bits;
+constexpr uint8_t bigint_limbs = bigint_bits / limb_bits;
 
 // vector-like type that is allocated on the stack. the entire
 // buffer is pre-allocated, and only the length changes.

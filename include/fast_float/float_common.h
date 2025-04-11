@@ -33,9 +33,7 @@
 
 namespace fast_float {
 
-// because library only support 32 and 64 bit architectures,
-// we should use 32 bit value here
-typedef uint32_t chars_format_t;
+typedef uint8_t chars_format_t;
 
 enum class chars_format : chars_format_t;
 
@@ -56,8 +54,8 @@ enum class chars_format : chars_format_t {
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
   json = uint64_t(detail::basic_json_fmt) | general | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
-  json_or_infnan = uint64_t(detail::basic_json_fmt) | general,
-  fortran = uint64_t(detail::basic_fortran_fmt) | general,
+  json_or_infnan = chars_format_t(detail::basic_json_fmt) | general,
+  fortran = chars_format_t(detail::basic_fortran_fmt) | general,
   allow_leading_plus = 1 << 6,
   skip_white_space = 1 << 7,
 #endif
@@ -85,7 +83,7 @@ template <typename UC> struct parse_options_t {
   /** The character used as decimal point */
   UC const decimal_point;
   /** The base used for integers */
-  uint32_t const base; /* only allowed from 2 to 36 */
+  uint8_t const base; /* only allowed from 2 to 36 */
   FASTFLOAT_ASSUME(base >= 2 && base <= 36);
 };
 
@@ -305,10 +303,10 @@ template <typename T> struct span {
   T const *ptr;
   uint16_t length;
 
-  constexpr span(T const *_ptr, uint16_t _length)
+  constexpr span(T const *_ptr, uint16_t _length) noexcept
       : ptr(_ptr), length(_length) {}
 
-  constexpr span() : ptr(nullptr), length(0) {}
+  constexpr span() noexcept : ptr(nullptr), length(0) {}
 
   constexpr uint16_t len() const noexcept { return length; }
 
@@ -330,7 +328,7 @@ struct value128 {
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes */
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint8_t
-leading_zeroes_generic(uint64_t input_num, uint64_t last_bit = 0) {
+leading_zeroes_generic(uint64_t input_num, uint64_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0xffffffff00000000)) {
     input_num >>= 32;
     last_bit |= 32;
@@ -404,7 +402,7 @@ umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
 #if !defined(__MINGW64__)
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t _umul128(uint64_t ab,
                                                                 uint64_t cd,
-                                                                uint64_t *hi) {
+                                                                uint64_t *hi) noexcept {
   return umul128_generic(ab, cd, hi);
 }
 #endif // !__MINGW64__
@@ -1198,17 +1196,17 @@ template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 #endif
 
 template <typename UC>
-fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
+fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) noexcept {
   return int_luts<>::chdigit[static_cast<unsigned char>(c)];
 }
 
-fastfloat_really_inline constexpr uint8_t max_digits_u64(uint8_t base) {
+fastfloat_really_inline constexpr uint8_t max_digits_u64(uint8_t base) noexcept {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t min_safe_u64(uint8_t base) {
+fastfloat_really_inline constexpr uint64_t min_safe_u64(uint8_t base) noexcept {
   return int_luts<>::min_safe_u64[base - 2];
 }
 
