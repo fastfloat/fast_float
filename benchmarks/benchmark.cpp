@@ -207,7 +207,7 @@ void fileload(std::string filename) {
   std::cout << "#### " << std::endl;
   std::string line;
   std::vector<std::string> lines;
-  lines.reserve(10000); // let us reserve plenty of memory.
+  lines.reserve(120000); // let us reserve plenty of memory.
   size_t volume = 0;
   while (getline(inputfile, line)) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -241,8 +241,7 @@ int main(int argc, char **argv) {
     fileload(argv[1]);
     return EXIT_SUCCESS;
   }
-  fileload(std::string(BENCHMARK_DATA_DIR) + "/contrived.txt");
-  fileload(std::string(BENCHMARK_DATA_DIR) + "/canada_short.txt");
+
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
   return EXIT_SUCCESS;
