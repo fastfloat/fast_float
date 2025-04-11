@@ -33,7 +33,11 @@
 
 namespace fast_float {
 
-enum class chars_format : uint8_t;
+// because library only support 32 and 64 bit architectures,
+// we should use 32 bit value here
+typedef uint32_t chars_format_t;
+
+enum class chars_format : chars_format_t;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 namespace detail {
@@ -42,7 +46,7 @@ constexpr chars_format basic_fortran_fmt = chars_format(1 << 5);
 } // namespace detail
 #endif
 
-enum class chars_format : uint8_t {
+enum class chars_format : chars_format_t {
   scientific = 1 << 0,
   fixed = 1 << 1,
   general = fixed | scientific,
@@ -69,8 +73,8 @@ using from_chars_result = from_chars_result_t<char>;
 template <typename UC> struct parse_options_t {
   FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
       chars_format const fmt = chars_format::general, UC const dot = UC('.'),
-      int const b = 10) noexcept
-      : format(fmt), decimal_point(dot), base(uint8_t(b)) {
+      chars_format_t const b = 10) noexcept
+      : format(fmt), decimal_point(dot), base(b) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     // static_assert(b >= 2 && b <= 36);
 #endif
@@ -81,7 +85,7 @@ template <typename UC> struct parse_options_t {
   /** The character used as decimal point */
   UC const decimal_point;
   /** The base used for integers */
-  uint8_t const base; /* only allowed from 2 to 36 */
+  uint32_t const base; /* only allowed from 2 to 36 */
   FASTFLOAT_ASSUME(base >= 2 && base <= 36);
 };
 
