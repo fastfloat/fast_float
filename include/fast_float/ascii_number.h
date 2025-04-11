@@ -260,6 +260,7 @@ enum class parse_error {
 };
 
 template <typename UC> struct parsed_number_string_t {
+  // an unsigned int avoids signed overflows (which are bad)
   uint64_t mantissa{0};
   int16_t exponent{0};
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -328,7 +329,6 @@ parse_number_string(UC const *p, UC const *pend,
 
   UC const *const start_digits = p;
 
-  // an unsigned int avoids signed overflows (which are bad)
   while ((p != pend) && is_integer(*p)) {
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
@@ -359,7 +359,6 @@ parse_number_string(UC const *p, UC const *pend,
   if (has_decimal_point) {
     ++p;
     UC const *before = p;
-    uint16_t fraction = 0;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     loop_parse_if_eight_digits(p, pend, answer.mantissa);
@@ -371,13 +370,13 @@ parse_number_string(UC const *p, UC const *pend,
           digit; // in rare cases, this will overflow, but that's ok
       ++p;
     }
-    fraction = static_cast<uint16_t>(before - p);
+    answer.exponent = static_cast<int16_t>(before - p);
     answer.fraction = span<UC const>(before, static_cast<uint16_t>(p - before));
-    digit_count -= fraction;
+    digit_count -= answer.exponent;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
       // at least 1 digit in fractional part
-      if (has_decimal_point && fraction == 0) {
+      if (has_decimal_point && answer.exponent == 0) {
         return report_parse_error<UC>(
             p, parse_error::no_digits_in_fractional_part);
       }
@@ -389,7 +388,8 @@ parse_number_string(UC const *p, UC const *pend,
   }
   // We have now parsed the integer and the fraction part of the mantissa.
 
-  // Now we can parse the exponent part.
+  // Now we can parse the explicit exponential part.
+  int16_t exp_number = 0; // explicit exponential part
   if ((p != pend) && (uint8_t(options.format & chars_format::scientific) &&
                           (UC('e') == *p) ||
                       (UC('E') == *p))
@@ -400,8 +400,14 @@ parse_number_string(UC const *p, UC const *pend,
 #endif
   ) {
     UC const *location_of_e = p;
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     ++p;
-
+#else
+    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
+        (UC('D') == *p)) {
+      ++p;
+    }
+#endif
     bool neg_exp = false;
     if (p != pend) {
       if (UC('-') == *p) {
@@ -423,16 +429,17 @@ parse_number_string(UC const *p, UC const *pend,
       p = location_of_e;
     } else {
       while ((p != pend) && is_integer(*p)) {
-        if (answer.exponent < 0x1000) {
+        if (exp_number < 0x1000) {
           // check for exponent overflow if we have too many digits.
           uint8_t const digit = uint8_t(*p - UC('0'));
-          answer.exponent = 10 * answer.exponent + digit;
+          exp_number = 10 * exp_number + digit;
         }
         ++p;
       }
       if (neg_exp) {
-        answer.exponent = -answer.exponent;
+        exp_number = -exp_number;
       }
+      answer.exponent += exp_number;
     }
   } else {
     // If it scientific and not fixed, we have to bail out.
@@ -479,7 +486,7 @@ parse_number_string(UC const *p, UC const *pend,
       }
       if (answer.mantissa >=
           minimal_nineteen_digit_integer) { // We have a big integers
-        answer.exponent += int16_t(end_of_integer_part - p);
+        answer.exponent = int16_t(end_of_integer_part - p) + exp_number;
       } else { // We have a value with a fractional component.
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
@@ -488,7 +495,7 @@ parse_number_string(UC const *p, UC const *pend,
           answer.mantissa = answer.mantissa * 10 + uint64_t(*p - UC('0'));
           ++p;
         }
-        answer.exponent += int16_t(answer.fraction.ptr - p);
+        answer.exponent = int16_t(answer.fraction.ptr - p) + exp_number;
       }
       // We have now corrected both exponent and mantissa, to a truncated value
     }
