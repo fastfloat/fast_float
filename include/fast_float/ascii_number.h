@@ -263,6 +263,8 @@ template <typename UC> struct parsed_number_string_t {
   // an unsigned int avoids signed overflows (which are bad)
   uint64_t mantissa{0};
   int16_t exponent{0};
+  UC const *lastmatch{nullptr};
+  parse_error error{parse_error::no_error};
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
@@ -271,8 +273,6 @@ template <typename UC> struct parsed_number_string_t {
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
   span<UC const> fraction{}; // nullable
-  UC const *lastmatch{nullptr};
-  parse_error error{parse_error::no_error};
 };
 
 using byte_span = span<char const>;
