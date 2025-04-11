@@ -312,7 +312,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (uint8_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
-      first++;
+      ++first;
     }
   }
   if (first == last) {
@@ -375,7 +375,7 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (uint8_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
-      first++;
+      ++first;
     }
   }
   if (first == last || options.base < 2 || options.base > 36) {
