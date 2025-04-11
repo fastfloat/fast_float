@@ -72,7 +72,7 @@ template <typename UC> struct parse_options_t {
       int const b = 10) noexcept
       : format(fmt), decimal_point(dot), base(uint8_t(b)) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    //static_assert(b >= 2 && b <= 36);
+    // static_assert(b >= 2 && b <= 36);
 #endif
   }
 
