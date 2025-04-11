@@ -10,7 +10,7 @@
 #include <cstring> // for memset
 #include <stdexcept>
 
-#include <iostream>
+#include <array>
 #include <vector>
 
 template <int TYPE = PERF_TYPE_HARDWARE> class LinuxEvents {
@@ -22,7 +22,8 @@ template <int TYPE = PERF_TYPE_HARDWARE> class LinuxEvents {
   std::vector<uint64_t> ids{};
 
 public:
-  explicit LinuxEvents(std::vector<int> config_vec) : fd(0), working(true) {
+  explicit LinuxEvents(std::array<unsigned long long, 4> config_vec)
+      : fd(0), working(true) {
     memset(&attribs, 0, sizeof(attribs));
     attribs.type = TYPE;
     attribs.size = sizeof(attribs);
@@ -75,7 +76,7 @@ public:
     }
   }
 
-  inline void end(std::vector<unsigned long long> &results) {
+  inline void end(std::array<unsigned long long, 4> &results) {
     if (fd != -1) {
       if (ioctl(fd, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP) == -1) {
         report_error("ioctl(PERF_EVENT_IOC_DISABLE)");
