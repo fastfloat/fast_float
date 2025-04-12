@@ -261,8 +261,8 @@ enum class parse_error {
 
 template <typename UC> struct parsed_number_string_t {
   // an unsigned int avoids signed overflows (which are bad)
-  uint64_t mantissa{0};
-  int16_t exponent{0};
+  am_mant_t mantissa{0};
+  am_pow_t exponent{0};
   UC const *lastmatch{nullptr};
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
@@ -334,13 +334,13 @@ parse_number_string(UC const *p, UC const *pend,
     // multiplication
     answer.mantissa =
         10 * answer.mantissa +
-        uint64_t(*p -
+        UC(*p -
                  UC('0')); // might overflow, we will handle the overflow later
     ++p;
   }
   UC const *const end_of_integer_part = p;
-  uint16_t digit_count =
-      static_cast<uint16_t>(end_of_integer_part - start_digits);
+  am_digits digit_count =
+      static_cast<am_digits>(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, digit_count);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
@@ -364,14 +364,14 @@ parse_number_string(UC const *p, UC const *pend,
     loop_parse_if_eight_digits(p, pend, answer.mantissa);
 
     while ((p != pend) && is_integer(*p)) {
-      uint8_t const digit = uint8_t(*p - UC('0'));
+      UC const digit = UC(*p - UC('0'));
       answer.mantissa =
           answer.mantissa * 10 +
           digit; // in rare cases, this will overflow, but that's ok
       ++p;
     }
-    answer.exponent = static_cast<int16_t>(before - p);
-    answer.fraction = span<UC const>(before, static_cast<uint16_t>(p - before));
+    answer.exponent = static_cast<am_pow_t>(before - p);
+    answer.fraction = span<UC const>(before, static_cast<am_digits>(p - before));
     digit_count -= answer.exponent;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
@@ -389,7 +389,7 @@ parse_number_string(UC const *p, UC const *pend,
   // We have now parsed the integer and the fraction part of the mantissa.
 
   // Now we can parse the explicit exponential part.
-  int16_t exp_number = 0; // explicit exponential part
+  am_pow_t exp_number = 0; // explicit exponential part
   if ((p != pend) && (chars_format_t(options.format & chars_format::scientific) &&
                           (UC('e') == *p) ||
                       (UC('E') == *p))
@@ -431,7 +431,7 @@ parse_number_string(UC const *p, UC const *pend,
       while ((p != pend) && is_integer(*p)) {
         if (exp_number < 0x1000) {
           // check for exponent overflow if we have too many digits.
-          uint8_t const digit = uint8_t(*p - UC('0'));
+          UC const digit = UC(*p - UC('0'));
           exp_number = 10 * exp_number + digit;
         }
         ++p;
@@ -478,24 +478,24 @@ parse_number_string(UC const *p, UC const *pend,
       answer.mantissa = 0;
       p = answer.integer.ptr;
       UC const *int_end = p + answer.integer.len();
-      uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
+      am_mant_t const minimal_nineteen_digit_integer{1000000000000000000};
       while ((answer.mantissa < minimal_nineteen_digit_integer) &&
              (p != int_end)) {
-        answer.mantissa = answer.mantissa * 10 + uint64_t(*p - UC('0'));
+        answer.mantissa = answer.mantissa * 10 + UC(*p - UC('0'));
         ++p;
       }
       if (answer.mantissa >=
           minimal_nineteen_digit_integer) { // We have a big integers
-        answer.exponent = int16_t(end_of_integer_part - p) + exp_number;
+        answer.exponent = am_pow_t(end_of_integer_part - p) + exp_number;
       } else { // We have a value with a fractional component.
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
         while ((answer.mantissa < minimal_nineteen_digit_integer) &&
                (p != frac_end)) {
-          answer.mantissa = answer.mantissa * 10 + uint64_t(*p - UC('0'));
+          answer.mantissa = answer.mantissa * 10 + UC(*p - UC('0'));
           ++p;
         }
-        answer.exponent = int16_t(answer.fraction.ptr - p) + exp_number;
+        answer.exponent = am_pow_t(answer.fraction.ptr - p) + exp_number;
       }
       // We have now corrected both exponent and mantissa, to a truncated value
     }
