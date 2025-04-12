@@ -23,8 +23,16 @@
 #if defined(__cpp_lib_is_constant_evaluated) &&                                \
     __cpp_lib_is_constant_evaluated >= 201811L
 #define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 1
+#define FASTFLOAT_CONSTEVAL consteval
 #else
 #define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 0
+#define FASTFLOAT_CONSTEVAL FASTFLOAT_CONSTEXPR14
+#endif
+
+#if defined(__cpp_lib_byteswap)
+#define FASTFLOAT_HAS_BYTESWAP 1
+#else
+#define FASTFLOAT_HAS_BYTESWAP 0
 #endif
 
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
@@ -48,6 +56,13 @@
 #define FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE 0
 #else
 #define FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE 1
+#endif
+
+// For support attribute [[assume]] is declared in P1774
+#if defined(__cpp_attrubute_assume)
+#define FASTFLOAT_ASSUME(expr) [[assume(expr)]]
+#else
+#define FASTFLOAT_ASSUME(expr)
 #endif
 
 #endif // FASTFLOAT_CONSTEXPR_FEATURE_DETECT_H
