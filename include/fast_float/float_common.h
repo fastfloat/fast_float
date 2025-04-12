@@ -408,9 +408,8 @@ umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t _umul128(uint64_t ab,
-                                                                uint64_t cd,
-                                                                uint64_t *hi) noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
+_umul128(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
   return umul128_generic(ab, cd, hi);
 }
 #endif // !__MINGW64__
@@ -449,7 +448,7 @@ typedef uint64_t am_mant_t;
 // Size of bits in the mantissa.
 typedef uint8_t am_bits_t;
 
-// Power bias is signed for handling a denormal float 
+// Power bias is signed for handling a denormal float
 // or an invalid mantissa.
 typedef int16_t am_pow_t;
 
@@ -630,7 +629,8 @@ inline constexpr am_pow_t binary_format<float>::min_exponent_round_to_even() {
   return -17;
 }
 
-template <> inline constexpr am_pow_t binary_format<double>::minimum_exponent() {
+template <>
+inline constexpr am_pow_t binary_format<double>::minimum_exponent() {
   return -1023;
 }
 
@@ -669,7 +669,8 @@ inline constexpr am_pow_t binary_format<float>::max_exponent_fast_path() {
 }
 
 template <typename T>
-inline constexpr binary_format<T>::equiv_uint binary_format<T>::max_mantissa_fast_path() {
+inline constexpr binary_format<T>::equiv_uint
+binary_format<T>::max_mantissa_fast_path() {
   return binary_format<T>::equiv_uint(2) << mantissa_explicit_bits();
 }
 
@@ -786,7 +787,8 @@ inline constexpr am_bits_t binary_format<std::float16_t>::sign_index() {
 #endif
 
 template <>
-inline constexpr am_exp_t binary_format<std::float16_t>::largest_power_of_ten() {
+inline constexpr am_exp_t
+binary_format<std::float16_t>::largest_power_of_ten() {
   return 4;
 }
 
@@ -1197,7 +1199,8 @@ fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) noexcept {
   return int_luts<>::chdigit[static_cast<unsigned char>(c)];
 }
 
-fastfloat_really_inline constexpr uint8_t max_digits_u64(uint8_t base) noexcept {
+fastfloat_really_inline constexpr uint8_t
+max_digits_u64(uint8_t base) noexcept {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 

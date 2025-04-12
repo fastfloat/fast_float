@@ -334,8 +334,7 @@ parse_number_string(UC const *p, UC const *pend,
     // multiplication
     answer.mantissa =
         10 * answer.mantissa +
-        UC(*p -
-                 UC('0')); // might overflow, we will handle the overflow later
+        UC(*p - UC('0')); // might overflow, we will handle the overflow later
     ++p;
   }
   UC const *const end_of_integer_part = p;
@@ -371,7 +370,8 @@ parse_number_string(UC const *p, UC const *pend,
       ++p;
     }
     answer.exponent = static_cast<am_pow_t>(before - p);
-    answer.fraction = span<UC const>(before, static_cast<am_digits>(p - before));
+    answer.fraction =
+        span<UC const>(before, static_cast<am_digits>(p - before));
     digit_count -= answer.exponent;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
@@ -390,9 +390,10 @@ parse_number_string(UC const *p, UC const *pend,
 
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
-  if ((p != pend) && (chars_format_t(options.format & chars_format::scientific) &&
-                          (UC('e') == *p) ||
-                      (UC('E') == *p))
+  if ((p != pend) &&
+          (chars_format_t(options.format & chars_format::scientific) &&
+               (UC('e') == *p) ||
+           (UC('E') == *p))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
           ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||

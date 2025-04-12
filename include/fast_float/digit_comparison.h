@@ -69,14 +69,14 @@ to_extended(T const &value) noexcept {
 
   adjusted_mantissa am;
   am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
-                 binary_format<T>::minimum_exponent();
+                  binary_format<T>::minimum_exponent();
   equiv_uint bits;
 #if FASTFLOAT_HAS_BIT_CAST
-  bits = 
+  bits =
 #if FASTFLOAT_HAS_BIT_CAST == 1
-         std::
+      std::
 #endif
-              bit_cast<equiv_uint>(value);
+          bit_cast<equiv_uint>(value);
 #else
   ::memcpy(&bits, &value, sizeof(T));
 #endif
@@ -87,7 +87,7 @@ to_extended(T const &value) noexcept {
   } else {
     // normal
     am.power2 = am_pow_t((bits & exponent_mask) >>
-                        binary_format<T>::mantissa_explicit_bits());
+                         binary_format<T>::mantissa_explicit_bits());
     am.power2 -= bias;
     am.mantissa = (bits & mantissa_mask) | hidden_bit_mask;
   }
@@ -147,7 +147,8 @@ template <typename callback>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
 round_nearest_tie_even(adjusted_mantissa &am, am_pow_t shift,
                        callback cb) noexcept {
-  am_mant_t const mask = (shift == 64) ? UINT64_MAX : (am_mant_t(1) << shift) - 1;
+  am_mant_t const mask =
+      (shift == 64) ? UINT64_MAX : (am_mant_t(1) << shift) - 1;
   am_mant_t const halfway = (shift == 0) ? 0 : am_mant_t(1) << (shift - 1);
   am_mant_t truncated_bits = am.mantissa & mask;
   bool is_above = truncated_bits > halfway;
@@ -352,7 +353,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
   bool truncated;
   am.mantissa = bigmant.hi64(truncated);
   am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
-                 binary_format<T>::minimum_exponent();
+                  binary_format<T>::minimum_exponent();
   am.power2 = bigmant.bit_length() - 64 + bias;
 
   round<T>(am, [truncated](adjusted_mantissa &a, am_pow_t shift) {
@@ -385,8 +386,9 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
     adjusted_mantissa am_b = am;
     // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
     // -Wnoexcept-type.
-    round<T>(am_b,
-             [](adjusted_mantissa &a, am_pow_t shift) { round_down(a, shift); });
+    round<T>(am_b, [](adjusted_mantissa &a, am_pow_t shift) {
+      round_down(a, shift);
+    });
     to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
         false,

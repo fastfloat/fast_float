@@ -77,7 +77,7 @@ compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
   answer.mantissa = w << hilz;
   int32_t bias = binary::mantissa_explicit_bits() - binary::minimum_exponent();
   answer.power2 = am_pow_t(detail::power(int32_t(q)) + bias - hilz - lz - 62 +
-                          invalid_am_bias);
+                           invalid_am_bias);
   return answer;
 }
 
@@ -144,7 +144,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   answer.mantissa = product.high >> shift;
 
   answer.power2 = am_pow_t(detail::power(int32_t(q)) + upperbit - lz -
-                          binary::minimum_exponent());
+                           binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal or very small value.
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if (-answer.power2 + 1 >=
