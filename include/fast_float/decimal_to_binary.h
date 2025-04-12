@@ -17,7 +17,7 @@ namespace fast_float {
 // most significant bits and the low part corresponding to the least significant
 // bits.
 //
-template <uint32_t bit_precision>
+template <uint8_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(int64_t q, uint64_t w) noexcept {
   int const index = 2 * int(q - powers::smallest_power_of_five);
@@ -171,7 +171,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
     // subnormal, but we can only know this after rounding.
     // So we only declare a subnormal if we are smaller than the threshold.
     answer.power2 =
-        (answer.mantissa < (uint64_t(1) << binary::mantissa_explicit_bits()))
+        (answer.mantissa < (am_mant_t(1) << binary::mantissa_explicit_bits()))
             ? 0
             : 1;
     return answer;
@@ -189,18 +189,18 @@ compute_float(int64_t q, uint64_t w) noexcept {
     // ... we dropped out only zeroes. But if this happened, then we can go
     // back!!!
     if ((answer.mantissa << shift) == product.high) {
-      answer.mantissa &= ~uint64_t(1); // flip it so that we do not round up
+      answer.mantissa &= ~am_mant_t(1); // flip it so that we do not round up
     }
   }
 
   answer.mantissa += (answer.mantissa & 1); // round up
   answer.mantissa >>= 1;
-  if (answer.mantissa >= (uint64_t(2) << binary::mantissa_explicit_bits())) {
-    answer.mantissa = (uint64_t(1) << binary::mantissa_explicit_bits());
+  if (answer.mantissa >= (am_mant_t(2) << binary::mantissa_explicit_bits())) {
+    answer.mantissa = (am_mant_t(1) << binary::mantissa_explicit_bits());
     ++answer.power2; // undo previous addition
   }
 
-  answer.mantissa &= ~(uint64_t(1) << binary::mantissa_explicit_bits());
+  answer.mantissa &= ~(am_mant_t(1) << binary::mantissa_explicit_bits());
   if (answer.power2 >= binary::infinite_power()) { // infinity
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;

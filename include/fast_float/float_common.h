@@ -1058,7 +1058,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <typename = void> struct space_lut {
-  static constexpr bool value[] = {
+  static constexpr uint8_t value[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1074,7 +1074,7 @@ template <typename = void> struct space_lut {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr bool space_lut<T>::value[];
+template <typename T> constexpr uint8_t space_lut<T>::value[];
 
 #endif
 
