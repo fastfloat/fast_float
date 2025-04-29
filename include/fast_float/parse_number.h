@@ -75,6 +75,7 @@ from_chars_result_t<UC>
 }
 #endif
 
+#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 /**
  * Returns true if the floating-pointing rounding mode is to 'nearest'.
  * It is the default on most system. This function is meant to be inexpensive.
@@ -139,6 +140,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 #pragma GCC diagnostic pop
 #endif
 }
+#endif
 
 } // namespace detail
 
@@ -226,7 +228,9 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
+#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
     if (!cpp20_and_in_constexpr() && detail::rounds_to_nearest()) {
+#endif
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
       if (pns.mantissa <= binary_format<T>::max_mantissa_fast_path()) {
@@ -243,6 +247,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 #endif
         return answer;
       }
+#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
     } else {
       // We do not have that fegetround() == FE_TONEAREST.
       // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's
@@ -271,6 +276,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
         return answer;
       }
     }
+#endif
   }
   adjusted_mantissa am =
       compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
