@@ -1,5 +1,6 @@
 
-// #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+ #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+ #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
@@ -224,6 +225,10 @@ void fileload(std::string filename) {
 int main(int argc, char **argv) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   std::cout << "# FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled"
+            << std::endl;
+#endif
+#ifdef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+  std::cout << "# FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED is enabled"
             << std::endl;
 #endif
 #ifdef USING_COUNTERS
