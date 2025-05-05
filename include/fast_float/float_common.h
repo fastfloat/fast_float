@@ -577,7 +577,7 @@ template <typename U>
 constexpr float binary_format_lookup_tables<float, U>::powers_of_ten[];
 
 template <typename U>
-constexpr uint64_t binary_format_lookup_tables<float, U>::max_mantissa[];
+constexpr uint32_t binary_format_lookup_tables<float, U>::max_mantissa[];
 
 #endif
 

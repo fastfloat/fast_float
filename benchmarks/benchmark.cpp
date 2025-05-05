@@ -216,7 +216,8 @@ void fileload(std::string filename) {
       line.erase(0, 1);
     }
 #endif
-    volume += lines.emplace_back(line).size();
+    lines.emplace_back(line);
+    volume += line.size();
   }
   std::cout << "# read " << lines.size() << " lines " << std::endl;
   process(lines, volume);
