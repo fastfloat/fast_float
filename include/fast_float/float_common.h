@@ -34,12 +34,12 @@
 namespace fast_float {
 
 // The number of digits in the mantissa.
-typedef uint16_t am_digits;
+typedef uint_fast16_t am_digits;
 
 // The number of bits in the limb.
-typedef uint8_t limb_t;
+typedef uint_fast8_t limb_t;
 
-typedef uint8_t chars_format_t;
+typedef uint_fast8_t chars_format_t;
 
 enum class chars_format : chars_format_t;
 
