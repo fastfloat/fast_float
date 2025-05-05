@@ -669,7 +669,7 @@ inline constexpr am_pow_t binary_format<float>::max_exponent_fast_path() {
 }
 
 template <typename T>
-inline constexpr binary_format<T>::equiv_uint
+inline constexpr typename binary_format<T>::equiv_uint
 binary_format<T>::max_mantissa_fast_path() {
   return binary_format<T>::equiv_uint(2) << mantissa_explicit_bits();
 }
