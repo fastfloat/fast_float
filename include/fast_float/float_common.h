@@ -1206,7 +1206,8 @@ max_digits_u64(uint_fast8_t base) noexcept {
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t min_safe_u64(uint_fast8_t base) noexcept {
+fastfloat_really_inline constexpr uint64_t
+min_safe_u64(uint_fast8_t base) noexcept {
   return int_luts<>::min_safe_u64[base - 2];
 }
 
