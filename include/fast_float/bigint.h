@@ -32,7 +32,7 @@ typedef span<limb> limb_span;
 // of bits required to store the largest bigint, which is
 // `log2(10**(digits + max_exp))`, or `log2(10**(767 + 342))`, or
 // ~3600 bits, so we round to 4000.
-typedef uint16_t bigint_bits_t;
+typedef uint_fast16_t bigint_bits_t;
 constexpr bigint_bits_t bigint_bits = 4000;
 constexpr limb_t bigint_limbs = bigint_bits / limb_bits;
 
@@ -41,7 +41,7 @@ constexpr limb_t bigint_limbs = bigint_bits / limb_bits;
 template <limb_t size> struct stackvec {
   limb data[size];
   // we never need more than 150 limbs
-  uint8_t length{0};
+  uint_fast8_t length{0};
 
   FASTFLOAT_CONSTEXPR20 stackvec() noexcept = default;
   stackvec(stackvec const &) = delete;

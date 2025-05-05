@@ -39,7 +39,7 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int16_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int_fast16_t
 scientific_exponent(parsed_number_string_t<UC> const &num) noexcept {
   am_mant_t mantissa = num.mantissa;
   am_pow_t exponent = num.exponent;
@@ -116,7 +116,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void round(adjusted_mantissa &am,
   if (-am.power2 >= mantissa_shift) {
     // have a denormal float
     am_pow_t shift = -am.power2 + 1;
-    cb(am, std::min<int16_t>(shift, 64));
+    cb(am, std::min<int_fast16_t>(shift, 64));
     // check for round-up: if rounding-nearest carried us to the hidden bit.
     am.power2 = (am.mantissa <
                  (am_mant_t(1) << binary_format<T>::mantissa_explicit_bits()))

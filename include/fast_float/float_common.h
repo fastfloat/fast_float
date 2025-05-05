@@ -34,12 +34,12 @@
 namespace fast_float {
 
 // The number of digits in the mantissa.
-typedef uint16_t am_digits;
+typedef uint_fast16_t am_digits;
 
 // The number of bits in the limb.
-typedef uint8_t limb_t;
+typedef uint_fast8_t limb_t;
 
-typedef uint8_t chars_format_t;
+typedef uint_fast8_t chars_format_t;
 
 enum class chars_format : chars_format_t;
 
@@ -444,13 +444,13 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 }
 
 // Value of the mantissa.
-typedef uint64_t am_mant_t;
+typedef uint_fast64_t am_mant_t;
 // Size of bits in the mantissa.
-typedef uint8_t am_bits_t;
+typedef uint_fast8_t am_bits_t;
 
 // Power bias is signed for handling a denormal float
 // or an invalid mantissa.
-typedef int16_t am_pow_t;
+typedef int_fast16_t am_pow_t;
 
 // Bias so we can get the real exponent with an invalid adjusted_mantissa.
 constexpr static am_pow_t invalid_am_bias = -0x8000;
