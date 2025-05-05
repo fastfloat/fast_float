@@ -17,7 +17,7 @@ namespace fast_float {
 // most significant bits and the low part corresponding to the least significant
 // bits.
 //
-template <uint8_t bit_precision>
+template <uint_fast8_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(int64_t q, uint64_t w) noexcept {
   int const index = 2 * int(q - powers::smallest_power_of_five);
