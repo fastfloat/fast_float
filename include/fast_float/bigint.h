@@ -298,7 +298,7 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
                                           limb_t start) noexcept {
   // the effective x buffer is from `xstart..x.len()`, so exit early
   // if we can't get that current range.
-  if (x.len() < start || y.len() > x.len() - start) {
+  if (x.len() < start || y.len() > limb_t(x.len() - start)) {
     FASTFLOAT_TRY(x.try_resize(limb_t(y.len() + start), 0));
   }
 
