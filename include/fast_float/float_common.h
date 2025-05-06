@@ -336,7 +336,7 @@ struct value128 {
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes */
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
-leading_zeroes_generic(uint64_t input_num, uint64_t last_bit = 0) noexcept {
+leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0xffffffff00000000)) {
     input_num >>= 32;
     last_bit |= 32;

@@ -39,7 +39,7 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int_fast16_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_pow_t
 scientific_exponent(parsed_number_string_t<UC> const &num) noexcept {
   am_mant_t mantissa = num.mantissa;
   am_pow_t exponent = num.exponent;
@@ -268,7 +268,7 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
   // scalar value (9 or 19 digits) for each step.
-  am_digits const max_digits = binary_format<T>::max_digits();
+  constexpr am_digits max_digits = binary_format<T>::max_digits();
   am_digits counter = 0;
   am_digits digits = 0;
   limb value = 0;
