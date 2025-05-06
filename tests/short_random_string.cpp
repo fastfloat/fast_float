@@ -54,7 +54,7 @@ float cygwin_strtof_l(char const *start, char **end) {
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed) {};
+  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed){};
 
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
