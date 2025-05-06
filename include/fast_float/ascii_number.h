@@ -334,7 +334,8 @@ parse_number_string(UC const *p, UC const *pend,
     // multiplication
     answer.mantissa = static_cast<fast_float::am_mant_t>(
         answer.mantissa * 10 +
-        UC(*p - UC('0'))); // might overflow, we will handle the overflow later
+        static_cast<fast_float::am_mant_t>(
+            *p - UC('0'))); // might overflow, we will handle the overflow later
     ++p;
   }
   UC const *const end_of_integer_part = p;
@@ -391,9 +392,9 @@ parse_number_string(UC const *p, UC const *pend,
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
   if ((p != pend) &&
-          (chars_format_t(options.format & chars_format::scientific) &&
-               (UC('e') == *p) ||
-           (UC('E') == *p))
+          ((chars_format_t(options.format & chars_format::scientific) &&
+                (UC('e') == *p) ||
+            (UC('E') == *p)))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
           ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
@@ -421,9 +422,9 @@ parse_number_string(UC const *p, UC const *pend,
     }
     if ((p == pend) || !is_integer(*p)) {
       if (!chars_format_t(options.format & chars_format::fixed)) {
-        // The exponential part is invalid for scientific notation, so it must
-        // be a trailing token for fixed notation. However, fixed notation is
-        // disabled, so report a scientific notation error.
+        // The exponential part is invalid for scientific notation, so it
+        // must be a trailing token for fixed notation. However, fixed
+        // notation is disabled, so report a scientific notation error.
         return report_parse_error<UC>(p, parse_error::missing_exponential_part);
       }
       // Otherwise, we will be ignoring the 'e'.

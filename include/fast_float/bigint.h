@@ -67,7 +67,7 @@ template <limb_t size> struct stackvec {
   // index from the end of the container
   FASTFLOAT_CONSTEXPR14 const limb &rindex(limb_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
-    limb_t rindex = length - index - 1;
+    limb_t rindex = static_cast<limb_t>(length - index - 1);
     return data[rindex];
   }
 
@@ -590,7 +590,9 @@ struct bigint : pow5_tables<> {
   FASTFLOAT_CONSTEXPR20 bool add(limb y) noexcept { return small_add(vec, y); }
 
   // multiply as if by 2 raised to a power.
-  FASTFLOAT_CONSTEXPR20 bool pow2(am_pow_t exp) noexcept { return shl(exp); }
+  FASTFLOAT_CONSTEXPR20 bool pow2(am_pow_t exp) noexcept {
+    return shl(static_cast<fast_float::bigint_bits_t>(exp));
+  }
 
   // multiply as if by 5 raised to a power.
   FASTFLOAT_CONSTEXPR20 bool pow5(am_pow_t exp) noexcept {
