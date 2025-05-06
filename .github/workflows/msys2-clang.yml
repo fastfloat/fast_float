@@ -28,7 +28,7 @@ jobs:
         with:
           update: true
           msystem: ${{ matrix.msystem }}
-          install: ${{ matrix.install }} cmake
+          install: ${{ matrix.install }}
       - name: Prepare build dir
         run: mkdir build
       - name: Configure
