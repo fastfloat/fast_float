@@ -58,7 +58,7 @@ enum class chars_format : chars_format_t {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   no_infnan = 1 << 3,
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
-  json = uint64_t(detail::basic_json_fmt) | general | no_infnan,
+  json = chars_format_t(detail::basic_json_fmt) | general | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
   json_or_infnan = chars_format_t(detail::basic_json_fmt) | general,
   fortran = chars_format_t(detail::basic_fortran_fmt) | general,
@@ -76,17 +76,12 @@ using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(
-      chars_format_t const fmt = chars_format::general, UC const dot = UC('.'),
+      chars_format const fmt = chars_format::general, UC const dot = UC('.'),
       uint_fast8_t const b = 10) noexcept
-      : format(fmt), decimal_point(dot),
-        base(b){
-#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  // static_assert(b >= 2 && b <= 36);
-#endif
-        }
+      : format(fmt), decimal_point(dot), base(b) {}
 
-        /** Which number formats are accepted */
-        chars_format format;
+  /** Which number formats are accepted */
+  chars_format format;
   /** The character used as decimal point */
   UC decimal_point;
   /** The base used for integers */

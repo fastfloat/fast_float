@@ -303,8 +303,8 @@ parse_number_string(UC const *p, UC const *pend,
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*p == UC('-')) ||
-      (chars_format_t(options.format & chars_format::allow_leading_plus) &&
-       !basic_json_fmt && *p == UC('+'))) {
+      ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
+       (!basic_json_fmt && *p == UC('+')))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -393,14 +393,14 @@ parse_number_string(UC const *p, UC const *pend,
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
   if (((p != pend) &&
-       (((chars_format_t(options.format & chars_format::scientific) &&
-          ((UC('e') == *p) || (UC('E') == *p))))
+           (((chars_format_t(options.format & chars_format::scientific)) &&
+             ((UC('e') == *p) || (UC('E') == *p))))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-        || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
-            ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
-             (UC('D') == *p)))
+       || (((chars_format_t(options.format & detail::basic_fortran_fmt))) &&
+           ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
+            (UC('D') == *p)))
 #endif
-            ))) {
+           )) {
     UC const *location_of_e = p;
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     ++p;
@@ -421,7 +421,7 @@ parse_number_string(UC const *p, UC const *pend,
       }
     }
     if ((p == pend) || !is_integer(*p)) {
-      if (!chars_format_t(options.format & chars_format::fixed)) {
+      if (!(chars_format_t(options.format & chars_format::fixed))) {
         // The exponential part is invalid for scientific notation, so it
         // must be a trailing token for fixed notation. However, fixed
         // notation is disabled, so report a scientific notation error.
@@ -445,8 +445,8 @@ parse_number_string(UC const *p, UC const *pend,
     }
   } else {
     // If it scientific and not fixed, we have to bail out.
-    if (chars_format_t(options.format & chars_format::scientific) &&
-        !chars_format_t(options.format & chars_format::fixed)) {
+    if ((chars_format_t(options.format & chars_format::scientific)) &&
+        !(chars_format_t(options.format & chars_format::fixed))) {
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
   }
@@ -531,7 +531,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     return answer;
   }
   if ((*p == UC('-')) ||
-      (chars_format_t(options.format & chars_format::allow_leading_plus) &&
+      ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
        (*p == UC('+')))) {
     ++p;
   }

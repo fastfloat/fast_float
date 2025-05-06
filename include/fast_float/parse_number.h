@@ -33,7 +33,7 @@ from_chars_result_t<UC>
   bool const minusSign = (*first == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if ((*first == UC('-')) ||
-      (chars_format_t(fmt & chars_format::allow_leading_plus) &&
+      ((chars_format_t(fmt & chars_format::allow_leading_plus)) &&
        (*first == UC('+')))) {
     ++first;
   }
@@ -332,7 +332,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 #endif
   parsed_number_string_t<UC> const pns =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      chars_format_t(options.format & detail::basic_json_fmt)
+      (chars_format_t(options.format & detail::basic_json_fmt))
           ? parse_number_string<true, UC>(first, last, options)
           :
 #endif
@@ -364,9 +364,8 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  parse_options_t<UC> const options(
-      static_cast<chars_format_t>(chars_format::general), UC('.'),
-      static_cast<uint_fast8_t>(base));
+  parse_options_t<UC> const options(chars_format::general, UC('.'),
+                                    static_cast<uint_fast8_t>(base));
   return from_chars_advanced(first, last, value, options);
 }
 
