@@ -457,7 +457,8 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
 
   am_digits const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
-  am_pow_t const exponent = static_cast<am_pow_t>(sci_exp + 1 - digits);
+  am_pow_t const exponent =
+      static_cast<am_pow_t>(sci_exp + 1 - static_cast<am_pow_t>(digits));
   if (exponent >= 0) {
     return positive_digit_comp<T>(bigmant, am, exponent);
   } else {

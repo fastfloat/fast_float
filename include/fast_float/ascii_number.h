@@ -367,7 +367,8 @@ parse_number_string(UC const *p, UC const *pend,
       UC const digit = UC(*p - UC('0'));
       answer.mantissa = static_cast<fast_float::am_mant_t>(
           answer.mantissa * 10 +
-          digit); // in rare cases, this will overflow, but that's ok
+          static_cast<am_mant_t>(
+              digit)); // in rare cases, this will overflow, but that's ok
       ++p;
     }
     answer.exponent = static_cast<am_pow_t>(before - p);
@@ -391,16 +392,15 @@ parse_number_string(UC const *p, UC const *pend,
 
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
-  if ((p != pend) &&
-          ((chars_format_t(options.format & chars_format::scientific) &&
-                (UC('e') == *p) ||
-            (UC('E') == *p)))
+  if (((p != pend) &&
+       (((chars_format_t(options.format & chars_format::scientific) &&
+          ((UC('e') == *p) || (UC('E') == *p))))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
-          ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
-           (UC('D') == *p)))
+        || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
+            ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
+             (UC('D') == *p)))
 #endif
-  ) {
+            ))) {
     UC const *location_of_e = p;
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     ++p;
@@ -483,7 +483,8 @@ parse_number_string(UC const *p, UC const *pend,
       am_mant_t const minimal_nineteen_digit_integer{1000000000000000000};
       while ((answer.mantissa < minimal_nineteen_digit_integer) &&
              (p != int_end)) {
-        answer.mantissa = answer.mantissa * 10 + UC(*p - UC('0'));
+        answer.mantissa = static_cast<am_mant_t>(
+            answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
         ++p;
       }
       if (answer.mantissa >=
@@ -494,7 +495,8 @@ parse_number_string(UC const *p, UC const *pend,
         UC const *frac_end = p + answer.fraction.len();
         while ((answer.mantissa < minimal_nineteen_digit_integer) &&
                (p != frac_end)) {
-          answer.mantissa = answer.mantissa * 10 + UC(*p - UC('0'));
+          answer.mantissa = static_cast<am_mant_t>(
+              answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
           ++p;
         }
         answer.exponent = am_pow_t(answer.fraction.ptr - p) + exp_number;
