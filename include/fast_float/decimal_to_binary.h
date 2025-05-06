@@ -72,7 +72,7 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
 compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
-  am_pow_t hilz = uint64_t(w >> 63) ^ 1;
+  am_pow_t hilz = static_cast<am_pow_t>(uint64_t(w >> 63) ^ 1);
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
   constexpr am_pow_t bias =

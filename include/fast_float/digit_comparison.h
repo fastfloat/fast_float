@@ -355,7 +355,8 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
   am.mantissa = bigmant.hi64(truncated);
   constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
                             binary_format<T>::minimum_exponent();
-  am.power2 = bigmant.bit_length() - 64 + bias;
+  am.power2 =
+      static_cast<fast_float::am_pow_t>(bigmant.bit_length() - 64 + bias);
 
   round<T>(am, [truncated](adjusted_mantissa &a, am_pow_t shift) {
     round_nearest_tie_even(

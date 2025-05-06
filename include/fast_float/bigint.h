@@ -582,7 +582,7 @@ struct bigint : pow5_tables<> {
   // get the number of bits in the bigint.
   FASTFLOAT_CONSTEXPR20 bigint_bits_t bit_length() const noexcept {
     limb_t lz = ctlz();
-    return limb_bits * vec.len() - lz;
+    return static_cast<fast_float::bigint_bits_t>(limb_bits * vec.len() - lz);
   }
 
   FASTFLOAT_CONSTEXPR20 bool mul(limb y) noexcept { return small_mul(vec, y); }

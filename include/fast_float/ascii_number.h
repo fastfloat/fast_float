@@ -332,9 +332,9 @@ parse_number_string(UC const *p, UC const *pend,
   while ((p != pend) && is_integer(*p)) {
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
-    answer.mantissa =
-        10 * answer.mantissa +
-        UC(*p - UC('0')); // might overflow, we will handle the overflow later
+    answer.mantissa = static_cast<fast_float::am_mant_t>(
+        answer.mantissa * 10 +
+        UC(*p - UC('0'))); // might overflow, we will handle the overflow later
     ++p;
   }
   UC const *const end_of_integer_part = p;
@@ -364,9 +364,9 @@ parse_number_string(UC const *p, UC const *pend,
 
     while ((p != pend) && is_integer(*p)) {
       UC const digit = UC(*p - UC('0'));
-      answer.mantissa =
+      answer.mantissa = static_cast<fast_float::am_mant_t>(
           answer.mantissa * 10 +
-          digit; // in rare cases, this will overflow, but that's ok
+          digit); // in rare cases, this will overflow, but that's ok
       ++p;
     }
     answer.exponent = static_cast<am_pow_t>(before - p);
