@@ -76,8 +76,8 @@ using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(
-      chars_format const fmt = chars_format::general, UC const dot = UC('.'),
-      chars_format_t const b = 10) noexcept
+      chars_format_t const fmt = chars_format::general, UC const dot = UC('.'),
+      uint_fast8_t const b = 10) noexcept
       : format(fmt), decimal_point(dot),
         base(b){
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
