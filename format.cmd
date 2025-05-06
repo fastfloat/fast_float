@@ -17,9 +17,12 @@ if not exist ".clang-format" (
 echo Formatting files with .clang-format...
 set count=0
 for /R ".\" %%f in (*.cpp, *.h, *.c, *.hpp) do (
-    echo Formatting "%%f"
-    clang-format -i -style=file "%%f"
-    set /a count+=1
+    echo "%%f" | findstr /i "\\build\\ \\.vs\\ \\.git\\ \\.github\\" >nul
+    if !errorlevel! equ 1 (
+        echo Formatting "%%f"
+        clang-format -i -style=file "%%f"
+        set /a count+=1
+    )
 )
 
-echo Done. Proccesed !count! files.
+echo Done. Processed !count! files.
