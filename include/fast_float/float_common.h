@@ -75,22 +75,21 @@ template <typename UC> struct from_chars_result_t {
 using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
-  FASTFLOAT_CONSTEXPR20 explicit parse_options_t(
+  constexpr explicit parse_options_t(
       chars_format const fmt = chars_format::general, UC const dot = UC('.'),
       chars_format_t const b = 10) noexcept
-      : format(fmt), decimal_point(dot),
-        base(b){
+      : format(fmt), decimal_point(dot), base(b) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  // static_assert(b >= 2 && b <= 36);
+    // static_assert(b >= 2 && b <= 36);
 #endif
-        }
+  }
 
-        /** Which number formats are accepted */
-        chars_format const format;
+  /** Which number formats are accepted */
+  chars_format format;
   /** The character used as decimal point */
-  UC const decimal_point;
+  UC decimal_point;
   /** The base used for integers */
-  uint_fast8_t const base; /* only allowed from 2 to 36 */
+  uint_fast8_t base; /* only allowed from 2 to 36 */
   FASTFLOAT_ASSUME(base >= 2 && base <= 36);
 };
 
