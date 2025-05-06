@@ -68,8 +68,8 @@ to_extended(T const &value) noexcept {
   constexpr equiv_uint hidden_bit_mask = binary_format<T>::hidden_bit_mask();
 
   adjusted_mantissa am;
-  am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
-                  binary_format<T>::minimum_exponent();
+  constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
+                            binary_format<T>::minimum_exponent();
   equiv_uint bits;
 #if FASTFLOAT_HAS_BIT_CAST
   bits =
@@ -112,7 +112,8 @@ to_extended_halfway(T const &value) noexcept {
 template <typename T, typename callback>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void round(adjusted_mantissa &am,
                                                          callback cb) noexcept {
-  am_pow_t mantissa_shift = 64 - binary_format<T>::mantissa_explicit_bits() - 1;
+  constexpr am_pow_t mantissa_shift =
+      64 - binary_format<T>::mantissa_explicit_bits() - 1;
   if (-am.power2 >= mantissa_shift) {
     // have a denormal float
     am_pow_t shift = -am.power2 + 1;
@@ -352,8 +353,8 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
   FASTFLOAT_ASSERT(bigmant.pow10(exponent));
   bool truncated;
   am.mantissa = bigmant.hi64(truncated);
-  am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
-                  binary_format<T>::minimum_exponent();
+  constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
+                            binary_format<T>::minimum_exponent();
   am.power2 = bigmant.bit_length() - 64 + bias;
 
   round<T>(am, [truncated](adjusted_mantissa &a, am_pow_t shift) {

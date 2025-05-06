@@ -445,8 +445,8 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 
 // Value of the mantissa.
 typedef uint_fast64_t am_mant_t;
-// Size of bits in the mantissa.
-typedef uint_fast8_t am_bits_t;
+// Size of bits in the mantissa and path and roundings shifts
+typedef int_fast8_t am_bits_t;
 
 // Power bias is signed for handling a denormal float
 // or an invalid mantissa.
@@ -481,17 +481,17 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr am_pow_t minimum_exponent();
   static constexpr am_pow_t infinite_power();
   static constexpr am_bits_t sign_index();
-  static constexpr am_pow_t
+  static constexpr am_bits_t
   min_exponent_fast_path(); // used when fegetround() == FE_TONEAREST
-  static constexpr am_pow_t max_exponent_fast_path();
-  static constexpr am_pow_t max_exponent_round_to_even();
-  static constexpr am_pow_t min_exponent_round_to_even();
-  static constexpr equiv_uint max_mantissa_fast_path(int64_t power);
+  static constexpr am_bits_t max_exponent_fast_path();
+  static constexpr am_bits_t max_exponent_round_to_even();
+  static constexpr am_bits_t min_exponent_round_to_even();
+  static constexpr equiv_uint max_mantissa_fast_path(am_pow_t power);
   static constexpr equiv_uint
   max_mantissa_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr am_pow_t largest_power_of_ten();
   static constexpr am_pow_t smallest_power_of_ten();
-  static constexpr T exact_power_of_ten(int64_t power);
+  static constexpr T exact_power_of_ten(am_pow_t power);
   static constexpr am_digits max_digits();
   static constexpr equiv_uint exponent_mask();
   static constexpr equiv_uint mantissa_mask();
@@ -582,7 +582,7 @@ constexpr uint32_t binary_format_lookup_tables<float, U>::max_mantissa[];
 #endif
 
 template <>
-inline constexpr am_pow_t binary_format<double>::min_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<double>::min_exponent_fast_path() {
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return 0;
 #else
@@ -591,7 +591,7 @@ inline constexpr am_pow_t binary_format<double>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr am_pow_t binary_format<float>::min_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<float>::min_exponent_fast_path() {
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return 0;
 #else
@@ -610,22 +610,22 @@ inline constexpr am_bits_t binary_format<float>::mantissa_explicit_bits() {
 }
 
 template <>
-inline constexpr am_pow_t binary_format<double>::max_exponent_round_to_even() {
+inline constexpr am_bits_t binary_format<double>::max_exponent_round_to_even() {
   return 23;
 }
 
 template <>
-inline constexpr am_pow_t binary_format<float>::max_exponent_round_to_even() {
+inline constexpr am_bits_t binary_format<float>::max_exponent_round_to_even() {
   return 10;
 }
 
 template <>
-inline constexpr am_pow_t binary_format<double>::min_exponent_round_to_even() {
+inline constexpr am_bits_t binary_format<double>::min_exponent_round_to_even() {
   return -4;
 }
 
 template <>
-inline constexpr am_pow_t binary_format<float>::min_exponent_round_to_even() {
+inline constexpr am_bits_t binary_format<float>::min_exponent_round_to_even() {
   return -17;
 }
 
@@ -659,12 +659,12 @@ template <> inline constexpr am_bits_t binary_format<float>::sign_index() {
 #endif
 
 template <>
-inline constexpr am_pow_t binary_format<double>::max_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<double>::max_exponent_fast_path() {
   return 22;
 }
 
 template <>
-inline constexpr am_pow_t binary_format<float>::max_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<float>::max_exponent_fast_path() {
   return 10;
 }
 
@@ -704,7 +704,7 @@ constexpr uint16_t
 
 template <>
 inline constexpr std::float16_t
-binary_format<std::float16_t>::exact_power_of_ten(int64_t power) {
+binary_format<std::float16_t>::exact_power_of_ten(am_pow_t power) {
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)powers_of_ten[0], powers_of_ten[power];
 }
@@ -728,52 +728,52 @@ binary_format<std::float16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr int8_t
+inline constexpr am_bits_t
 binary_format<std::float16_t>::max_exponent_fast_path() {
   return 4;
 }
 
 template <>
-inline constexpr uint8_t
+inline constexpr am_bits_t
 binary_format<std::float16_t>::mantissa_explicit_bits() {
   return 10;
 }
 
 template <>
-inline constexpr uint64_t
-binary_format<std::float16_t>::max_mantissa_fast_path(int64_t power) {
+inline constexpr binary_format<std::float16_t>::equiv_uint
+binary_format<std::float16_t>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 4
+  FASTFLOAT_ASSUME(power >= 0 && power <= 4);
   //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
 }
 
 template <>
-inline constexpr int8_t
+inline constexpr am_bits_t
 binary_format<std::float16_t>::min_exponent_fast_path() {
   return 0;
 }
 
 template <>
-inline constexpr int16_t
+inline constexpr am_bits_t
 binary_format<std::float16_t>::max_exponent_round_to_even() {
   return 5;
 }
 
 template <>
-inline constexpr int16_t
+inline constexpr am_bits_t
 binary_format<std::float16_t>::min_exponent_round_to_even() {
   return -22;
 }
 
 template <>
-inline constexpr am_exp_t binary_format<std::float16_t>::minimum_exponent() {
+inline constexpr am_pow_t binary_format<std::float16_t>::minimum_exponent() {
   return -15;
 }
 
 template <>
-inline constexpr am_exp_t binary_format<std::float16_t>::infinite_power() {
+inline constexpr am_pow_t binary_format<std::float16_t>::infinite_power() {
   return 0x1F;
 }
 
@@ -787,13 +787,13 @@ inline constexpr am_bits_t binary_format<std::float16_t>::sign_index() {
 #endif
 
 template <>
-inline constexpr am_exp_t
+inline constexpr am_pow_t
 binary_format<std::float16_t>::largest_power_of_ten() {
   return 4;
 }
 
 template <>
-inline constexpr am_exp_t
+inline constexpr am_pow_t
 binary_format<std::float16_t>::smallest_power_of_ten() {
   return -27;
 }
@@ -812,7 +812,7 @@ template <typename U> struct binary_format_lookup_tables<std::bfloat16_t, U> {
 
   // Largest integer value v so that (5**index * v) <= 1<<8.
   // 0x100 == 1<<8
-  static constexpr uint64_t max_mantissa[] = {0x100, 0x100 / 5, 0x100 / (5 * 5),
+  static constexpr uint16_t max_mantissa[] = {0x100, 0x100 / 5, 0x100 / (5 * 5),
                                               0x100 / (5 * 5 * 5),
                                               0x100 / (5 * 5 * 5 * 5)};
 };
@@ -831,13 +831,13 @@ constexpr uint64_t
 
 template <>
 inline constexpr std::bfloat16_t
-binary_format<std::bfloat16_t>::exact_power_of_ten(int64_t power) {
+binary_format<std::bfloat16_t>::exact_power_of_ten(am_pow_t power) {
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)powers_of_ten[0], powers_of_ten[power];
 }
 
 template <>
-inline constexpr int8_t
+inline constexpr am_bits_t
 binary_format<std::bfloat16_t>::max_exponent_fast_path() {
   return 3;
 }
@@ -861,66 +861,66 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr uint8_t
+inline constexpr am_bits_t
 binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
   return 7;
 }
 
 template <>
-inline constexpr uint64_t
-binary_format<std::bfloat16_t>::max_mantissa_fast_path(int64_t power) {
+inline constexpr binary_format<std::bfloat16_t>::equiv_uint
+binary_format<std::bfloat16_t>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 3
+  FASTFLOAT_ASSUME(power >= 0 && power <= 3);
   //
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return (void)max_mantissa[0], max_mantissa[power];
 }
 
 template <>
-inline constexpr int8_t
+inline constexpr am_bits_t
 binary_format<std::bfloat16_t>::min_exponent_fast_path() {
   return 0;
 }
 
 template <>
-inline constexpr am_exp_t
+inline constexpr am_bits_t
 binary_format<std::bfloat16_t>::max_exponent_round_to_even() {
   return 3;
 }
 
 template <>
-inline constexpr am_exp_t
+inline constexpr am_bits_t
 binary_format<std::bfloat16_t>::min_exponent_round_to_even() {
   return -24;
 }
 
 template <>
-inline constexpr am_exp_t binary_format<std::bfloat16_t>::minimum_exponent() {
+inline constexpr am_pow_t binary_format<std::bfloat16_t>::minimum_exponent() {
   return -127;
 }
 
 template <>
-inline constexpr am_exp_t binary_format<std::bfloat16_t>::infinite_power() {
+inline constexpr am_pow_t binary_format<std::bfloat16_t>::infinite_power() {
   return 0xFF;
 }
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <>
-inline constexpr uint8_t binary_format<std::bfloat16_t>::sign_index() {
+inline constexpr am_bits_t binary_format<std::bfloat16_t>::sign_index() {
   return 15;
 }
 
 #endif
 
 template <>
-inline constexpr am_exp_t
+inline constexpr am_pow_t
 binary_format<std::bfloat16_t>::largest_power_of_ten() {
   return 38;
 }
 
 template <>
-inline constexpr am_exp_t
+inline constexpr am_pow_t
 binary_format<std::bfloat16_t>::smallest_power_of_ten() {
   return -60;
 }
@@ -932,8 +932,8 @@ inline constexpr uint16_t binary_format<std::bfloat16_t>::max_digits() {
 #endif // __STDCPP_BFLOAT16_T__
 
 template <>
-inline constexpr uint64_t
-binary_format<double>::max_mantissa_fast_path(int64_t power) {
+inline constexpr binary_format<double>::equiv_uint
+binary_format<double>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 22);
   //
@@ -942,8 +942,8 @@ binary_format<double>::max_mantissa_fast_path(int64_t power) {
 }
 
 template <>
-inline constexpr uint32_t
-binary_format<float>::max_mantissa_fast_path(int64_t power) {
+inline constexpr binary_format<float>::equiv_uint
+binary_format<float>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 10);
   //
@@ -953,7 +953,7 @@ binary_format<float>::max_mantissa_fast_path(int64_t power) {
 
 template <>
 inline constexpr double
-binary_format<double>::exact_power_of_ten(int64_t power) {
+binary_format<double>::exact_power_of_ten(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 22);
   //
@@ -962,7 +962,8 @@ binary_format<double>::exact_power_of_ten(int64_t power) {
 }
 
 template <>
-inline constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
+inline constexpr float
+binary_format<float>::exact_power_of_ten(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 10);
   //

@@ -17,7 +17,7 @@ namespace fast_float {
 // most significant bits and the low part corresponding to the least significant
 // bits.
 //
-template <uint_fast8_t bit_precision>
+template <limb_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(int64_t q, uint64_t w) noexcept {
   int const index = 2 * int(q - powers::smallest_power_of_five);
@@ -62,7 +62,7 @@ namespace detail {
  * where
  *   p = log(5**-q)/log(2) = -q * log(5)/log(2)
  */
-constexpr fastfloat_really_inline int32_t power(int32_t q) noexcept {
+constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
   return (((152170 + 65536) * q) >> 16) + 63;
 }
 } // namespace detail
@@ -72,11 +72,12 @@ constexpr fastfloat_really_inline int32_t power(int32_t q) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
 compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
-  int32_t hilz = int32_t(w >> 63) ^ 1;
+  am_pow_t hilz = uint64_t(w >> 63) ^ 1;
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
-  int32_t bias = binary::mantissa_explicit_bits() - binary::minimum_exponent();
-  answer.power2 = am_pow_t(detail::power(int32_t(q)) + bias - hilz - lz - 62 +
+  constexpr am_pow_t bias =
+      binary::mantissa_explicit_bits() - binary::minimum_exponent();
+  answer.power2 = am_pow_t(detail::power(am_pow_t(q)) + bias - hilz - lz - 62 +
                            invalid_am_bias);
   return answer;
 }
@@ -86,7 +87,7 @@ compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_error(int64_t q, uint64_t w) noexcept {
-  int lz = leading_zeroes(w);
+  limb_t lz = leading_zeroes(w);
   w <<= lz;
   value128 product =
       compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
@@ -118,7 +119,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   // powers::largest_power_of_five].
 
   // We want the most significant bit of i to be 1. Shift if needed.
-  int lz = leading_zeroes(w);
+  limb_t lz = leading_zeroes(w);
   w <<= lz;
 
   // The required precision is binary::mantissa_explicit_bits() + 3 because
@@ -138,12 +139,12 @@ compute_float(int64_t q, uint64_t w) noexcept {
   // branchless approach: value128 product = compute_product(q, w); but in
   // practice, we can win big with the compute_product_approximation if its
   // additional branch is easily predicted. Which is best is data specific.
-  int upperbit = int(product.high >> 63);
-  int shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
+  limb_t upperbit = limb_t(product.high >> 63);
+  limb_t shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
 
   answer.mantissa = product.high >> shift;
 
-  answer.power2 = am_pow_t(detail::power(int32_t(q)) + upperbit - lz -
+  answer.power2 = am_pow_t(detail::power(am_pow_t(q)) + upperbit - lz -
                            binary::minimum_exponent());
   if (answer.power2 <= 0) { // we have a subnormal or very small value.
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
