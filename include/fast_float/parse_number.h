@@ -364,7 +364,9 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  parse_options_t<UC> const options(chars_format::general, UC('.'), base);
+  parse_options_t<UC> const options(
+      static_cast<chars_format_t>(chars_format::general), UC('.'),
+      static_cast<uint_fast8_t>(base));
   return from_chars_advanced(first, last, value, options);
 }
 
