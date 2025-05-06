@@ -374,7 +374,7 @@ parse_number_string(UC const *p, UC const *pend,
     answer.exponent = static_cast<am_pow_t>(before - p);
     answer.fraction =
         span<UC const>(before, static_cast<am_digits>(p - before));
-    digit_count -= answer.exponent;
+    digit_count -= static_cast<am_digits>(answer.exponent);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
       // at least 1 digit in fractional part

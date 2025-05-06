@@ -140,7 +140,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   // practice, we can win big with the compute_product_approximation if its
   // additional branch is easily predicted. Which is best is data specific.
   limb_t upperbit = limb_t(product.high >> 63);
-  limb_t shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
+  limb_t shift = limb_t(upperbit + 64 - binary::mantissa_explicit_bits() - 3);
 
   answer.mantissa = product.high >> shift;
 
