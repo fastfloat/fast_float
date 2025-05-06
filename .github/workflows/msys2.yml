@@ -43,3 +43,9 @@ jobs:
         run: cmake --build build
       - name: Run basic tests
         run: cd build && ctest --output-on-failure -R basictest
+     - name: Install dependencies
+       run: |
+       pacman -Syu --noconfirm
+       pacman -S --noconfirm base-devel cmake
+     - name: Verify CMake version
+       run: cmake --version
