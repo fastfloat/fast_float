@@ -1045,7 +1045,11 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
 #endif
 #if FASTFLOAT_HAS_BIT_CAST
-  value = std::bit_cast<T>(word);
+  value =
+#if FASTFLOAT_HAS_BIT_CAST == 1
+      std::
+#endif
+          bit_cast<T>(word);
 #else
   ::memcpy(&value, &word, sizeof(T));
 #endif
