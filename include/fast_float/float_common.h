@@ -232,8 +232,7 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-cpp20_and_in_constexpr() noexcept {
+fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
   return std::is_constant_evaluated();
 #else
@@ -922,7 +921,7 @@ binary_format<std::bfloat16_t>::smallest_power_of_ten() {
 }
 
 template <>
-inline constexpr uint16_t binary_format<std::bfloat16_t>::max_digits() {
+inline constexpr am_digits binary_format<std::bfloat16_t>::max_digits() {
   return 98;
 }
 #endif // __STDCPP_BFLOAT16_T__
