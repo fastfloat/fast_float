@@ -328,15 +328,24 @@ parse_number_string(UC const *p, UC const *pend,
 #endif
 
   UC const *const start_digits = p;
-
-  while ((p != pend) && is_integer(*p)) {
-    // a multiplication by 10 is cheaper than an arbitrary integer
-    // multiplication
-    answer.mantissa = static_cast<fast_float::am_mant_t>(
-        answer.mantissa * 10 +
-        static_cast<fast_float::am_mant_t>(
-            *p - UC('0'))); // might overflow, we will handle the overflow later
-    ++p;
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  if (p != pend)
+#endif
+  {
+    do {
+      if (is_integer(*p)) {
+        // a multiplication by 10 is cheaper than an arbitrary integer
+        // multiplication
+        answer.mantissa = static_cast<fast_float::am_mant_t>(
+            answer.mantissa * 10 +
+            static_cast<fast_float::am_mant_t>(
+                *p -
+                UC('0'))); // might overflow, we will handle the overflow later
+        ++p;
+      } else {
+        break;
+      }
+    } while (p != pend);
   }
 
   UC const *const end_of_integer_part = p;
@@ -398,7 +407,8 @@ parse_number_string(UC const *p, UC const *pend,
   bool neg_exp = false;
   if (p != pend) {
     UC const *location_of_e;
-    if (chars_format_t(options.format & chars_format::scientific)) {
+    if (chars_format_t(options.format & chars_format::scientific) ||
+        chars_format_t(options.format & chars_format::fixed)) {
       switch (*p) {
       case UC('e'):
       case UC('E'):
@@ -406,8 +416,8 @@ parse_number_string(UC const *p, UC const *pend,
         ++p;
         break;
       default:
-        // If it scientific and not fixed, we have to bail out.
         if (!chars_format_t(options.format & chars_format::fixed)) {
+          // It scientific and not fixed, we have to bail out.
           return report_parse_error<UC>(p,
                                         parse_error::missing_exponential_part);
         }
@@ -424,13 +434,8 @@ parse_number_string(UC const *p, UC const *pend,
           ++p;
           break;
         default:
-          // If it scientific and not fixed, we have to bail out.
-          if (!chars_format_t(options.format & chars_format::fixed)) {
-            return report_parse_error<UC>(
-                p, parse_error::missing_exponential_part);
-          }
-          // In fixed notation we will be ignoring the 'e'.
-          location_of_e = nullptr;
+          // In scientific and fixed notations sign is optional.
+          break;
         }
       }
     }
