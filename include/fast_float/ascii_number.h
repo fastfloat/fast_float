@@ -396,8 +396,8 @@ parse_number_string(UC const *p, UC const *pend,
       }
     }
 #endif
-  } else if (digit_count ==
-             0) { // we must have encountered at least one integer!
+  } else if (digit_count == 0) {
+    // We must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   // We have now parsed the integer and the fraction part of the mantissa.
@@ -407,8 +407,7 @@ parse_number_string(UC const *p, UC const *pend,
   bool neg_exp = false;
   if (p != pend) {
     UC const *location_of_e;
-    if (chars_format_t(options.format & chars_format::scientific) ||
-        chars_format_t(options.format & chars_format::fixed)) {
+    if (chars_format_t(options.format & chars_format::scientific)) {
       switch (*p) {
       case UC('e'):
       case UC('E'):
@@ -485,13 +484,11 @@ parse_number_string(UC const *p, UC const *pend,
         exp_number = -exp_number;
       }
       answer.exponent += exp_number;
-    }
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    else if (chars_format_t(options.format & detail::basic_fortran_fmt)) {
-      // In Fortran the number in exponent part is mandatory.
+    } else if (chars_format_t(options.format & chars_format::scientific) &&
+               !chars_format_t(options.format & chars_format::fixed)) {
+      // If it scientific and not fixed, we have to bail out.
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
-#endif
   }
 
   // We parsed all parts of the number, let's save progress.
