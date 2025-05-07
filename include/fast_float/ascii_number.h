@@ -473,13 +473,13 @@ parse_number_string(UC const *p, UC const *pend,
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
     UC const *start = start_digits;
-    do { // we already have some numbers, so we can skip first check safely
-      if ((*start == UC('0') || *start == options.decimal_point)) {
-        if (*start == UC('0')) {
-          --digit_count;
-        }
+    while ((start != pend) &&
+           (*start == UC('0') || *start == options.decimal_point)) {
+      if (*start == UC('0')) {
+        --digit_count;
       }
-    } while (++start != pend);
+      ++start;
+    }
 
     // We have to check if we have a number with more than 19 significant
     // digits.
