@@ -396,8 +396,8 @@ parse_number_string(UC const *p, UC const *pend,
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
   if ((p != pend) &&
-      (chars_format_t(options.format & chars_format::scientific) &&
-           ((UC('e') == *p) || (UC('E') == *p))
+      ((chars_format_t(options.format & chars_format::scientific) &&
+        (UC('e') == *p || UC('E') == *p))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
        || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
            ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
