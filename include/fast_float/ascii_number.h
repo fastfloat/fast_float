@@ -328,24 +328,15 @@ parse_number_string(UC const *p, UC const *pend,
 #endif
 
   UC const *const start_digits = p;
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if (p != pend)
-#endif
-  {
-    do {
-      if (is_integer(*p)) {
-        // a multiplication by 10 is cheaper than an arbitrary integer
-        // multiplication
-        answer.mantissa = static_cast<fast_float::am_mant_t>(
-            answer.mantissa * 10 +
-            static_cast<fast_float::am_mant_t>(
-                *p -
-                UC('0'))); // might overflow, we will handle the overflow later
-        ++p;
-      } else {
-        break;
-      }
-    } while (p != pend);
+
+  while ((p != pend) && is_integer(*p)) {
+    // a multiplication by 10 is cheaper than an arbitrary integer
+    // multiplication
+    answer.mantissa = static_cast<fast_float::am_mant_t>(
+        answer.mantissa * 10 +
+        static_cast<fast_float::am_mant_t>(
+            *p - UC('0'))); // might overflow, we will handle the overflow later
+    ++p;
   }
 
   UC const *const end_of_integer_part = p;
@@ -370,7 +361,7 @@ parse_number_string(UC const *p, UC const *pend,
   // We can now parse the fraction part of the mantissa.
   if ((p != pend) && (*p == options.decimal_point)) {
     ++p;
-    UC const *before = p;
+    UC const *const before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     loop_parse_if_eight_digits(p, pend, answer.mantissa);
@@ -404,74 +395,46 @@ parse_number_string(UC const *p, UC const *pend,
 
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
-  bool neg_exp = false;
-  if (p != pend) {
-    UC const *location_of_e;
-    if (chars_format_t(options.format & chars_format::scientific)) {
-      switch (*p) {
-      case UC('e'):
-      case UC('E'):
-        location_of_e = p;
-        ++p;
-        break;
-      default:
-        if (!chars_format_t(options.format & chars_format::fixed)) {
-          // It scientific and not fixed, we have to bail out.
-          return report_parse_error<UC>(p,
-                                        parse_error::missing_exponential_part);
-        }
-        // In fixed notation we will be ignoring the 'e'.
-        location_of_e = nullptr;
-      }
-      if (location_of_e && p != pend) {
-        switch (*p) {
-        case UC('-'):
-          neg_exp = true;
-          ++p;
-          break;
-        case UC('+'): // '+' on exponent is allowed by C++17 20.19.3.(7.1)
-          ++p;
-          break;
-        default:
-          // In scientific and fixed notations sign is optional.
-          break;
-        }
-      }
-    }
+  if ((p != pend) &&
+          (chars_format_t(options.format & chars_format::scientific) &&
+           ((UC('e') == *p) || (UC('E') == *p)))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    else if (chars_format_t(options.format & detail::basic_fortran_fmt)) {
-      switch (*p) {
-      case UC('d'):
-      case UC('D'):
-        ++p;
-        break;
-      default:
-        // In Fortran the d symbol is optional.
-        break;
-      }
-      switch (*p) {
-      case UC('-'):
-        neg_exp = true;
-        location_of_e = p;
-        ++p;
-        break;
-      case UC('+'):
-        location_of_e = p;
-        ++p;
-        break;
-      default:
-        // In Fortran the sign is mandatory.
-        return report_parse_error<UC>(p, parse_error::missing_exponential_part);
-      }
+      || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
+          ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
+           (UC('D') == *p)))
+#endif
+  ) {
+    UC const *location_of_e = p;
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    ++p;
+#else
+    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
+        (UC('D') == *p)) {
+      ++p;
     }
 #endif
-    else {
-      location_of_e = nullptr;
+    bool neg_exp = false;
+    if (p != pend) {
+      if (UC('-') == *p) {
+        neg_exp = true;
+        ++p;
+      } else if (UC('+') == *p) {
+        // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+        ++p;
+      }
     }
-
-    if (location_of_e) {
-      // We have a valid scientific notation, let's parse the explicit
-      // exponent.
+    // We have now parsed the sign of the exponent.
+    if ((p == pend) || !is_integer(*p)) {
+      if (!(chars_format_t(options.format & chars_format::fixed))) {
+        // The exponential part is invalid for scientific notation, so it
+        // must be a trailing token for fixed notation. However, fixed
+        // notation is disabled, so report a scientific notation error.
+        return report_parse_error<UC>(p, parse_error::missing_exponential_part);
+      }
+      // Otherwise, we will be ignoring the 'e'.
+      p = location_of_e;
+    } else {
+      // Now let's parse the explicit exponent.
       while ((p != pend) && is_integer(*p)) {
         if (exp_number < 0x1000) {
           // check for exponent overflow if we have too many digits.
@@ -484,9 +447,11 @@ parse_number_string(UC const *p, UC const *pend,
         exp_number = -exp_number;
       }
       answer.exponent += exp_number;
-    } else if (chars_format_t(options.format & chars_format::scientific) &&
-               !chars_format_t(options.format & chars_format::fixed)) {
-      // If it scientific and not fixed, we have to bail out.
+    }
+  } else {
+    // If it scientific and not fixed, we have to bail out.
+    if ((chars_format_t(options.format & chars_format::scientific)) &&
+        !(chars_format_t(options.format & chars_format::fixed))) {
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
   }
