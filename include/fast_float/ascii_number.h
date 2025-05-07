@@ -238,7 +238,7 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
   }
 }
 
-enum class parse_error {
+enum class parse_error : uint_fast8_t {
   no_error,
   // A sign must be followed by an integer or dot.
   missing_integer_or_dot_after_sign,
@@ -301,8 +301,8 @@ parse_number_string(UC const *p, UC const *pend,
   FASTFLOAT_ASSUME(p < pend); // so dereference without checks;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
-  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) ||
+  if (answer.negative ||
+      // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
       ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
        (!basic_json_fmt && *p == UC('+')))) {
     ++p;
@@ -338,10 +338,13 @@ parse_number_string(UC const *p, UC const *pend,
             *p - UC('0'))); // might overflow, we will handle the overflow later
     ++p;
   }
+
   UC const *const end_of_integer_part = p;
   am_digits digit_count =
       static_cast<am_digits>(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, digit_count);
+  // We have now parsed the integer part of the mantissa.
+
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in integer part, without leading zeros
@@ -355,8 +358,8 @@ parse_number_string(UC const *p, UC const *pend,
   }
 #endif
 
-  bool const has_decimal_point = (p != pend) && (*p == options.decimal_point);
-  if (has_decimal_point) {
+  // We can now parse the fraction part of the mantissa.
+  if ((p != pend) && (*p == options.decimal_point)) {
     ++p;
     UC const *before = p;
     // can occur at most twice without overflowing, but let it occur more, since
@@ -378,7 +381,7 @@ parse_number_string(UC const *p, UC const *pend,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
       // at least 1 digit in fractional part
-      if (has_decimal_point && answer.exponent == 0) {
+      if (answer.exponent == 0) {
         return report_parse_error<UC>(
             p, parse_error::no_digits_in_fractional_part);
       }
@@ -392,44 +395,79 @@ parse_number_string(UC const *p, UC const *pend,
 
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
-  if (((p != pend) &&
-           (((chars_format_t(options.format & chars_format::scientific)) &&
-             ((UC('e') == *p) || (UC('E') == *p))))
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-       || (((chars_format_t(options.format & detail::basic_fortran_fmt))) &&
-           ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
-            (UC('D') == *p)))
-#endif
-           )) {
-    UC const *location_of_e = p;
-#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    ++p;
-#else
-    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
-        (UC('D') == *p)) {
-      ++p;
-    }
-#endif
-    bool neg_exp = false;
-    if (p != pend) {
-      if (UC('-') == *p) {
-        neg_exp = true;
+  bool neg_exp = false;
+  if (p != pend) {
+    UC const *location_of_e;
+    if (chars_format_t(options.format & chars_format::scientific)) {
+      switch (*p) {
+      case UC('e'):
+      case UC('E'):
+        location_of_e = p;
         ++p;
-      } else if (UC('+') == *p) {
-        // '+' on exponent is allowed by C++17 20.19.3.(7.1)
-        ++p;
+        break;
+      default:
+        // If it scientific and not fixed, we have to bail out.
+        if (!chars_format_t(options.format & chars_format::fixed)) {
+          return report_parse_error<UC>(p,
+                                        parse_error::missing_exponential_part);
+        }
+        // In fixed notation we will be ignoring the 'e'.
+        location_of_e = nullptr;
+      }
+      if (location_of_e && p != pend) {
+        switch (*p) {
+        case UC('-'):
+          neg_exp = true;
+          ++p;
+          break;
+        case UC('+'): // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+          ++p;
+          break;
+        default:
+          // If it scientific and not fixed, we have to bail out.
+          if (!chars_format_t(options.format & chars_format::fixed)) {
+            return report_parse_error<UC>(
+                p, parse_error::missing_exponential_part);
+          }
+          // In fixed notation we will be ignoring the 'e'.
+          location_of_e = nullptr;
+        }
       }
     }
-    if ((p == pend) || !is_integer(*p)) {
-      if (!(chars_format_t(options.format & chars_format::fixed))) {
-        // The exponential part is invalid for scientific notation, so it
-        // must be a trailing token for fixed notation. However, fixed
-        // notation is disabled, so report a scientific notation error.
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    else if (chars_format_t(options.format & detail::basic_fortran_fmt)) {
+      switch (*p) {
+      case UC('d'):
+      case UC('D'):
+        ++p;
+        break;
+      default:
+        // In Fortran the d symbol is optional.
+        break;
+      }
+      switch (*p) {
+      case UC('-'):
+        neg_exp = true;
+        location_of_e = p;
+        ++p;
+        break;
+      case UC('+'):
+        location_of_e = p;
+        ++p;
+        break;
+      default:
+        // In Fortran the sign is mandatory.
         return report_parse_error<UC>(p, parse_error::missing_exponential_part);
       }
-      // Otherwise, we will be ignoring the 'e'.
-      p = location_of_e;
-    } else {
+    }
+#endif
+    else {
+      location_of_e = nullptr;
+    }
+
+    if (location_of_e) {
+      // We have a valid scientific notation, let's parse the explicit
+      // exponent.
       while ((p != pend) && is_integer(*p)) {
         if (exp_number < 0x1000) {
           // check for exponent overflow if we have too many digits.
@@ -443,35 +481,41 @@ parse_number_string(UC const *p, UC const *pend,
       }
       answer.exponent += exp_number;
     }
-  } else {
-    // If it scientific and not fixed, we have to bail out.
-    if ((chars_format_t(options.format & chars_format::scientific)) &&
-        !(chars_format_t(options.format & chars_format::fixed))) {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    else if (chars_format_t(options.format & detail::basic_fortran_fmt)) {
+      // In Fortran the number in exponent part is mandatory.
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
+#endif
   }
+
+  // We parsed all parts of the number, let's save progress.
   answer.lastmatch = p;
   answer.valid = true;
 
-  // If we frequently had to deal with long strings of digits,
+  // Now we can check for errors.
+
+  // TODO: If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
   // of a 64-bit integer. However, this is uncommon.
-  //
+
   // We can deal with up to 19 digits.
-  if (digit_count > 19) { // this is uncommon
+  if (digit_count > 19) {
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
     UC const *start = start_digits;
-    while ((start != pend) &&
-           (*start == UC('0') || *start == options.decimal_point)) {
-      if (*start == UC('0')) {
-        --digit_count;
+    do { // we already have some numbers, so we can skip first check safely
+      if ((*start == UC('0') || *start == options.decimal_point)) {
+        if (*start == UC('0')) {
+          --digit_count;
+        }
       }
-      ++start;
-    }
+    } while (++start != pend);
 
+    // We have to check if we have a number with more than 19 significant
+    // digits.
     if (digit_count > 19) {
       answer.too_many_digits = true;
       // Let us start again, this time, avoiding overflows.
@@ -480,19 +524,20 @@ parse_number_string(UC const *p, UC const *pend,
       answer.mantissa = 0;
       p = answer.integer.ptr;
       UC const *int_end = p + answer.integer.len();
-      am_mant_t const minimal_nineteen_digit_integer{1000000000000000000};
+      constexpr am_mant_t minimal_nineteen_digit_integer{1000000000000000000};
       while ((answer.mantissa < minimal_nineteen_digit_integer) &&
              (p != int_end)) {
         answer.mantissa = static_cast<am_mant_t>(
             answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
         ++p;
       }
-      if (answer.mantissa >=
-          minimal_nineteen_digit_integer) { // We have a big integers
+      if (answer.mantissa >= minimal_nineteen_digit_integer) {
+        // We have a big integers, so skip the fraction part completely.
         answer.exponent = am_pow_t(end_of_integer_part - p) + exp_number;
-      } else { // We have a value with a fractional component.
+      } else {
+        // We have a value with a significant fractional component.
         p = answer.fraction.ptr;
-        UC const *frac_end = p + answer.fraction.len();
+        UC const *const frac_end = p + answer.fraction.len();
         while ((answer.mantissa < minimal_nineteen_digit_integer) &&
                (p != frac_end)) {
           answer.mantissa = static_cast<am_mant_t>(
@@ -501,9 +546,10 @@ parse_number_string(UC const *p, UC const *pend,
         }
         answer.exponent = am_pow_t(answer.fraction.ptr - p) + exp_number;
       }
-      // We have now corrected both exponent and mantissa, to a truncated value
     }
+    // We have now corrected both exponent and mantissa, to a truncated value
   }
+
   return answer;
 }
 
