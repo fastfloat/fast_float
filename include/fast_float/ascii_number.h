@@ -20,7 +20,8 @@
 
 namespace fast_float {
 
-template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
+template <typename UC>
+fastfloat_really_inline constexpr bool has_simd_opt() noexcept {
 #ifdef FASTFLOAT_HAS_SIMD
   return std::is_same<UC, char16_t>::value;
 #else
@@ -36,7 +37,7 @@ fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
 }
 
 #if FASTFLOAT_HAS_BYTESWAP == 0
-fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
+fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
   return (val & 0xFF00000000000000) >> 56 | (val & 0x00FF000000000000) >> 40 |
          (val & 0x0000FF0000000000) >> 24 | (val & 0x000000FF00000000) >> 8 |
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
@@ -123,7 +124,7 @@ uint64_t simd_read8_to_u64(UC const *) {
 
 // credit  @aqrit
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
-parse_eight_digits_unrolled(uint64_t val) {
+parse_eight_digits_unrolled(uint64_t val) noexcept {
   uint64_t const mask = 0x000000FF000000FF;
   uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
   uint64_t const mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
@@ -530,6 +531,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   UC const *const first = p;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  // Read sign
   bool const negative = (*p == UC('-'));
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -552,6 +554,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_num = p;
 
+  // Skip leading zeros
   while (p != pend && *p == UC('0')) {
     ++p;
   }
@@ -560,6 +563,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_digits = p;
 
+  // Parse digits
   uint64_t i = 0;
   if (options.base == 10) {
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
@@ -573,7 +577,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     p++;
   }
 
-  uint16_t const digit_count = static_cast<uint16_t>(p - start_digits);
+  am_digits const digit_count = static_cast<am_digits>(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {
