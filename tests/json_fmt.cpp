@@ -135,7 +135,8 @@ int main() {
         f.data(), f.data() + f.size(),
         fast_float::parse_options(
             fast_float::chars_format::json |
-            fast_float::chars_format::allow_leading_plus)); // should be ignored
+            fast_float::chars_format::allow_leading_plus)); // should be
+                                                            // ignored
     if (answer.valid) {
       std::cerr << "json parse accepted invalid json " << f << std::endl;
       return EXIT_FAILURE;
