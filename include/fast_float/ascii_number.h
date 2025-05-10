@@ -268,7 +268,7 @@ template <typename UC> struct parsed_number_string_t {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
-  bool valid{false};
+  bool invalid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
@@ -283,7 +283,7 @@ template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 report_parse_error(UC const *p, parse_error error) noexcept {
   parsed_number_string_t<UC> answer;
-  answer.valid = false;
+  answer.invalid = true;
   answer.lastmatch = p;
   answer.error = error;
   return answer;
@@ -299,7 +299,8 @@ parse_number_string(UC const *p, UC const *pend,
   // Consider refactoring the 'parse_number_string' function.
   // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
   parsed_number_string_t<UC> answer;
-  FASTFLOAT_ASSUME(p < pend); // so dereference without checks;
+  // so dereference without checks
+  FASTFLOAT_ASSUME(p < pend);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
   if (answer.negative ||
@@ -312,15 +313,15 @@ parse_number_string(UC const *p, UC const *pend,
           p, parse_error::missing_integer_or_dot_after_sign);
     }
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
-      if (!is_integer(*p)) { // a sign must be followed by an integer
+      // a sign must be followed by an integer
+      if (!is_integer(*p)) {
         return report_parse_error<UC>(p,
                                       parse_error::missing_integer_after_sign);
       }
     }
     else {
-      if (!is_integer(*p) &&
-          (*p != options.decimal_point)) { // a sign must be followed by an
-                                           // integer or the dot
+      // a sign must be followed by an integer or the dot
+      if (!is_integer(*p) && (*p != options.decimal_point)) {
         return report_parse_error<UC>(
             p, parse_error::missing_integer_or_dot_after_sign);
       }
@@ -459,7 +460,6 @@ parse_number_string(UC const *p, UC const *pend,
 
   // We parsed all parts of the number, let's save progress.
   answer.lastmatch = p;
-  answer.valid = true;
 
   // Now we can check for errors.
 

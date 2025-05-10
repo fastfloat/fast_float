@@ -337,7 +337,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
           :
 #endif
           parse_number_string<false, UC>(first, last, options);
-  if (!pns.valid) {
+  if (pns.invalid) {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     if (chars_format_t(options.format & chars_format::no_infnan)) {
 #endif
