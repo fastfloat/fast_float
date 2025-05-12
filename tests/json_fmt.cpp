@@ -120,8 +120,8 @@ int main() {
   for (std::size_t i = 0; i < reject.size(); ++i) {
     auto const &s = reject[i].input;
     double result;
-    auto const answer = fast_float::from_chars(s.data(), s.data() + s.size(), result,
-                                         fast_float::chars_format::json);
+    auto const answer = fast_float::from_chars(
+        s.data(), s.data() + s.size(), result, fast_float::chars_format::json);
     if (answer.ec == std::errc()) {
       std::cerr << "json fmt accepted invalid json " << s << std::endl;
       return EXIT_FAILURE;
