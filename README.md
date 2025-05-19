@@ -357,6 +357,7 @@ int main() {
 }
 ```
 
+
 ## Users and Related Work
 
 The fast_float library is part of:
@@ -387,6 +388,14 @@ using an updated algorithm reworked from the ground up, and while offering an
 API more in line with the expectations of C++ programmers. The
 fast_double_parser library is part of the [Microsoft LightGBM machine-learning
 framework](https://github.com/microsoft/LightGBM).
+
+
+
+Packages
+------
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/fastfloat.svg)](https://repology.org/project/fastfloat/versions)
+
 
 ## References
 
