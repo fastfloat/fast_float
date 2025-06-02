@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
+cmake_policy(VERSION 3.5) # For doctest
 
 project(fast_float VERSION 8.0.2 LANGUAGES CXX)
 set(FASTFLOAT_CXX_STANDARD 11 CACHE STRING "the C++ standard to use for fastfloat")
