@@ -1,4 +1,4 @@
-name: Amalgamate Ubuntu 20.04 CI (GCC 9)
+name: Amalgamate Ubuntu 24.04 CI
 
 on: [push, pull_request]
 
