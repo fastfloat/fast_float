@@ -9,8 +9,7 @@ option(FASTFLOAT_SUPPLEMENTAL_TESTS "Run supplemental tests" ON)
 
 if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
-    GIT_REPOSITORY https://github.com/onqtam/doctest.git
-    GIT_TAG v2.4.11)
+    GIT_REPOSITORY https://github.com/lemire/doctest.git)
 else ()
   find_package(doctest REQUIRED)
 endif()
@@ -33,13 +32,9 @@ endif()
 
 add_library(supplemental-data INTERFACE)
 if (FASTFLOAT_SUPPLEMENTAL_TESTS)
-  FetchContent_GetProperties(supplemental_test_files)
-  if(NOT supplemental_test_files_POPULATED)
-    message(STATUS "Supplemental tests enabled. Retrieving test files.")
-    FetchContent_Populate(supplemental_test_files)
-    message(STATUS "Supplemental test files retrieved.")
-    add_subdirectory(${supplemental_test_files_SOURCE_DIR} ${supplemental_test_files_BINARY_DIR})
-  endif()
+  message(STATUS "Supplemental tests enabled. Retrieving test files.")
+  FetchContent_MakeAvailable(supplemental_test_files)
+  message(STATUS "Supplemental test files retrieved.")
   target_compile_definitions(supplemental-data INTERFACE SUPPLEMENTAL_TEST_DATA_DIR="${supplemental_test_files_BINARY_DIR}/data")
 endif()
 
