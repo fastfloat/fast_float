@@ -57,6 +57,7 @@ Example:
 ```C++
 #include "fast_float/fast_float.h"
 #include <iostream>
+#include <string>
 
 int main() {
   std::string input = "3.1416 xyz ";
@@ -65,6 +66,25 @@ int main() {
   if (answer.ec != std::errc()) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
   std::cout << "parsed the number " << result << std::endl;
   return EXIT_SUCCESS;
+}
+```
+
+Though the C++17 standard has you do a comparison with `std::errc()` to check whether the conversion worked, you can avoid it by casting the result to a `bool` like so:
+
+```cpp
+#include "fast_float/fast_float.h"
+#include <iostream>
+#include <string>
+
+int main() {
+  std::string input = "3.1416 xyz ";
+  double result;
+  if(auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result)) {
+    std::cout << "parsed the number " << result << std::endl;
+    return EXIT_SUCCESS;
+  }
+  std::cerr << "failed to parse " << result << std::endl;
+  return EXIT_FAILURE;
 }
 ```
 
