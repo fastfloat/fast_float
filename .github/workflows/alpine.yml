@@ -18,7 +18,7 @@ jobs:
           - riscv64
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install latest Alpine Linux for ${{ matrix.arch }}
         uses: jirutka/setup-alpine@v1
