@@ -575,6 +575,7 @@ cmake --build build
   manager](https://conan.io/center/recipes/fast_float).
 * It is part of the [brew package
   manager](https://formulae.brew.sh/formula/fast_float).
+* fast_float is available on [xmake](https://xmake.io) repository.
 * Some Linux distribution like Fedora include fast_float (e.g., as
   `fast_float-devel`).
 
