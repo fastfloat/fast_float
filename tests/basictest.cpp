@@ -1134,6 +1134,14 @@ TEST_CASE("double.inf") {
          std::errc::result_out_of_range);
   verify("1.9e308", std::numeric_limits<double>::infinity(),
          std::errc::result_out_of_range);
+
+  // DBL_MAX + 0.00000000000000001e308
+  verify("1.79769313486231581e308", std::numeric_limits<double>::infinity(),
+         std::errc::result_out_of_range);
+
+  // DBL_MAX + 0.0000000000000001e308
+  verify("1.7976931348623159e308", std::numeric_limits<double>::infinity(),
+         std::errc::result_out_of_range);
 }
 
 TEST_CASE("double.general") {
@@ -1143,6 +1151,13 @@ TEST_CASE("double.general") {
   verify("-22250738585072012e-324",
          -0x1p-1022); /* limit between normal and subnormal*/
   verify("-1e-999", -0.0, std::errc::result_out_of_range);
+
+  // DBL_TRUE_MIN / 2
+  verify("2.4703282292062327e-324", 0.0, std::errc::result_out_of_range);
+
+  // DBL_TRUE_MIN / 2 + 0.0000000000000001e-324
+  verify("2.4703282292062328e-324", 0x0.0000000000001p-1022);
+
   verify("-2.2222222222223e-322", -0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
   verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
@@ -2070,3 +2085,114 @@ TEST_CASE("bfloat16.general") {
   //     0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875bf16);
 }
 #endif
+
+template <typename Int>
+void integer_multiplication_by_power_of_10_test(Int mantissa,
+                                                int decimal_exponent,
+                                                double expected) {
+  const double actual =
+      fast_float::multiply_integer_and_power_of_10(mantissa, decimal_exponent);
+
+  INFO("m * 10^e=" << mantissa << " * 10^" << decimal_exponent
+                   << "\n"
+                      "  expected="
+                   << fHexAndDec(expected) << "\n"
+                   << "  ..actual=" << fHexAndDec(actual) << "\n"
+                   << "  expected mantissa="
+                   << iHexAndDec(get_mantissa(expected)) << "\n"
+                   << "  ..actual mantissa=" << iHexAndDec(get_mantissa(actual))
+                   << "\n");
+  CHECK_EQ(actual, expected);
+}
+
+#define verify_integer_multiplication_by_power_of_10(mantissa,                 \
+                                                     decimal_exponent)         \
+  do {                                                                         \
+    integer_multiplication_by_power_of_10_test(mantissa, decimal_exponent,     \
+                                               mantissa##e##decimal_exponent); \
+  } while (false)
+
+TEST_CASE("multiply_integer_and_power_of_10") {
+  // explicitly verifying API with different types of integers
+  integer_multiplication_by_power_of_10_test<char>(31, -1, 3.1);
+  integer_multiplication_by_power_of_10_test<unsigned char>(31, -1, 3.1);
+  integer_multiplication_by_power_of_10_test<signed char>(31, -1, 3.1);
+  integer_multiplication_by_power_of_10_test<signed char>(-31, -1, -3.1);
+  integer_multiplication_by_power_of_10_test<int16_t>(31415, -4, 3.1415);
+  integer_multiplication_by_power_of_10_test<int16_t>(-31415, -4, -3.1415);
+  integer_multiplication_by_power_of_10_test<uint16_t>(31415, -4, 3.1415);
+  integer_multiplication_by_power_of_10_test<int32_t>(314159265, -8,
+                                                      3.14159265);
+  integer_multiplication_by_power_of_10_test<int32_t>(-314159265, -8,
+                                                      -3.14159265);
+  integer_multiplication_by_power_of_10_test<uint32_t>(3141592653, -9,
+                                                       3.141592653);
+  integer_multiplication_by_power_of_10_test<int64_t>(3141592653589793238, -18,
+                                                      3.141592653589793238);
+  integer_multiplication_by_power_of_10_test<int64_t>(-3141592653589793238, -18,
+                                                      -3.141592653589793238);
+  integer_multiplication_by_power_of_10_test<uint64_t>(3141592653589793238, -18,
+                                                       3.141592653589793238);
+
+  for (int mode : {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST}) {
+    fesetround(mode);
+    INFO("fesetround(): " << std::string{round_name(mode)});
+
+    struct Guard {
+      ~Guard() { fesetround(FE_TONEAREST); }
+    } guard;
+
+    verify_integer_multiplication_by_power_of_10(0, 0);
+    verify_integer_multiplication_by_power_of_10(1, 0);
+    verify_integer_multiplication_by_power_of_10(0, 1);
+    verify_integer_multiplication_by_power_of_10(1, 1);
+    verify_integer_multiplication_by_power_of_10(-1, 0);
+    verify_integer_multiplication_by_power_of_10(0, -1);
+    verify_integer_multiplication_by_power_of_10(-1, -1);
+    verify_integer_multiplication_by_power_of_10(-1, 1);
+    verify_integer_multiplication_by_power_of_10(1, -1);
+    verify_integer_multiplication_by_power_of_10(-1, -1);
+
+    integer_multiplication_by_power_of_10_test(49406564584124654, -340,
+                                               DBL_TRUE_MIN);
+    integer_multiplication_by_power_of_10_test(22250738585072014, -324,
+                                               DBL_MIN);
+    integer_multiplication_by_power_of_10_test(17976931348623158, 292, DBL_MAX);
+
+    // DBL_TRUE_MIN / 2 underflows to 0
+    integer_multiplication_by_power_of_10_test(49406564584124654 / 2, -340, 0.);
+
+    // DBL_TRUE_MIN / 2 + 0.0000000000000001e-324 rounds to DBL_TRUE_MIN
+    integer_multiplication_by_power_of_10_test(49406564584124654 / 2 + 1, -340,
+                                               DBL_TRUE_MIN);
+
+    // DBL_MAX + 0.0000000000000001e308 overflows to infinity
+    integer_multiplication_by_power_of_10_test(
+        17976931348623158 + 1, 292, std::numeric_limits<double>::infinity());
+
+    // loosely verifying correct rounding of 1 to 64 bits
+    // worth of significant digits
+    verify_integer_multiplication_by_power_of_10(1, 42);
+    verify_integer_multiplication_by_power_of_10(12, 42);
+    verify_integer_multiplication_by_power_of_10(123, 42);
+    verify_integer_multiplication_by_power_of_10(1234, 42);
+    verify_integer_multiplication_by_power_of_10(12345, 42);
+    verify_integer_multiplication_by_power_of_10(123456, 42);
+    verify_integer_multiplication_by_power_of_10(1234567, 42);
+    verify_integer_multiplication_by_power_of_10(12345678, 42);
+    verify_integer_multiplication_by_power_of_10(123456789, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901, 42);
+    verify_integer_multiplication_by_power_of_10(123456789012, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890123, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901234, 42);
+    verify_integer_multiplication_by_power_of_10(123456789012345, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890123456, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901234567, 42);
+    verify_integer_multiplication_by_power_of_10(123456789012345678, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890123456789, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901234567890, 42);
+    // ULLONG_MAX
+    verify_integer_multiplication_by_power_of_10(18446744073709551615, 42);
+  }
+}
