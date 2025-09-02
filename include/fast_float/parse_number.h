@@ -344,10 +344,11 @@ from_chars(UC const *first, UC const *last, T &value, int base) noexcept {
   return from_chars_advanced(first, last, value, options);
 }
 
-FASTFLOAT_CONSTEXPR20
-typename std::enable_if<is_supported_float_type<double>::value, double>::type
-multiply_integer_and_power_of_10(uint64_t mantissa,
-                                 int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20 inline
+    typename std::enable_if<is_supported_float_type<double>::value,
+                            double>::type
+    multiply_integer_and_power_of_10(uint64_t mantissa,
+                                     int decimal_exponent) noexcept {
   double value;
   if (clinger_fast_path_impl(mantissa, decimal_exponent, false, value))
     return value;
@@ -358,10 +359,11 @@ multiply_integer_and_power_of_10(uint64_t mantissa,
   return value;
 }
 
-FASTFLOAT_CONSTEXPR20
-typename std::enable_if<is_supported_float_type<double>::value, double>::type
-multiply_integer_and_power_of_10(int64_t mantissa,
-                                 int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20 inline
+    typename std::enable_if<is_supported_float_type<double>::value,
+                            double>::type
+    multiply_integer_and_power_of_10(int64_t mantissa,
+                                     int decimal_exponent) noexcept {
   const bool is_negative = mantissa < 0;
   const uint64_t m = static_cast<uint64_t>(is_negative ? -mantissa : mantissa);
 
@@ -377,17 +379,20 @@ multiply_integer_and_power_of_10(int64_t mantissa,
 
 // the following overloads are here to avoid surprising ambiguity for int,
 // unsigned, etc.
-FASTFLOAT_CONSTEXPR20
-typename std::enable_if<is_supported_float_type<double>::value, double>::type
-multiply_integer_and_power_of_10(unsigned mantissa,
-                                 int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20 inline
+    typename std::enable_if<is_supported_float_type<double>::value,
+                            double>::type
+    multiply_integer_and_power_of_10(unsigned mantissa,
+                                     int decimal_exponent) noexcept {
   return multiply_integer_and_power_of_10(static_cast<uint64_t>(mantissa),
                                           decimal_exponent);
 }
 
-FASTFLOAT_CONSTEXPR20
-typename std::enable_if<is_supported_float_type<double>::value, double>::type
-multiply_integer_and_power_of_10(int mantissa, int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20 inline
+    typename std::enable_if<is_supported_float_type<double>::value,
+                            double>::type
+    multiply_integer_and_power_of_10(int mantissa,
+                                     int decimal_exponent) noexcept {
   return multiply_integer_and_power_of_10(static_cast<int64_t>(mantissa),
                                           decimal_exponent);
 }
