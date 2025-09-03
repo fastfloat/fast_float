@@ -189,7 +189,7 @@ from_chars(UC const *first, UC const *last, T &value,
 }
 
 template <typename T>
-FASTFLOAT_CONSTEXPR20 bool
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
 clinger_fast_path_impl(uint64_t mantissa, int64_t exponent, bool is_negative,
                        T &value) noexcept {
   // The implementation of the Clinger's fast path is convoluted because
