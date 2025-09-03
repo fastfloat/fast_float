@@ -2087,9 +2087,9 @@ TEST_CASE("bfloat16.general") {
 #endif
 
 template <typename Int>
-void integer_multiplication_by_power_of_10_test(Int mantissa,
-                                                int decimal_exponent,
-                                                double expected) {
+void verify_integer_multiplication_by_power_of_10(Int mantissa,
+                                                  int decimal_exponent,
+                                                  double expected) {
   const double actual =
       fast_float::multiply_integer_and_power_of_10(mantissa, decimal_exponent);
 
@@ -2105,34 +2105,41 @@ void integer_multiplication_by_power_of_10_test(Int mantissa,
   CHECK_EQ(actual, expected);
 }
 
-#define verify_integer_multiplication_by_power_of_10(mantissa,                 \
-                                                     decimal_exponent)         \
-  do {                                                                         \
-    integer_multiplication_by_power_of_10_test(mantissa, decimal_exponent,     \
-                                               mantissa##e##decimal_exponent); \
-  } while (false)
+template <typename Int>
+void verify_integer_multiplication_by_power_of_10(Int mantissa,
+                                                  int decimal_exponent) {
+  std::string constructed_string =
+      std::to_string(mantissa) + "e" + std::to_string(decimal_exponent);
+  double expected_result;
+  const auto result = fast_float::from_chars(
+      constructed_string.data(),
+      constructed_string.data() + constructed_string.size(), expected_result);
+  if (result.ec != std::errc())
+    INFO("Failed to parse: " << constructed_string);
+  verify_integer_multiplication_by_power_of_10(mantissa, decimal_exponent,
+                                               expected_result);
+}
 
 TEST_CASE("multiply_integer_and_power_of_10") {
   // explicitly verifying API with different types of integers
-  integer_multiplication_by_power_of_10_test<char>(31, -1, 3.1);
-  integer_multiplication_by_power_of_10_test<unsigned char>(31, -1, 3.1);
-  integer_multiplication_by_power_of_10_test<signed char>(31, -1, 3.1);
-  integer_multiplication_by_power_of_10_test<signed char>(-31, -1, -3.1);
-  integer_multiplication_by_power_of_10_test<int16_t>(31415, -4, 3.1415);
-  integer_multiplication_by_power_of_10_test<int16_t>(-31415, -4, -3.1415);
-  integer_multiplication_by_power_of_10_test<uint16_t>(31415, -4, 3.1415);
-  integer_multiplication_by_power_of_10_test<int32_t>(314159265, -8,
-                                                      3.14159265);
-  integer_multiplication_by_power_of_10_test<int32_t>(-314159265, -8,
-                                                      -3.14159265);
-  integer_multiplication_by_power_of_10_test<uint32_t>(3141592653, -9,
-                                                       3.141592653);
-  integer_multiplication_by_power_of_10_test<int64_t>(3141592653589793238, -18,
-                                                      3.141592653589793238);
-  integer_multiplication_by_power_of_10_test<int64_t>(-3141592653589793238, -18,
-                                                      -3.141592653589793238);
-  integer_multiplication_by_power_of_10_test<uint64_t>(3141592653589793238, -18,
-                                                       3.141592653589793238);
+  verify_integer_multiplication_by_power_of_10<int8_t>(31, -1, 3.1);
+  verify_integer_multiplication_by_power_of_10<int8_t>(-31, -1, -3.1);
+  verify_integer_multiplication_by_power_of_10<uint8_t>(31, -1, 3.1);
+  verify_integer_multiplication_by_power_of_10<int16_t>(31415, -4, 3.1415);
+  verify_integer_multiplication_by_power_of_10<int16_t>(-31415, -4, -3.1415);
+  verify_integer_multiplication_by_power_of_10<uint16_t>(31415, -4, 3.1415);
+  verify_integer_multiplication_by_power_of_10<int32_t>(314159265, -8,
+                                                        3.14159265);
+  verify_integer_multiplication_by_power_of_10<int32_t>(-314159265, -8,
+                                                        -3.14159265);
+  verify_integer_multiplication_by_power_of_10<uint32_t>(3141592653, -9,
+                                                         3.141592653);
+  verify_integer_multiplication_by_power_of_10<int64_t>(
+      3141592653589793238, -18, 3.141592653589793238);
+  verify_integer_multiplication_by_power_of_10<int64_t>(
+      -3141592653589793238, -18, -3.141592653589793238);
+  verify_integer_multiplication_by_power_of_10<uint64_t>(
+      3141592653589793238, -18, 3.141592653589793238);
 
   for (int mode : {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST}) {
     fesetround(mode);
@@ -2151,48 +2158,78 @@ TEST_CASE("multiply_integer_and_power_of_10") {
     verify_integer_multiplication_by_power_of_10(-1, -1);
     verify_integer_multiplication_by_power_of_10(-1, 1);
     verify_integer_multiplication_by_power_of_10(1, -1);
-    verify_integer_multiplication_by_power_of_10(-1, -1);
 
-    integer_multiplication_by_power_of_10_test(49406564584124654, -340,
-                                               DBL_TRUE_MIN);
-    integer_multiplication_by_power_of_10_test(22250738585072014, -324,
-                                               DBL_MIN);
-    integer_multiplication_by_power_of_10_test(17976931348623158, 292, DBL_MAX);
+    verify_integer_multiplication_by_power_of_10(
+        49406564584124654, -340, std::numeric_limits<double>::denorm_min());
+    verify_integer_multiplication_by_power_of_10(
+        22250738585072014, -324, std::numeric_limits<double>::min());
+    verify_integer_multiplication_by_power_of_10(
+        17976931348623158, 292, std::numeric_limits<double>::max());
 
     // DBL_TRUE_MIN / 2 underflows to 0
-    integer_multiplication_by_power_of_10_test(49406564584124654 / 2, -340, 0.);
+    verify_integer_multiplication_by_power_of_10(49406564584124654 / 2, -340,
+                                                 0.);
 
     // DBL_TRUE_MIN / 2 + 0.0000000000000001e-324 rounds to DBL_TRUE_MIN
-    integer_multiplication_by_power_of_10_test(49406564584124654 / 2 + 1, -340,
-                                               DBL_TRUE_MIN);
+    verify_integer_multiplication_by_power_of_10(
+        49406564584124654 / 2 + 1, -340,
+        std::numeric_limits<double>::denorm_min());
 
     // DBL_MAX + 0.0000000000000001e308 overflows to infinity
-    integer_multiplication_by_power_of_10_test(
+    verify_integer_multiplication_by_power_of_10(
         17976931348623158 + 1, 292, std::numeric_limits<double>::infinity());
+    // DBL_MAX + 0.00000000000000001e308 overflows to infinity
+    verify_integer_multiplication_by_power_of_10(
+        179769313486231580 + 1, 291, std::numeric_limits<double>::infinity());
 
     // loosely verifying correct rounding of 1 to 64 bits
     // worth of significant digits
     verify_integer_multiplication_by_power_of_10(1, 42);
+    verify_integer_multiplication_by_power_of_10(1, -42);
     verify_integer_multiplication_by_power_of_10(12, 42);
+    verify_integer_multiplication_by_power_of_10(12, -42);
     verify_integer_multiplication_by_power_of_10(123, 42);
+    verify_integer_multiplication_by_power_of_10(123, -42);
     verify_integer_multiplication_by_power_of_10(1234, 42);
+    verify_integer_multiplication_by_power_of_10(1234, -42);
     verify_integer_multiplication_by_power_of_10(12345, 42);
+    verify_integer_multiplication_by_power_of_10(12345, -42);
     verify_integer_multiplication_by_power_of_10(123456, 42);
+    verify_integer_multiplication_by_power_of_10(123456, -42);
     verify_integer_multiplication_by_power_of_10(1234567, 42);
+    verify_integer_multiplication_by_power_of_10(1234567, -42);
     verify_integer_multiplication_by_power_of_10(12345678, 42);
+    verify_integer_multiplication_by_power_of_10(12345678, -42);
     verify_integer_multiplication_by_power_of_10(123456789, 42);
     verify_integer_multiplication_by_power_of_10(1234567890, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890, -42);
     verify_integer_multiplication_by_power_of_10(12345678901, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901, -42);
     verify_integer_multiplication_by_power_of_10(123456789012, 42);
+    verify_integer_multiplication_by_power_of_10(123456789012, -42);
     verify_integer_multiplication_by_power_of_10(1234567890123, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890123, -42);
     verify_integer_multiplication_by_power_of_10(12345678901234, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901234, -42);
     verify_integer_multiplication_by_power_of_10(123456789012345, 42);
+    verify_integer_multiplication_by_power_of_10(123456789012345, -42);
     verify_integer_multiplication_by_power_of_10(1234567890123456, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890123456, -42);
     verify_integer_multiplication_by_power_of_10(12345678901234567, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901234567, -42);
     verify_integer_multiplication_by_power_of_10(123456789012345678, 42);
+    verify_integer_multiplication_by_power_of_10(123456789012345678, -42);
     verify_integer_multiplication_by_power_of_10(1234567890123456789, 42);
-    verify_integer_multiplication_by_power_of_10(12345678901234567890, 42);
-    // ULLONG_MAX
-    verify_integer_multiplication_by_power_of_10(18446744073709551615, 42);
+    verify_integer_multiplication_by_power_of_10(1234567890123456789, -42);
+    verify_integer_multiplication_by_power_of_10(12345678901234567890ull, 42);
+    verify_integer_multiplication_by_power_of_10(12345678901234567890ull, -42);
+    verify_integer_multiplication_by_power_of_10(
+        std::numeric_limits<int64_t>::max(), 42);
+    verify_integer_multiplication_by_power_of_10(
+        std::numeric_limits<int64_t>::max(), -42);
+    verify_integer_multiplication_by_power_of_10(
+        std::numeric_limits<uint64_t>::max(), 42);
+    verify_integer_multiplication_by_power_of_10(
+        std::numeric_limits<uint64_t>::max(), -42);
   }
 }
