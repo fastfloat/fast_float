@@ -22,12 +22,8 @@ endif()
 
 # FetchContent_MakeAvailable() was only introduced in 3.14
 # https://cmake.org/cmake/help/v3.14/release/3.14.html#modules
-# FetchContent_MakeAvailable(doctest)
 if (NOT SYSTEM_DOCTEST)
-  FetchContent_GetProperties(doctest)
-  if(NOT doctest_POPULATED)
-    FetchContent_MakeAvailable(doctest)
-  endif()
+  FetchContent_MakeAvailable(doctest)
 endif()
 
 add_library(supplemental-data INTERFACE)
@@ -76,7 +72,7 @@ endif()
 if (FASTFLOAT_SUPPLEMENTAL_TESTS)
   target_compile_definitions(basictest PRIVATE FASTFLOAT_SUPPLEMENTAL_TESTS)
 endif()
-
+fast_float_add_cpp_test(p2497)
 fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)
