@@ -2140,6 +2140,10 @@ TEST_CASE("integer_times_pow10") {
       -3141592653589793238, -18, -3.141592653589793238);
   verify_integer_multiplication_by_power_of_10<uint64_t>(
       3141592653589793238, -18, 3.141592653589793238);
+  verify_integer_multiplication_by_power_of_10<long long>(
+      -3141592653589793238, -18, -3.141592653589793238);
+  verify_integer_multiplication_by_power_of_10<unsigned long long>(
+      3141592653589793238, -18, 3.141592653589793238);
 
   for (int mode : {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST}) {
     fesetround(mode);

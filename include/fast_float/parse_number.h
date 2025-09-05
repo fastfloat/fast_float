@@ -373,6 +373,18 @@ integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept {
 
 // the following overloads are here to avoid surprising ambiguity for int,
 // unsigned, etc.
+#if !defined(_MSC_VER)
+FASTFLOAT_CONSTEXPR20 inline double
+integer_times_pow10(unsigned long long mantissa,
+                    int decimal_exponent) noexcept {
+  return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
+}
+
+FASTFLOAT_CONSTEXPR20 inline double
+integer_times_pow10(long long mantissa, int decimal_exponent) noexcept {
+  return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
+}
+#endif
 FASTFLOAT_CONSTEXPR20 inline double
 integer_times_pow10(unsigned mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
