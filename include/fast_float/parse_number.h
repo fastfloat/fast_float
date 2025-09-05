@@ -374,15 +374,15 @@ integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept {
 // the following overloads are here to avoid surprising ambiguity for int,
 // unsigned, etc.
 template <typename Int>
-FASTFLOAT_CONSTEXPR20 inline std::enable_if_t<
-    std::is_integral<Int>::value && !std::is_signed<Int>::value, double>
+FASTFLOAT_CONSTEXPR20 inline typename std::enable_if<
+    std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
 integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
 }
 
 template <typename Int>
-FASTFLOAT_CONSTEXPR20 inline std::enable_if_t<
-    std::is_integral<Int>::value && std::is_signed<Int>::value, double>
+FASTFLOAT_CONSTEXPR20 inline typename std::enable_if<
+    std::is_integral<Int>::value && std::is_signed<Int>::value, double>::type
 integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
 }
