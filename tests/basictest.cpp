@@ -2091,7 +2091,7 @@ void verify_integer_multiplication_by_power_of_10(Int mantissa,
                                                   int decimal_exponent,
                                                   double expected) {
   const double actual =
-      fast_float::multiply_integer_and_power_of_10(mantissa, decimal_exponent);
+      fast_float::integer_times_pow10(mantissa, decimal_exponent);
 
   INFO("m * 10^e=" << mantissa << " * 10^" << decimal_exponent
                    << "\n"
@@ -2120,7 +2120,7 @@ void verify_integer_multiplication_by_power_of_10(Int mantissa,
                                                expected_result);
 }
 
-TEST_CASE("multiply_integer_and_power_of_10") {
+TEST_CASE("integer_times_pow10") {
   // explicitly verifying API with different types of integers
   verify_integer_multiplication_by_power_of_10<int8_t>(31, -1, 3.1);
   verify_integer_multiplication_by_power_of_10<int8_t>(-31, -1, -3.1);

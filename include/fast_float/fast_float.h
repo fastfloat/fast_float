@@ -58,16 +58,12 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
  * The implementation does not throw and does not allocate memory (e.g., with
  * `new` or `malloc`).
  */
+FASTFLOAT_CONSTEXPR20 inline double
+integer_times_pow10(uint64_t mantissa, int decimal_exponent) noexcept;
 FASTFLOAT_CONSTEXPR20 inline
     typename std::enable_if<is_supported_float_type<double>::value,
                             double>::type
-    multiply_integer_and_power_of_10(uint64_t mantissa,
-                                     int decimal_exponent) noexcept;
-FASTFLOAT_CONSTEXPR20 inline
-    typename std::enable_if<is_supported_float_type<double>::value,
-                            double>::type
-    multiply_integer_and_power_of_10(int64_t mantissa,
-                                     int decimal_exponent) noexcept;
+    integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept;
 
 /**
  * from_chars for integer types.
