@@ -1,12 +1,6 @@
-name: Ubuntu rvv VLEN=128 (clang 17)
+name: Ubuntu RISC-V rvv VLEN=128 (clang 17)
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
 
 jobs:
   build:
