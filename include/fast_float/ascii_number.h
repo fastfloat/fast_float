@@ -487,7 +487,7 @@ parse_number_string(UC const *p, UC const *pend,
     if (digit_count > 19) {
       answer.too_many_digits = true;
       // Let us start again, this time, avoiding overflows.
-      // We don't need to check if is_integer, since we use the
+      // We don't need to call if is_integer, since we use the
       // pre-tokenized spans from above.
       answer.mantissa = 0;
       p = answer.integer.ptr;

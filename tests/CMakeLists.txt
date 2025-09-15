@@ -9,8 +9,7 @@ option(FASTFLOAT_SUPPLEMENTAL_TESTS "Run supplemental tests" ON)
 
 if (NOT SYSTEM_DOCTEST)
   FetchContent_Declare(doctest
-    GIT_REPOSITORY https://github.com/onqtam/doctest.git
-    GIT_TAG v2.4.11)
+    GIT_REPOSITORY https://github.com/lemire/doctest.git)
 else ()
   find_package(doctest REQUIRED)
 endif()
@@ -23,24 +22,15 @@ endif()
 
 # FetchContent_MakeAvailable() was only introduced in 3.14
 # https://cmake.org/cmake/help/v3.14/release/3.14.html#modules
-# FetchContent_MakeAvailable(doctest)
 if (NOT SYSTEM_DOCTEST)
-  FetchContent_GetProperties(doctest)
-  if(NOT doctest_POPULATED)
-    FetchContent_Populate(doctest)
-    add_subdirectory(${doctest_SOURCE_DIR} ${doctest_BINARY_DIR})
-  endif()
+  FetchContent_MakeAvailable(doctest)
 endif()
 
 add_library(supplemental-data INTERFACE)
 if (FASTFLOAT_SUPPLEMENTAL_TESTS)
-  FetchContent_GetProperties(supplemental_test_files)
-  if(NOT supplemental_test_files_POPULATED)
-    message(STATUS "Supplemental tests enabled. Retrieving test files.")
-    FetchContent_Populate(supplemental_test_files)
-    message(STATUS "Supplemental test files retrieved.")
-    add_subdirectory(${supplemental_test_files_SOURCE_DIR} ${supplemental_test_files_BINARY_DIR})
-  endif()
+  message(STATUS "Supplemental tests enabled. Retrieving test files.")
+  FetchContent_MakeAvailable(supplemental_test_files)
+  message(STATUS "Supplemental test files retrieved.")
   target_compile_definitions(supplemental-data INTERFACE SUPPLEMENTAL_TEST_DATA_DIR="${supplemental_test_files_BINARY_DIR}/data")
 endif()
 
@@ -82,7 +72,7 @@ endif()
 if (FASTFLOAT_SUPPLEMENTAL_TESTS)
   target_compile_definitions(basictest PRIVATE FASTFLOAT_SUPPLEMENTAL_TESTS)
 endif()
-
+fast_float_add_cpp_test(p2497)
 fast_float_add_cpp_test(long_test)
 fast_float_add_cpp_test(powersoffive_hardround)
 fast_float_add_cpp_test(string_test)

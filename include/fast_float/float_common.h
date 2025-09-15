@@ -70,6 +70,11 @@ enum class chars_format : chars_format_t {
 template <typename UC> struct from_chars_result_t {
   UC const *ptr;
   std::errc ec;
+
+  // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2497r0.html
+  constexpr explicit operator bool() const noexcept {
+    return ec == std::errc();
+  }
 };
 
 using from_chars_result = from_chars_result_t<char>;
@@ -102,11 +107,12 @@ using parse_options = parse_options_t<char>;
      defined(__MINGW64__) || defined(__s390x__) ||                             \
      (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) ||      \
       defined(__PPC64LE__)) ||                                                 \
-     defined(__loongarch64))
+     defined(__loongarch64) || (defined(__riscv) && __riscv_xlen == 64))
 #define FASTFLOAT_64BIT 1
 #elif (defined(__i386) || defined(__i386__) || defined(_M_IX86) ||             \
        defined(__arm__) || defined(_M_ARM) || defined(__ppc__) ||              \
-       defined(__MINGW32__) || defined(__EMSCRIPTEN__))
+       defined(__MINGW32__) || defined(__EMSCRIPTEN__) ||                      \
+       (defined(__riscv) && __riscv_xlen == 32))
 #define FASTFLOAT_32BIT 1
 #else
   // Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
