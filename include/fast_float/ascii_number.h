@@ -52,7 +52,7 @@ read8_to_u64(UC const *chars) {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
     for (uint_fast8_t i = 0; i != 8; ++i) {
-      val |= uint64_t(uint_fast8_t(*chars)) << (i * 8);
+      val |= uint64_t(uint8_t(*chars)) << (i * 8);
       ++chars;
     }
     return val;
@@ -72,7 +72,7 @@ read8_to_u64(UC const *chars) {
 
 #ifdef FASTFLOAT_SSE2
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   __m128i const packed = _mm_packus_epi16(data, data);
 #ifdef FASTFLOAT_64BIT
@@ -95,7 +95,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
 
 #elif defined(FASTFLOAT_NEON)
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint8x8_t utf8_packed = vmovn_u16(data);
   return vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);
@@ -125,9 +125,9 @@ uint64_t simd_read8_to_u64(UC const *) {
 // credit  @aqrit
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_eight_digits_unrolled(uint64_t val) noexcept {
-  uint64_t const mask = 0x000000FF000000FF;
-  uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
-  uint64_t const mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  constexpr uint64_t mask = 0x000000FF000000FF;
+  constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  constexpr uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;

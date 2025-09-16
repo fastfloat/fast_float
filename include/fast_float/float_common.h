@@ -446,7 +446,7 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 
 // Value of the mantissa.
 typedef uint_fast64_t am_mant_t;
-// Size of bits in the mantissa and path and roundings shifts
+// Size of bits in the mantissa and path and rounding shifts
 typedef int_fast8_t am_bits_t;
 
 // Power bias is signed for handling a denormal float
@@ -461,11 +461,11 @@ struct adjusted_mantissa {
   am_pow_t power2;
   adjusted_mantissa() noexcept = default;
 
-  constexpr bool operator==(adjusted_mantissa const o) const noexcept {
+  constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;
   }
 
-  constexpr bool operator!=(adjusted_mantissa const o) const noexcept {
+  constexpr bool operator!=(adjusted_mantissa const &o) const noexcept {
     return mantissa != o.mantissa || power2 != o.power2;
   }
 };
@@ -1041,7 +1041,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     bool const negative,
 #endif
-    adjusted_mantissa const am, T &value) noexcept {
+    adjusted_mantissa const &am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
