@@ -195,32 +195,21 @@ from_chars(UC const *first, UC const *last, T &value,
                                     parse_options_t<UC>(fmt));
 }
 
-/**
- * This function overload takes parsed_number_string_t structure that is created
- * and populated either by from_chars_advanced function taking chars range and
- * parsing options or other parsing custom function implemented by user.
- */
-template <typename T, typename UC>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
-from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
+template <typename T>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+clinger_fast_path_impl(uint64_t const mantissa, int64_t const exponent,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+                       bool const is_negative,
+#endif
+                       T &value) noexcept {
 
-  static_assert(is_supported_float_type<T>::value,
-                "only some floating-point types are supported");
-  static_assert(is_supported_char_type<UC>::value,
-                "only char, wchar_t, char16_t and char32_t are supported");
-
-  from_chars_result_t<UC> answer;
-
-  answer.ec = std::errc(); // be optimistic
-  answer.ptr = pns.lastmatch;
   // The implementation of the Clinger's fast path is convoluted because
   // we want round-to-nearest in all cases, irrespective of the rounding mode
   // selected on the thread.
   // We proceed optimistically, assuming that detail::rounds_to_nearest()
   // returns true.
-  if (binary_format<T>::min_exponent_fast_path() <= pns.exponent &&
-      pns.exponent <= binary_format<T>::max_exponent_fast_path() &&
-      !pns.too_many_digits) {
+  if (binary_format<T>::min_exponent_fast_path() <= exponent &&
+      exponent <= binary_format<T>::max_exponent_fast_path()) {
     // Unfortunately, the conventional Clinger's fast path is only possible
     // when the system rounds to the nearest float.
     //
@@ -233,37 +222,36 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 #endif
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
-      if (pns.mantissa <= binary_format<T>::max_mantissa_fast_path()) {
-        value = T(pns.mantissa);
-        if (pns.exponent < 0) {
-          value = value / binary_format<T>::exact_power_of_ten(-pns.exponent);
+      if (mantissa <= binary_format<T>::max_mantissa_fast_path()) {
+        value = T(mantissa);
+        if (exponent < 0) {
+          value = value / binary_format<T>::exact_power_of_ten(-exponent);
         } else {
-          value = value * binary_format<T>::exact_power_of_ten(pns.exponent);
+          value = value * binary_format<T>::exact_power_of_ten(exponent);
         }
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-        if (pns.negative) {
+        if (is_negative) {
           value = -value;
         }
 #endif
-        return answer;
+        return true;
       }
 #ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
     } else {
       // We do not have that fegetround() == FE_TONEAREST.
       // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's
       // proposal
-      if (pns.exponent >= 0 &&
-          pns.mantissa <=
-              binary_format<T>::max_mantissa_fast_path(pns.exponent)) {
+      if (exponent >= 0 &&
+          mantissa <= binary_format<T>::max_mantissa_fast_path(exponent)) {
 #if defined(__clang__) || defined(FASTFLOAT_32BIT)
         // Clang may map 0 to -0.0 when fegetround() == FE_DOWNWARD
-        if (pns.mantissa == 0) {
+        if (mantissa == 0) {
           value =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-              pns.negative ? T(-0.) :
+              is_negative ? T(-0.) :
 #endif
                            T(0.);
-          return answer;
+          return true;
         }
 #endif
         value = T(pns.mantissa) *
@@ -273,11 +261,40 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
           value = -value;
         }
 #endif
-        return answer;
+        return true;
       }
     }
 #endif
   }
+  return false;
+}
+
+/**
+ * This function overload takes parsed_number_string_t structure that is created
+ * and populated either by from_chars_advanced function taking chars range and
+ * parsing options or other parsing custom function implemented by user.
+ */
+template <typename T, typename UC>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
+  static_assert(is_supported_float_type<T>::value,
+                "only some floating-point types are supported");
+  static_assert(is_supported_char_type<UC>::value,
+                "only char, wchar_t, char16_t and char32_t are supported");
+
+  from_chars_result_t<UC> answer;
+
+  answer.ec = std::errc(); // be optimistic
+  answer.ptr = pns.lastmatch;
+
+  if (!pns.too_many_digits &&
+      clinger_fast_path_impl(pns.mantissa, pns.exponent,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+                             pns.negative,
+#endif
+                             value))
+    return answer;
+
   adjusted_mantissa am =
       compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
   if (pns.too_many_digits && am.power2 >= 0) {
@@ -367,6 +384,69 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
   parse_options_t<UC> const options(chars_format::general, UC('.'),
                                     static_cast<uint_fast8_t>(base));
   return from_chars_advanced(first, last, value, options);
+}
+
+FASTFLOAT_CONSTEXPR20 inline double
+integer_times_pow10(uint64_t const mantissa, int const decimal_exponent) noexcept {
+  double value;
+  if (clinger_fast_path_impl(mantissa, decimal_exponent,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+                             false,
+#endif
+                             value))
+    return value;
+
+  adjusted_mantissa am =
+      compute_float<binary_format<double>>(decimal_exponent, mantissa);
+  to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+           false,
+#endif
+           am, value);
+  return value;
+}
+
+FASTFLOAT_CONSTEXPR20 inline double
+integer_times_pow10(int64_t const mantissa, int const decimal_exponent) noexcept {
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  FASTFLOAT_ASSUME(mantissa > 0);
+  const uint64_t m = static_cast<uint64_t>(mantissa);
+#else
+  const bool is_negative = mantissa < 0;
+  const uint64_t m = static_cast<uint64_t>(is_negative ? -mantissa : mantissa);
+#endif
+  double value;
+  if (clinger_fast_path_impl(m, decimal_exponent,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+                             is_negative,
+#endif
+                             value))
+    return value;
+
+  adjusted_mantissa am =
+      compute_float<binary_format<double>>(decimal_exponent, m);
+  to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+           is_negative,
+#endif
+           am, value);
+  return value;
+}
+
+// the following overloads are here to avoid surprising ambiguity for int,
+// unsigned, etc.
+template <typename Int>
+FASTFLOAT_CONSTEXPR20 inline typename std::enable_if<
+    std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
+integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+  return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
+}
+
+template <typename Int>
+FASTFLOAT_CONSTEXPR20 inline typename std::enable_if<
+    std::is_integral<Int>::value && std::is_signed<Int>::value, double>::type
+integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+  return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
 }
 
 template <typename T, typename UC>

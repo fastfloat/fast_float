@@ -377,6 +377,33 @@ int main() {
 }
 ```
 
+## Multiplication of an integer by a power of 10
+An integer `W` can be multiplied by a power of ten `10^Q` and
+converted to `double` with correctly rounded value
+(in "round to nearest, tie to even" fashion) using
+`fast_float::integer_times_pow10()`, e.g.:
+```C++
+const uint64_t W = 12345678901234567;
+const int Q = 23;
+const double result = fast_float::integer_times_pow10(W, Q);
+std::cout.precision(17);
+std::cout << W << " * 10^" << Q << " = " << result << " ("
+  << (result == 12345678901234567e23 ? "==" : "!=") << "expected)\n";
+```
+outputs
+```
+12345678901234567 * 10^23 = 1.2345678901234567e+39 (==expected)
+```
+`fast_float::integer_times_pow10()` gives the same result as
+using `fast_float::from_chars()` when parsing the string `"WeQ"`
+(in this example `"12345678901234567e23"`),
+except `fast_float::integer_times_pow10()` does not report out-of-range errors, and
+underflows to zero or overflows to infinity when the resulting value is
+out of range.
+
+Overloads of `fast_float::integer_times_pow10()` are provided for
+signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
+
 You also can use not standard options:
 
 ```C++
@@ -426,6 +453,8 @@ The fast_float library is part of:
 * GCC (as of version 12): the `from_chars` function in GCC relies on fast_float,
 * [Chromium](https://github.com/Chromium/Chromium), the engine behind Google
   Chrome, Microsoft Edge, and Opera,
+* Boost JSON, MySQL, etc.
+* Blender
 * [WebKit](https://github.com/WebKit/WebKit), the engine behind Safari (Apple's
   web browser),
 * [DuckDB](https://duckdb.org),
@@ -528,7 +557,7 @@ sufficiently recent version of CMake (3.11 or better at least):
 FetchContent_Declare(
   fast_float
   GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
-  GIT_TAG tags/v8.0.2
+  GIT_TAG tags/v8.1.0
   GIT_SHALLOW TRUE)
 
 FetchContent_MakeAvailable(fast_float)
@@ -544,7 +573,7 @@ You may also use [CPM](https://github.com/cpm-cmake/CPM.cmake), like so:
 CPMAddPackage(
   NAME fast_float
   GITHUB_REPOSITORY "fastfloat/fast_float"
-  GIT_TAG v8.0.2)
+  GIT_TAG v8.1.0)
 ```
 
 ## Using as single header
@@ -556,7 +585,7 @@ if desired as described in the command line help.
 
 You may directly download automatically generated single-header files:
 
-<https://github.com/fastfloat/fast_float/releases/download/v8.0.2/fast_float.h>
+<https://github.com/fastfloat/fast_float/releases/download/v8.1.0/fast_float.h>
 
 ## Benchmarking
 
