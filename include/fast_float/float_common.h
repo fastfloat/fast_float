@@ -1134,8 +1134,10 @@ template <typename UC>
 fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
   // wchar_t and char can be signed, so we need to be careful.
   using UnsignedUC = typename std::make_unsigned<UC>::type;
-  return int_luts<>::chdigit[static_cast<unsigned char>(static_cast<UnsignedUC>(c)
-    & static_cast<UnsignedUC>(-((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
+  return int_luts<>::chdigit[static_cast<unsigned char>(
+      static_cast<UnsignedUC>(c) &
+      static_cast<UnsignedUC>(
+          -((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
 }
 
 fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
