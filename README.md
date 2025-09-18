@@ -516,7 +516,7 @@ sufficiently recent version of CMake (3.11 or better at least):
 FetchContent_Declare(
   fast_float
   GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
-  GIT_TAG tags/v8.0.3
+  GIT_TAG tags/v8.1.0
   GIT_SHALLOW TRUE)
 
 FetchContent_MakeAvailable(fast_float)
@@ -532,7 +532,7 @@ You may also use [CPM](https://github.com/cpm-cmake/CPM.cmake), like so:
 CPMAddPackage(
   NAME fast_float
   GITHUB_REPOSITORY "fastfloat/fast_float"
-  GIT_TAG v8.0.3)
+  GIT_TAG v8.1.0)
 ```
 
 ## Using as single header
@@ -544,7 +544,7 @@ if desired as described in the command line help.
 
 You may directly download automatically generated single-header files:
 
-<https://github.com/fastfloat/fast_float/releases/download/v8.0.3/fast_float.h>
+<https://github.com/fastfloat/fast_float/releases/download/v8.1.0/fast_float.h>
 
 ## Benchmarking
 
