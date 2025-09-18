@@ -377,6 +377,33 @@ int main() {
 }
 ```
 
+## Multiplication of an integer by a power of 10
+An integer `W` can be multiplied by a power of ten `10^Q` and
+converted to `double` with correctly rounded value
+(in "round to nearest, tie to even" fashion) using
+`fast_float::integer_times_pow10()`, e.g.:
+```C++
+const uint64_t W = 12345678901234567;
+const int Q = 23;
+const double result = fast_float::integer_times_pow10(W, Q);
+std::cout.precision(17);
+std::cout << W << " * 10^" << Q << " = " << result << " ("
+  << (result == 12345678901234567e23 ? "==" : "!=") << "expected)\n";
+```
+outputs
+```
+12345678901234567 * 10^23 = 1.2345678901234567e+39 (==expected)
+```
+`fast_float::integer_times_pow10()` gives the same result as
+using `fast_float::from_chars()` when parsing the string `"WeQ"`
+(in this example `"12345678901234567e23"`),
+except `fast_float::integer_times_pow10()` does not report out-of-range errors, and
+underflows to zero or overflows to infinity when the resulting value is
+out of range.
+
+Overloads of `fast_float::integer_times_pow10()` are provided for
+signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
+
 
 ## Users and Related Work
 
