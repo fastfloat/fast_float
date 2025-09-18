@@ -59,9 +59,11 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
  * `new` or `malloc`).
  */
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(uint64_t const mantissa, int const decimal_exponent) noexcept;
+integer_times_pow10(uint64_t const mantissa,
+                    int const decimal_exponent) noexcept;
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(int64_t const mantissa, int const decimal_exponent) noexcept;
+integer_times_pow10(int64_t const mantissa,
+                    int const decimal_exponent) noexcept;
 
 /**
  * from_chars for integer types.
