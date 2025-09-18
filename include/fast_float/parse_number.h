@@ -197,7 +197,7 @@ from_chars(UC const *first, UC const *last, T &value,
 
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-clinger_fast_path_impl(uint64_t const mantissa, int64_t const exponent,
+clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                        bool const is_negative,
 #endif
