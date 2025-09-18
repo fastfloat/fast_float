@@ -17,7 +17,7 @@
 
 #define FASTFLOAT_VERSION_MAJOR 8
 #define FASTFLOAT_VERSION_MINOR 0
-#define FASTFLOAT_VERSION_PATCH 2
+#define FASTFLOAT_VERSION_PATCH 3
 
 #define FASTFLOAT_STRINGIZE_IMPL(x) #x
 #define FASTFLOAT_STRINGIZE(x) FASTFLOAT_STRINGIZE_IMPL(x)
@@ -1132,13 +1132,12 @@ template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 template <typename UC>
 fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
+  // wchar_t and char can be signed, so we need to be careful.
   using UnsignedUC = typename std::make_unsigned<UC>::type;
-  auto uc = static_cast<UnsignedUC>(c);
-  // For types larger than one byte, we need to force an index with sentinel
-  // value (using index zero because that is easiest) if any byte other than
-  // the low byte is non-zero.
-  auto mask = static_cast<UnsignedUC>(-((uc & ~0xFFull) == 0));
-  return int_luts<>::chdigit[static_cast<unsigned char>(uc & mask)];
+  return int_luts<>::chdigit[static_cast<unsigned char>(
+      static_cast<UnsignedUC>(c) &
+      static_cast<UnsignedUC>(
+          -((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
 }
 
 fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
