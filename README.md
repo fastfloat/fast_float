@@ -385,6 +385,8 @@ The fast_float library is part of:
 * GCC (as of version 12): the `from_chars` function in GCC relies on fast_float,
 * [Chromium](https://github.com/Chromium/Chromium), the engine behind Google
   Chrome, Microsoft Edge, and Opera,
+* Boost JSON, MySQL, etc.
+* Blender
 * [WebKit](https://github.com/WebKit/WebKit), the engine behind Safari (Apple's
   web browser),
 * [DuckDB](https://duckdb.org),
