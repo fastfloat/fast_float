@@ -1132,7 +1132,13 @@ template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 template <typename UC>
 fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
-  return int_luts<>::chdigit[static_cast<unsigned char>(c)];
+  using UnsignedUC = typename std::make_unsigned<UC>::type;
+  auto uc = static_cast<UnsignedUC>(c);
+  // For types larger than one byte, we need to force an index with sentinel
+  // value (using index zero because that is easiest) if any byte other than
+  // the low byte is non-zero.
+  auto mask = static_cast<UnsignedUC>(-((uc & ~0xFFull) == 0));
+  return int_luts<>::chdigit[static_cast<unsigned char>(uc & mask)];
 }
 
 fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
