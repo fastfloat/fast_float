@@ -250,14 +250,14 @@ clinger_fast_path_impl(uint64_t const mantissa, int64_t const exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
               is_negative ? T(-0.) :
 #endif
-                           T(0.);
+                          T(0.);
           return true;
         }
 #endif
-        value = T(pns.mantissa) *
-                binary_format<T>::exact_power_of_ten(pns.exponent);
+        value = T(mantissa) *
+                binary_format<T>::exact_power_of_ten(exponent);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-        if (pns.negative) {
+        if (is_negative) {
           value = -value;
         }
 #endif
@@ -276,7 +276,7 @@ clinger_fast_path_impl(uint64_t const mantissa, int64_t const exponent,
  */
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
-from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
+from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
   static_assert(is_supported_char_type<UC>::value,
@@ -287,12 +287,11 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
 
-  if (!pns.too_many_digits &&
-      clinger_fast_path_impl(pns.mantissa, pns.exponent,
+  if (!pns.too_many_digits && clinger_fast_path_impl(pns.mantissa, pns.exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-                             pns.negative,
+                                                     pns.negative,
 #endif
-                             value))
+                                                     value))
     return answer;
 
   adjusted_mantissa am =
@@ -387,7 +386,8 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
 }
 
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(uint64_t const mantissa, int const decimal_exponent) noexcept {
+integer_times_pow10(uint64_t const mantissa,
+                    int const decimal_exponent) noexcept {
   double value;
   if (clinger_fast_path_impl(mantissa, decimal_exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -400,14 +400,15 @@ integer_times_pow10(uint64_t const mantissa, int const decimal_exponent) noexcep
       compute_float<binary_format<double>>(decimal_exponent, mantissa);
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-           false,
+      false,
 #endif
-           am, value);
+      am, value);
   return value;
 }
 
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(int64_t const mantissa, int const decimal_exponent) noexcept {
+integer_times_pow10(int64_t const mantissa,
+                    int const decimal_exponent) noexcept {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_ASSUME(mantissa > 0);
   const uint64_t m = static_cast<uint64_t>(mantissa);
@@ -427,9 +428,9 @@ integer_times_pow10(int64_t const mantissa, int const decimal_exponent) noexcept
       compute_float<binary_format<double>>(decimal_exponent, m);
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-           is_negative,
+      is_negative,
 #endif
-           am, value);
+      am, value);
   return value;
 }
 
