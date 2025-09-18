@@ -404,7 +404,7 @@ out of range.
 Overloads of `fast_float::integer_times_pow10()` are provided for
 signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
 
-You also can use not standard options:
+## You also can use additional options, like allow_leading_plus and skip_white_space:
 
 ```C++
 #include "fast_float/fast_float.h"
@@ -420,10 +420,9 @@ int main() {
 }
 ```
 
-For special case scenarious, like mathematical or other AST like parcer that already process minus sign 
-and only pasre in FastFloat positive numbers in fixed, scientific or hex format and do not have inf or nan
-in input you can use macros FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN that significantly reduce
-the code size and improve performance:
+## For mathematical or other AST like parcers that already process sign and all other symbols before any number by itself 
+you can use FastFloat for only parse positive numbers in fixed, scientific or hex format with macros 
+FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN, that significantly reduce the code size and improve performance:
 
 ```C++
 #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
