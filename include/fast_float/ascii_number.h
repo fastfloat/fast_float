@@ -20,7 +20,8 @@
 
 namespace fast_float {
 
-template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
+template <typename UC>
+fastfloat_really_inline constexpr bool has_simd_opt() noexcept {
 #ifdef FASTFLOAT_HAS_SIMD
   return std::is_same<UC, char16_t>::value;
 #else
@@ -35,12 +36,14 @@ fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
   return !(c > UC('9') || c < UC('0'));
 }
 
-fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {
+#if FASTFLOAT_HAS_BYTESWAP == 0
+fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
   return (val & 0xFF00000000000000) >> 56 | (val & 0x00FF000000000000) >> 40 |
          (val & 0x0000FF0000000000) >> 24 | (val & 0x000000FF00000000) >> 8 |
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
 }
+#endif
 
 // Read 8 UC into a u64. Truncates UC if not char.
 template <typename UC>
@@ -48,7 +51,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
 read8_to_u64(UC const *chars) {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
-    for (int i = 0; i < 8; ++i) {
+    for (uint_fast8_t i = 0; i != 8; ++i) {
       val |= uint64_t(uint8_t(*chars)) << (i * 8);
       ++chars;
     }
@@ -58,14 +61,18 @@ read8_to_u64(UC const *chars) {
   ::memcpy(&val, chars, sizeof(uint64_t));
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
-  val = byteswap(val);
+  val =
+#if FASTFLOAT_HAS_BYTESWAP == 1
+      std::
+#endif
+          byteswap(val);
 #endif
   return val;
 }
 
 #ifdef FASTFLOAT_SSE2
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   __m128i const packed = _mm_packus_epi16(data, data);
 #ifdef FASTFLOAT_64BIT
@@ -88,7 +95,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
 
 #elif defined(FASTFLOAT_NEON)
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint8x8_t utf8_packed = vmovn_u16(data);
   return vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);
@@ -117,10 +124,10 @@ uint64_t simd_read8_to_u64(UC const *) {
 
 // credit  @aqrit
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
-parse_eight_digits_unrolled(uint64_t val) {
-  uint64_t const mask = 0x000000FF000000FF;
-  uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
-  uint64_t const mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+parse_eight_digits_unrolled(uint64_t val) noexcept {
+  constexpr uint64_t mask = 0x000000FF000000FF;
+  constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  constexpr uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
@@ -232,12 +239,17 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
   }
 }
 
-enum class parse_error {
+enum class parse_error : uint_fast8_t {
   no_error,
-  // [JSON-only] The minus sign must be followed by an integer.
-  missing_integer_after_sign,
   // A sign must be followed by an integer or dot.
   missing_integer_or_dot_after_sign,
+  // The mantissa must have at least one digit.
+  no_digits_in_mantissa,
+  // Scientific notation requires an exponential part.
+  missing_exponential_part,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  // [JSON-only] The minus sign must be followed by an integer.
+  missing_integer_after_sign,
   // [JSON-only] The integer part must not have leading zeros.
   leading_zeros_in_integer_part,
   // [JSON-only] The integer part must have at least one digit.
@@ -245,18 +257,18 @@ enum class parse_error {
   // [JSON-only] If there is a decimal point, there must be digits in the
   // fractional part.
   no_digits_in_fractional_part,
-  // The mantissa must have at least one digit.
-  no_digits_in_mantissa,
-  // Scientific notation requires an exponential part.
-  missing_exponential_part,
+#endif
 };
 
 template <typename UC> struct parsed_number_string_t {
-  int64_t exponent{0};
-  uint64_t mantissa{0};
+  // an unsigned int avoids signed overflows (which are bad)
+  am_mant_t mantissa{0};
+  am_pow_t exponent{0};
   UC const *lastmatch{nullptr};
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
-  bool valid{false};
+#endif
+  bool invalid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
@@ -269,9 +281,9 @@ using parsed_number_string = parsed_number_string_t<char>;
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
-report_parse_error(UC const *p, parse_error error) {
+report_parse_error(UC const *p, parse_error error) noexcept {
   parsed_number_string_t<UC> answer;
-  answer.valid = false;
+  answer.invalid = true;
   answer.lastmatch = p;
   answer.error = error;
   return answer;
@@ -282,53 +294,60 @@ report_parse_error(UC const *p, parse_error error) {
 template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
-                    parse_options_t<UC> options) noexcept {
-  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
-  UC const decimal_point = options.decimal_point;
-
+                    parse_options_t<UC> const &options) noexcept {
+  // Cyclomatic complexity https://en.wikipedia.org/wiki/Cyclomatic_complexity
+  // Consider refactoring the 'parse_number_string' function.
+  // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
   parsed_number_string_t<UC> answer;
-  answer.valid = false;
-  answer.too_many_digits = false;
-  // assume p < pend, so dereference without checks;
+  // so dereference without checks
+  FASTFLOAT_ASSUME(p < pend);
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
-  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) || (uint64_t(fmt & chars_format::allow_leading_plus) &&
-                          !basic_json_fmt && *p == UC('+'))) {
+  if (answer.negative ||
+      // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+      ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
+       (!basic_json_fmt && *p == UC('+')))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
           p, parse_error::missing_integer_or_dot_after_sign);
     }
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
-      if (!is_integer(*p)) { // a sign must be followed by an integer
+      // a sign must be followed by an integer
+      if (!is_integer(*p)) {
         return report_parse_error<UC>(p,
                                       parse_error::missing_integer_after_sign);
       }
     }
     else {
-      if (!is_integer(*p) &&
-          (*p !=
-           decimal_point)) { // a sign must be followed by an integer or the dot
+      // a sign must be followed by an integer or the dot
+      if (!is_integer(*p) && (*p != options.decimal_point)) {
         return report_parse_error<UC>(
             p, parse_error::missing_integer_or_dot_after_sign);
       }
     }
   }
-  UC const *const start_digits = p;
+#endif
 
-  uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
+  UC const *const start_digits = p;
 
   while ((p != pend) && is_integer(*p)) {
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
-    i = 10 * i +
-        uint64_t(*p -
-                 UC('0')); // might overflow, we will handle the overflow later
+    answer.mantissa = static_cast<fast_float::am_mant_t>(
+        answer.mantissa * 10 +
+        static_cast<fast_float::am_mant_t>(
+            *p - UC('0'))); // might overflow, we will handle the overflow later
     ++p;
   }
+
   UC const *const end_of_integer_part = p;
-  int64_t digit_count = int64_t(end_of_integer_part - start_digits);
-  answer.integer = span<UC const>(start_digits, size_t(digit_count));
+  am_digits digit_count =
+      static_cast<am_digits>(end_of_integer_part - start_digits);
+  answer.integer = span<UC const>(start_digits, digit_count);
+  // We have now parsed the integer part of the mantissa.
+
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0) {
@@ -339,148 +358,180 @@ parse_number_string(UC const *p, UC const *pend,
                                     parse_error::leading_zeros_in_integer_part);
     }
   }
+#endif
 
-  int64_t exponent = 0;
-  bool const has_decimal_point = (p != pend) && (*p == decimal_point);
-  if (has_decimal_point) {
+  // We can now parse the fraction part of the mantissa.
+  if ((p != pend) && (*p == options.decimal_point)) {
     ++p;
-    UC const *before = p;
+    UC const *const before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    loop_parse_if_eight_digits(p, pend, i);
+    loop_parse_if_eight_digits(p, pend, answer.mantissa);
 
     while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - UC('0'));
+      UC const digit = UC(*p - UC('0'));
+      answer.mantissa = static_cast<fast_float::am_mant_t>(
+          answer.mantissa * 10 +
+          static_cast<am_mant_t>(
+              digit)); // in rare cases, this will overflow, but that's ok
       ++p;
-      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
     }
-    exponent = before - p;
-    answer.fraction = span<UC const>(before, size_t(p - before));
-    digit_count -= exponent;
-  }
-  FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
-    // at least 1 digit in fractional part
-    if (has_decimal_point && exponent == 0) {
-      return report_parse_error<UC>(p,
-                                    parse_error::no_digits_in_fractional_part);
+    answer.exponent = static_cast<am_pow_t>(before - p);
+    answer.fraction =
+        span<UC const>(before, static_cast<am_digits>(p - before));
+    digit_count -= static_cast<am_digits>(answer.exponent);
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
+      // at least 1 digit in fractional part
+      if (answer.exponent == 0) {
+        return report_parse_error<UC>(
+            p, parse_error::no_digits_in_fractional_part);
+      }
     }
-  }
-  else if (digit_count == 0) { // we must have encountered at least one integer!
+#endif
+  } else if (digit_count == 0) {
+    // We must have encountered at least one integer!
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
-  int64_t exp_number = 0; // explicit exponential part
-  if ((uint64_t(fmt & chars_format::scientific) && (p != pend) &&
-       ((UC('e') == *p) || (UC('E') == *p))) ||
-      (uint64_t(fmt & detail::basic_fortran_fmt) && (p != pend) &&
-       ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
-        (UC('D') == *p)))) {
+  // We have now parsed the integer and the fraction part of the mantissa.
+
+  // Now we can parse the explicit exponential part.
+  am_pow_t exp_number = 0; // explicit exponential part
+  if ((p != pend) &&
+      ((chars_format_t(options.format & chars_format::scientific) &&
+        (UC('e') == *p || UC('E') == *p))
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+       || (chars_format_t(options.format & detail::basic_fortran_fmt) &&
+           ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
+            (UC('D') == *p)))
+#endif
+           )) {
     UC const *location_of_e = p;
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    ++p;
+#else
     if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
         (UC('D') == *p)) {
       ++p;
     }
+#endif
     bool neg_exp = false;
-    if ((p != pend) && (UC('-') == *p)) {
-      neg_exp = true;
-      ++p;
-    } else if ((p != pend) &&
-               (UC('+') ==
-                *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
-      ++p;
+    if (p != pend) {
+      if (UC('-') == *p) {
+        neg_exp = true;
+        ++p;
+      } else if (UC('+') == *p) {
+        // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+        ++p;
+      }
     }
+    // We have now parsed the sign of the exponent.
     if ((p == pend) || !is_integer(*p)) {
-      if (!uint64_t(fmt & chars_format::fixed)) {
-        // The exponential part is invalid for scientific notation, so it must
-        // be a trailing token for fixed notation. However, fixed notation is
-        // disabled, so report a scientific notation error.
+      if (!(chars_format_t(options.format & chars_format::fixed))) {
+        // The exponential part is invalid for scientific notation, so it
+        // must be a trailing token for fixed notation. However, fixed
+        // notation is disabled, so report a scientific notation error.
         return report_parse_error<UC>(p, parse_error::missing_exponential_part);
       }
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
     } else {
+      // Now let's parse the explicit exponent.
       while ((p != pend) && is_integer(*p)) {
-        uint8_t digit = uint8_t(*p - UC('0'));
-        if (exp_number < 0x10000000) {
-          exp_number = 10 * exp_number + digit;
+        if (exp_number < 0x1000) {
+          // check for exponent overflow if we have too many digits.
+          UC const digit = UC(*p - UC('0'));
+          exp_number = 10 * exp_number + static_cast<am_pow_t>(digit);
         }
         ++p;
       }
       if (neg_exp) {
         exp_number = -exp_number;
       }
-      exponent += exp_number;
+      answer.exponent += exp_number;
     }
   } else {
     // If it scientific and not fixed, we have to bail out.
-    if (uint64_t(fmt & chars_format::scientific) &&
-        !uint64_t(fmt & chars_format::fixed)) {
+    if ((chars_format_t(options.format & chars_format::scientific)) &&
+        !(chars_format_t(options.format & chars_format::fixed))) {
       return report_parse_error<UC>(p, parse_error::missing_exponential_part);
     }
   }
-  answer.lastmatch = p;
-  answer.valid = true;
 
-  // If we frequently had to deal with long strings of digits,
+  // We parsed all parts of the number, let's save progress.
+  answer.lastmatch = p;
+
+  // Now we can check for errors.
+
+  // TODO: If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
   // of a 64-bit integer. However, this is uncommon.
-  //
+
   // We can deal with up to 19 digits.
-  if (digit_count > 19) { // this is uncommon
+  if (digit_count > 19) {
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
     UC const *start = start_digits;
-    while ((start != pend) && (*start == UC('0') || *start == decimal_point)) {
+    while ((start != pend) &&
+           (*start == UC('0') || *start == options.decimal_point)) {
       if (*start == UC('0')) {
-        digit_count--;
+        --digit_count;
       }
-      start++;
+      ++start;
     }
 
+    // We have to check if we have a number with more than 19 significant
+    // digits.
     if (digit_count > 19) {
       answer.too_many_digits = true;
       // Let us start again, this time, avoiding overflows.
       // We don't need to call if is_integer, since we use the
       // pre-tokenized spans from above.
-      i = 0;
+      answer.mantissa = 0;
       p = answer.integer.ptr;
       UC const *int_end = p + answer.integer.len();
-      uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
-      while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-        i = i * 10 + uint64_t(*p - UC('0'));
+      constexpr am_mant_t minimal_nineteen_digit_integer{1000000000000000000};
+      while ((answer.mantissa < minimal_nineteen_digit_integer) &&
+             (p != int_end)) {
+        answer.mantissa = static_cast<am_mant_t>(
+            answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
         ++p;
       }
-      if (i >= minimal_nineteen_digit_integer) { // We have a big integer
-        exponent = end_of_integer_part - p + exp_number;
-      } else { // We have a value with a fractional component.
+      if (answer.mantissa >= minimal_nineteen_digit_integer) {
+        // We have a big integers, so skip the fraction part completely.
+        answer.exponent = am_pow_t(end_of_integer_part - p) + exp_number;
+      } else {
+        // We have a value with a significant fractional component.
         p = answer.fraction.ptr;
-        UC const *frac_end = p + answer.fraction.len();
-        while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-          i = i * 10 + uint64_t(*p - UC('0'));
+        UC const *const frac_end = p + answer.fraction.len();
+        while ((answer.mantissa < minimal_nineteen_digit_integer) &&
+               (p != frac_end)) {
+          answer.mantissa = static_cast<am_mant_t>(
+              answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
           ++p;
         }
-        exponent = answer.fraction.ptr - p + exp_number;
+        answer.exponent = am_pow_t(answer.fraction.ptr - p) + exp_number;
       }
-      // We have now corrected both exponent and i, to a truncated value
     }
+    // We have now corrected both exponent and mantissa, to a truncated value
   }
-  answer.exponent = exponent;
-  answer.mantissa = i;
+
   return answer;
 }
 
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
-                 parse_options_t<UC> options) {
-  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
-  int const base = options.base;
+                 parse_options_t<UC> const &options) noexcept {
 
   from_chars_result_t<UC> answer;
 
   UC const *const first = p;
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  // Read sign
   bool const negative = (*p == UC('-'));
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -495,12 +546,15 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     return answer;
   }
   if ((*p == UC('-')) ||
-      (uint64_t(fmt & chars_format::allow_leading_plus) && (*p == UC('+')))) {
+      ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
+       (*p == UC('+')))) {
     ++p;
   }
+#endif
 
   UC const *const start_num = p;
 
+  // Skip leading zeros
   while (p != pend && *p == UC('0')) {
     ++p;
   }
@@ -509,20 +563,21 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_digits = p;
 
+  // Parse digits
   uint64_t i = 0;
-  if (base == 10) {
+  if (options.base == 10) {
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
   }
   while (p != pend) {
-    uint8_t digit = ch_to_digit(*p);
-    if (digit >= base) {
+    uint_fast8_t const digit = ch_to_digit(*p);
+    if (digit >= options.base) {
       break;
     }
-    i = uint64_t(base) * i + digit; // might overflow, check this later
+    i = uint64_t(options.base) * i + digit; // might overflow, check this later
     p++;
   }
 
-  size_t digit_count = size_t(p - start_digits);
+  am_digits const digit_count = static_cast<am_digits>(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {
@@ -539,26 +594,33 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   answer.ptr = p;
 
   // check u64 overflow
-  size_t max_digits = max_digits_u64(base);
+  uint_fast8_t const max_digits = max_digits_u64(options.base);
   if (digit_count > max_digits) {
     answer.ec = std::errc::result_out_of_range;
     return answer;
   }
   // this check can be eliminated for all other types, but they will all require
   // a max_digits(base) equivalent
-  if (digit_count == max_digits && i < min_safe_u64(base)) {
+  if (digit_count == max_digits && i < min_safe_u64(options.base)) {
     answer.ec = std::errc::result_out_of_range;
     return answer;
   }
 
   // check other types overflow
   if (!std::is_same<T, uint64_t>::value) {
-    if (i > uint64_t(std::numeric_limits<T>::max()) + uint64_t(negative)) {
+    if (i > uint64_t(std::numeric_limits<T>::max())
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+                + uint64_t(negative)
+#endif
+    ) {
       answer.ec = std::errc::result_out_of_range;
       return answer;
     }
   }
 
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  value = T(i);
+#else
   if (negative) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
@@ -578,6 +640,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   } else {
     value = T(i);
   }
+#endif
 
   answer.ec = std::errc();
   return answer;

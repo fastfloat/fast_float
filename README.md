@@ -35,7 +35,7 @@ struct from_chars_result {
 };
 ```
 
-It parses the character sequence `[first, last)` for a number. It parses
+It parses the character sequence `[first, last]` for a number. It parses
 floating-point numbers expecting a locale-independent format equivalent to the
 C++17 from_chars function. The resulting floating-point value is the closest
 floating-point values (using either `float` or `double`), using the "round to
@@ -48,7 +48,8 @@ parsed value. In case of error, the returned `ec` contains a representative
 error, otherwise the default (`std::errc()`) value is stored.
 
 The implementation does not throw and does not allocate memory (e.g., with `new`
-or `malloc`).
+or `malloc`) and can be usable in the kernel, embeded and other scenarious that
+relays on such behavior.
 
 It will parse infinity and nan values.
 
@@ -288,7 +289,7 @@ int main() {
 }
 ```
 
-## Advanced options: using commas as decimal separator, JSON and Fortran
+## Advanced options: using commas as decimal separator, parse JSON, Fortran and more
 
 The C++ standard stipulate that `from_chars` has to be locale-independent. In
 particular, the decimal separator has to be the period (`.`). However, some
@@ -377,6 +378,32 @@ int main() {
 }
 ```
 
+## You also can also use some additional options (currently only configure by macroses):
+
+There is a really common use case in mathematical and other abstract syntax tree (AST) like parsers,
+that already process sign and all other symbols before any number by itself. In this case you can 
+use FastFloat for only parse positive numbers in all supported formats with macros 
+`FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, that significantly reduce the code size and improve
+performance. Additionally you can use macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you 
+only uneed `FE_TONEAREST` rounding mode in the parsing: this option is also improve performance a bit.
+
+```C++
+#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "23.14069263277926900572";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
+  if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
+    { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
+
+  return EXIT_SUCCESS;
+}
+```
+
 ## Multiplication of an integer by a power of 10
 An integer `W` can be multiplied by a power of ten `10^Q` and
 converted to `double` with correctly rounded value
@@ -403,7 +430,6 @@ out of range.
 
 Overloads of `fast_float::integer_times_pow10()` are provided for
 signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
-
 
 ## Users and Related Work
 
