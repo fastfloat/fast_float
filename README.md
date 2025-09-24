@@ -443,7 +443,7 @@ framework](https://github.com/microsoft/LightGBM).
 Packages
 ------
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/fastfloat.svg)](https://repology.org/project/fastfloat/versions)
+[![Packaging status](https://repology.org/badge/vertical-allrepos/fast-float.svg)](https://repology.org/project/fast-float/versions)
 
 
 ## References
