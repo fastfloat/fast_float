@@ -401,6 +401,23 @@ except `fast_float::integer_times_pow10()` does not report out-of-range errors, 
 underflows to zero or overflows to infinity when the resulting value is
 out of range.
 
+You can use template overloads to get the result converted to different
+supported floating-point types: `float`, `double`, etc.
+For example, to get result as `float` use
+`fast_float::integer_times_pow10<float>()` specialization:
+```C++
+const uint64_t W = 12345678;
+const int Q = 23;
+const float result = fast_float::integer_times_pow10<float>(W, Q);
+std::cout.precision(9);
+std::cout << "float: " << W << " * 10^" << Q << " = " << result << " ("
+          << (result == 12345678e23f ? "==" : "!=") << "expected)\n";
+```
+outputs
+```
+float: 12345678 * 10^23 = 1.23456782e+30 (==expected)
+```
+
 Overloads of `fast_float::integer_times_pow10()` are provided for
 signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
 
