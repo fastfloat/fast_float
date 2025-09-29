@@ -198,12 +198,16 @@ using parse_options = parse_options_t<char>;
 
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
-  { ((void)(x)); }
+  {                                                                            \
+    ((void)(x));                                                               \
+  }
 #endif
 
 #ifndef FASTFLOAT_DEBUG_ASSERT
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
-  { ((void)(x)); }
+  {                                                                            \
+    ((void)(x));                                                               \
+  }
 #endif
 
 // rust style `try!()` macro, or `?` operator
@@ -1166,6 +1170,9 @@ static_assert(std::is_same<equiv_uint_t<std::float64_t>, uint64_t>::value,
 static_assert(
     std::numeric_limits<std::float64_t>::is_iec559,
     "std::float64_t must fulfill the requirements of IEC 559 (IEEE 754)");
+
+template <>
+struct binary_format<std::float64_t> : public binary_format<double> {};
 #endif // __STDCPP_FLOAT64_T__
 
 #ifdef __STDCPP_FLOAT32_T__
@@ -1174,6 +1181,9 @@ static_assert(std::is_same<equiv_uint_t<std::float32_t>, uint32_t>::value,
 static_assert(
     std::numeric_limits<std::float32_t>::is_iec559,
     "std::float32_t must fulfill the requirements of IEC 559 (IEEE 754)");
+
+template <>
+struct binary_format<std::float32_t> : public binary_format<float> {};
 #endif // __STDCPP_FLOAT32_T__
 
 #ifdef __STDCPP_FLOAT16_T__
@@ -1245,7 +1255,6 @@ constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
       ;
 }
 } // namespace detail
-
 } // namespace fast_float
 
 #endif
