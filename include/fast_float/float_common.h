@@ -1246,7 +1246,6 @@ constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
 }
 } // namespace detail
 
-
 #ifdef __STDCPP_FLOAT64_T__
 template <>
 struct binary_format<std::float64_t> : public binary_format<double> {};
