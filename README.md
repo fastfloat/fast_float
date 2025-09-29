@@ -406,16 +406,16 @@ supported floating-point types: `float`, `double`, etc.
 For example, to get result as `float` use
 `fast_float::integer_times_pow10<float>()` specialization:
 ```C++
-const uint64_t W = 1234567;
+const uint64_t W = 12345678;
 const int Q = 23;
-const double result = fast_float::integer_times_pow10<float>(W, Q);
-std::cout.precision(7);
+const float result = fast_float::integer_times_pow10<float>(W, Q);
+std::cout.precision(9);
 std::cout << "float: " << W << " * 10^" << Q << " = " << result << " ("
-          << (result == 1234567e23f ? "==" : "!=") << "expected)\n";
+          << (result == 12345678e23f ? "==" : "!=") << "expected)\n";
 ```
 outputs
 ```
-float: 1234567 * 10^23 = 1.234567e+29 (==expected)
+float: 12345678 * 10^23 = 1.23456782e+30 (==expected)
 ```
 
 Overloads of `fast_float::integer_times_pow10()` are provided for

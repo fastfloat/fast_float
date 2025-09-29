@@ -21,12 +21,12 @@ void double_specialization() {
 }
 
 void float_specialization() {
-  const uint64_t W = 1234567;
+  const uint64_t W = 12345678;
   const int Q = 23;
-  const double result = fast_float::integer_times_pow10<float>(W, Q);
-  std::cout.precision(7);
+  const float result = fast_float::integer_times_pow10<float>(W, Q);
+  std::cout.precision(9);
   std::cout << "float: " << W << " * 10^" << Q << " = " << result << " ("
-            << (result == 1234567e23f ? "==" : "!=") << "expected)\n";
+            << (result == 12345678e23f ? "==" : "!=") << "expected)\n";
 }
 
 int main() {
