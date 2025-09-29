@@ -1246,6 +1246,16 @@ constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
 }
 } // namespace detail
 
+
+#ifdef __STDCPP_FLOAT64_T__
+template <>
+struct binary_format<std::float64_t> : public binary_format<double> {};
+#endif
+#ifdef __STDCPP_FLOAT32_T__
+template <>
+struct binary_format<std::float32_t> : public binary_format<float> {};
+#endif
+
 } // namespace fast_float
 
 #endif
