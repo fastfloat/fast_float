@@ -1142,6 +1142,15 @@ TEST_CASE("double.inf") {
   // DBL_MAX + 0.0000000000000001e308
   verify("1.7976931348623159e308", std::numeric_limits<double>::infinity(),
          std::errc::result_out_of_range);
+
+  // ( (2 - 0.5*2^(−52)) * 2^1023 ) smallest number that overflows to infinity
+  verify("179769313486231580793728971405303415079934132710037826936173778980444"
+         "968292764750946649017977587207096330286416692887910946555547851940402"
+         "630657488671505820681908902000708383676273854845817711531764475730270"
+         "069855571366959622842914819860834936475292719074168444365510704342711"
+         "559699508093042880177904174497792",
+         std::numeric_limits<double>::infinity(),
+         std::errc::result_out_of_range);
 }
 
 TEST_CASE("double.general") {
@@ -1333,6 +1342,15 @@ TEST_CASE("double.general") {
       std::numeric_limits<double>::infinity(), std::errc::result_out_of_range);
   verify("-2240084132271013504.131248280843119943687942846658579428",
          -0x1.f1660a65b00bfp+60);
+
+  // ( (2 - 0.5*2^(−52)) * 2^1023 - 1 ) largest 309 decimal digit number
+  // that rounds to DBL_MAX
+  verify("179769313486231580793728971405303415079934132710037826936173778980444"
+         "968292764750946649017977587207096330286416692887910946555547851940402"
+         "630657488671505820681908902000708383676273854845817711531764475730270"
+         "069855571366959622842914819860834936475292719074168444365510704342711"
+         "559699508093042880177904174497791",
+         std::numeric_limits<double>::max());
 }
 
 TEST_CASE("double.decimal_point") {
@@ -1513,6 +1531,11 @@ TEST_CASE("float.inf") {
   // FLT_MAX + 0.0000001e38
   verify("3.4028236e38", std::numeric_limits<float>::infinity(),
          std::errc::result_out_of_range);
+
+  // ( (2 - 0.5*2^(-23)) * 2^127 ) smallest number that overflows to infinity
+  verify("340282356779733661637539395458142568448",
+         std::numeric_limits<float>::infinity(),
+         std::errc::result_out_of_range);
 }
 
 TEST_CASE("float.general") {
@@ -1525,6 +1548,11 @@ TEST_CASE("float.general") {
   verify("340282346638528859811704183484516925440", 0x1.fffffep+127f);
   // -max
   verify("-340282346638528859811704183484516925440", -0x1.fffffep+127f);
+
+  // ( (2 - 0.5*2^(-23)) * 2^127 - 1 ) largest 39 decimal digits number
+  // that rounds to FLT_MAX
+  verify("340282356779733661637539395458142568447",
+         std::numeric_limits<float>::max());
 
   verify("-1e-999", -0.0f, std::errc::result_out_of_range);
   verify("1."
