@@ -615,6 +615,11 @@ long digits.
 The library includes code adapted from Google Wuffs (written by Nigel Tao) which
 was originally published under the Apache 2.0 license.
 
+## Stars
+
+
+[![Star History Chart](https://api.star-history.com/svg?repos=fastfloat/fast_float&type=Date)](https://www.star-history.com/#fastfloat/fast_float&Date)
+
 ## License
 
 <sup>
