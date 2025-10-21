@@ -74,9 +74,10 @@ read8_to_u64(UC const *chars) {
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
+  // _mm_packus_epi16 is SSE4.1+, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
 #ifdef FASTFLOAT_64BIT
-  return uint64_t(_mm_cvtsi128_si64(packed));
+  return static_cast<uint64_t>(_mm_cvtsi128_si64(packed));
 #else
   uint64_t value;
   // Visual Studio + older versions of GCC don't support _mm_storeu_si64
@@ -109,7 +110,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
-#endif // FASTFLOAT_SSE2
+#endif
 
 // MSVC SFINAE is broken pre-VS2017
 #if defined(_MSC_VER) && _MSC_VER <= 1900
@@ -164,20 +165,40 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   }
 #ifdef FASTFLOAT_SSE2
   FASTFLOAT_SIMD_DISABLE_WARNINGS
+  // Load 8 UTF-16 characters (16 bytes)
   __m128i const data =
       _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
 
-  // (x - '0') <= 9
-  // http://0x80.pl/articles/simd-parsing-int-sequences.html
-  __m128i const t0 = _mm_add_epi16(data, _mm_set1_epi16(32720));
-  __m128i const t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-32759));
+#ifdef FASTFLOAT_64BIT
+  // --- Digit range check using SSE4.2 comparisons ---
+  // Validate: '0' (0x30) ≤ x ≤ '9' (0x39)
+  const __m128i ascii0 = _mm_set1_epi16(u'0');
+  const __m128i ascii9 = _mm_set1_epi16(u'9');
 
-  if (_mm_movemask_epi8(t1) == 0) {
+  __m128i below0 = _mm_cmplt_epi16(data, ascii0);   // x < '0'
+  __m128i above9 = _mm_cmpgt_epi16(data, ascii9);   // x > '9'
+  __m128i invalid = _mm_or_si128(below0, above9);
+
+  // Check if any invalid byte exists
+  if (_mm_testz_si128(invalid, invalid)) { // SSE4.1/4.2: zero flag test
+#else
+  // Branchless "are all digits?" trick from Lemire:
+  // (x - '0') <= 9  <=> (x + 32720) <= 32729
+  // encoded as signed comparison: (x + 32720) > -32759 ? not digit : digit
+  // http://0x80.pl/articles/simd-parsing-int-sequences.html
+  __m128i const adjust = _mm_set1_epi16(32720);
+  __m128i const cutoff = _mm_set1_epi16(-32759);
+  __m128i const t0 = _mm_add_epi16(data, adjust);
+  __m128i const mask = _mm_cmpgt_epi16(t0, cutoff);
+
+  // If mask == 0 → all digits valid.
+  if (_mm_movemask_epi8(mask) == 0) {
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
   } else
     return false;
   FASTFLOAT_SIMD_RESTORE_WARNINGS
+#endif
 #elif defined(FASTFLOAT_NEON)
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint16x8_t const data = vld1q_u16(reinterpret_cast<uint16_t const *>(chars));
