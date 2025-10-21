@@ -58,32 +58,36 @@ Example:
 #include "fast_float/fast_float.h"
 #include <iostream>
 #include <string>
+#include <system_error>
 
 int main() {
-  std::string input = "3.1416 xyz ";
+  const std::string input = "3.1416 xyz ";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
-  if (answer.ec != std::errc()) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
-  std::cout << "parsed the number " << result << std::endl;
+  if (answer.ec != std::errc()) {
+    std::cerr << "parsing failure\n";
+    return EXIT_FAILURE;
+  }
+  std::cout << "parsed the number " << result << '\n';
   return EXIT_SUCCESS;
 }
 ```
 
-Though the C++17 standard has you do a comparison with `std::errc()` to check whether the conversion worked, you can avoid it by casting the result to a `bool` like so:
+Prior to C++26, checking for a successful `std::from_chars` conversion requires comparing the `from_chars_result::ec` member to `std::errc()`. As an extension `fast_float::from_chars` supports the improved C++26 API that allows checking the result by converting it to `bool`, like so:
 
-```cpp
+```C++
 #include "fast_float/fast_float.h"
 #include <iostream>
 #include <string>
 
 int main() {
-  std::string input = "3.1416 xyz ";
+  const std::string input = "3.1416 xyz ";
   double result;
-  if(auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result)) {
-    std::cout << "parsed the number " << result << std::endl;
+  if (auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result)) {
+    std::cout << "parsed the number " << result << '\n';
     return EXIT_SUCCESS;
   }
-  std::cerr << "failed to parse " << result << std::endl;
+  std::cerr << "parsing failure\n";
   return EXIT_FAILURE;
 }
 ```
@@ -91,7 +95,7 @@ int main() {
 You can parse delimited numbers:
 
 ```C++
-  std::string input = "234532.3426362,7869234.9823,324562.645";
+  const std::string input = "234532.3426362,7869234.9823,324562.645";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
   if (answer.ec != std::errc()) {
