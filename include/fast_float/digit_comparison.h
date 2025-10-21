@@ -346,16 +346,17 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
 
 template <typename T>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
-    bigint &bigmant, adjusted_mantissa am, am_pow_t const exponent) noexcept {
+    bigint &bigmant, am_pow_t const exponent) noexcept {
   FASTFLOAT_ASSERT(bigmant.pow10(exponent));
+  adjusted_mantissa answer;
   bool truncated;
-  am.mantissa = bigmant.hi64(truncated);
+  answer.mantissa = bigmant.hi64(truncated);
   constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
                             binary_format<T>::minimum_exponent();
-  am.power2 =
+  answer.power2 =
       static_cast<fast_float::am_pow_t>(bigmant.bit_length() - 64 + bias);
 
-  round<T>(am, [truncated](adjusted_mantissa &a, am_pow_t shift) {
+  round<T>(answer, [truncated](adjusted_mantissa &a, am_pow_t shift) {
     round_nearest_tie_even(
         a, shift,
         [truncated](bool is_odd, bool is_halfway, bool is_above) -> bool {
@@ -364,7 +365,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
         });
   });
 
-  return am;
+  return answer;
 }
 
 // the scaling here is quite simple: we have, for the real digits `m * 10^e`,
@@ -410,6 +411,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
 
   // compare digits, and use it to direct rounding
   int ord = real_digits.compare(theor_digits);
+  adjusted_mantissa answer = am;
   round<T>(am, [ord](adjusted_mantissa &a, am_pow_t shift) {
     round_nearest_tie_even(
         a, shift, [ord](bool is_odd, bool _, bool __) -> bool {
@@ -425,7 +427,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
         });
   });
 
-  return am;
+  return answer;
 }
 
 // parse the significant digits as a big integer to unambiguously round
@@ -454,7 +456,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   am_pow_t const exponent =
       static_cast<am_pow_t>(sci_exp + 1 - static_cast<am_pow_t>(digits));
   if (exponent >= 0) {
-    return positive_digit_comp<T>(bigmant, am, exponent);
+    return positive_digit_comp<T>(bigmant, exponent);
   } else {
     return negative_digit_comp<T>(bigmant, am, exponent);
   }
