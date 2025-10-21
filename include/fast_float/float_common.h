@@ -473,7 +473,7 @@ template <typename T, typename U = void> struct binary_format_lookup_tables;
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   using equiv_uint = equiv_uint_t<T>;
 
-  static constexpr am_bits_t mantissa_explicit_bits();
+  static constexpr limb_t mantissa_explicit_bits();
   static constexpr am_pow_t minimum_exponent();
   static constexpr am_pow_t infinite_power();
   static constexpr am_bits_t sign_index();
@@ -596,12 +596,12 @@ inline constexpr am_bits_t binary_format<float>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr am_bits_t binary_format<double>::mantissa_explicit_bits() {
+inline constexpr limb_t binary_format<double>::mantissa_explicit_bits() {
   return 52;
 }
 
 template <>
-inline constexpr am_bits_t binary_format<float>::mantissa_explicit_bits() {
+inline constexpr limb_t binary_format<float>::mantissa_explicit_bits() {
   return 23;
 }
 
@@ -730,7 +730,7 @@ binary_format<std::float16_t>::max_exponent_fast_path() {
 }
 
 template <>
-inline constexpr am_bits_t
+inline constexpr limb_t
 binary_format<std::float16_t>::mantissa_explicit_bits() {
   return 10;
 }
@@ -857,7 +857,7 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr am_bits_t
+inline constexpr limb_t
 binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
   return 7;
 }
