@@ -387,7 +387,8 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
 template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
-    integer_times_pow10(uint64_t mantissa, int const decimal_exponent) noexcept {
+    integer_times_pow10(uint64_t mantissa,
+                        int const decimal_exponent) noexcept {
   T value;
   if (clinger_fast_path_impl(mantissa, decimal_exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
