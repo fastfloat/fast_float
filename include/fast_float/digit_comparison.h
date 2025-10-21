@@ -38,7 +38,6 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // this algorithm is not even close to optimized, but it has no practical
 // effect on performance: in order to have a faster algorithm, we'd need
 // to slow down performance for faster algorithms, and this is still fast.
-template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_pow_t
 scientific_exponent(am_mant_t mantissa, am_pow_t exponent) noexcept {
   while (mantissa >= 10000) {
@@ -450,7 +449,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
-  am_pow_t const sci_exp = scientific_exponent(num);
+  am_pow_t const sci_exp = scientific_exponent(num.mantissa, num.exponent);
   bigint bigmant;
   am_digits const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
