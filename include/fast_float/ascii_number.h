@@ -191,8 +191,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
 #endif
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
-  } else
-    return false;
+  }
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 #elif defined(FASTFLOAT_NEON)
   FASTFLOAT_SIMD_DISABLE_WARNINGS
@@ -206,14 +205,13 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   if (vminvq_u16(mask) == 0xFFFF) {
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
-  } else
-    return false;
+  }
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 #else
   (void)chars;
   (void)i;
-  return false;
 #endif
+  return false;
 }
 
 #endif
