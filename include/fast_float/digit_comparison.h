@@ -378,22 +378,20 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
   bigint &real_digits = bigmant;
   am_pow_t const &real_exp = exponent;
 
+  // get the value of `b`, rounded down, and get a bigint representation of
+  // b+h
+  adjusted_mantissa am_b = am;
+  // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
+  // -Wnoexcept-type.
+  round<T>(am_b, [](adjusted_mantissa &a, am_pow_t shift) {
+    round_down(a, shift);
+  });
   T b;
-  {
-    // get the value of `b`, rounded down, and get a bigint representation of
-    // b+h
-    adjusted_mantissa am_b = am;
-    // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
-    // -Wnoexcept-type.
-    round<T>(am_b, [](adjusted_mantissa &a, am_pow_t shift) {
-      round_down(a, shift);
-    });
-    to_float(
+  to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-        false,
+      false,
 #endif
-        am_b, b);
-  }
+      am_b, b);
   adjusted_mantissa theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
   am_pow_t theor_exp = theor.power2;
