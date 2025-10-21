@@ -76,7 +76,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   // _mm_packus_epi16 is SSE2+, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
-#ifdef FASTFLOAT_SSE42
+#ifdef FASTFLOAT_64BIT
   return static_cast<uint64_t>(_mm_cvtsi128_si64(packed));
 #else
   uint64_t value;
