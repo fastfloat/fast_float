@@ -10,11 +10,11 @@
 
 #include "float_common.h"
 
-#ifdef FASTFLOAT_SSE2
+#if defined(FASTFLOAT_SSE42)
+#include <nmmintrin.h>   // SSE4.2 intrinsics
+#elif defined(FASTFLOAT_SSE2)
 #include <emmintrin.h>
-#endif
-
-#ifdef FASTFLOAT_NEON
+#elif defined(FASTFLOAT_NEON)
 #include <arm_neon.h>
 #endif
 
@@ -76,7 +76,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   // _mm_packus_epi16 is SSE4.1+, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
-#ifdef FASTFLOAT_64BIT
+#ifdef FASTFLOAT_SSE42
   return static_cast<uint64_t>(_mm_cvtsi128_si64(packed));
 #else
   uint64_t value;
@@ -169,7 +169,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   __m128i const data =
       _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
 
-#ifdef FASTFLOAT_64BIT
+#ifdef FASTFLOAT_SSE42
   // --- Digit range check using SSE4.2 comparisons ---
   // Validate: '0' (0x30) ≤ x ≤ '9' (0x39)
   const __m128i ascii0 = _mm_set1_epi16(u'0');
@@ -197,8 +197,8 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
     return true;
   } else
     return false;
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
 #endif
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
 #elif defined(FASTFLOAT_NEON)
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint16x8_t const data = vld1q_u16(reinterpret_cast<uint16_t const *>(chars));
