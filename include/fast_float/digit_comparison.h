@@ -345,9 +345,8 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
 }
 
 template <typename T>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-positive_digit_comp(
-    bigint &bigmant, adjusted_mantissa& am, am_pow_t const exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
+    bigint &bigmant, adjusted_mantissa am, am_pow_t const exponent) noexcept {
   FASTFLOAT_ASSERT(bigmant.pow10(exponent));
   bool truncated;
   am.mantissa = bigmant.hi64(truncated);
@@ -374,9 +373,8 @@ positive_digit_comp(
 // we then need to scale by `2^(f- e)`, and then the two significant digits
 // are of the same magnitude.
 template <typename T>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-negative_digit_comp(
-    bigint &bigmant, adjusted_mantissa& am, am_pow_t const exponent) noexcept {
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
+    bigint &bigmant, adjusted_mantissa am, am_pow_t const exponent) noexcept {
   bigint &real_digits = bigmant;
   am_pow_t const &real_exp = exponent;
 
@@ -385,9 +383,8 @@ negative_digit_comp(
   adjusted_mantissa am_b = am;
   // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
   // -Wnoexcept-type.
-  round<T>(am_b, [](adjusted_mantissa &a, am_pow_t shift) {
-    round_down(a, shift);
-  });
+  round<T>(am_b,
+           [](adjusted_mantissa &a, am_pow_t shift) { round_down(a, shift); });
   T b;
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -445,7 +442,7 @@ negative_digit_comp(
 // of both, and use that to direct rounding.
 template <typename T, typename UC>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
-    parsed_number_string_t<UC> const &num, adjusted_mantissa& am) noexcept {
+    parsed_number_string_t<UC> const &num, adjusted_mantissa am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
