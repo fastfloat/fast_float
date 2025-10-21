@@ -69,7 +69,7 @@ template <typename T> std::string fHexAndDec(T v) {
   return ss.str();
 }
 
-char const *round_name(int d) {
+const std::string_view round_name(int const d) {
   switch (d) {
   case FE_UPWARD:
     return "FE_UPWARD";
@@ -2313,7 +2313,7 @@ TEST_CASE("integer_times_pow10") {
 
   for (int mode : {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST}) {
     fesetround(mode);
-    INFO("fesetround(): " << std::string{round_name(mode)});
+    INFO("fesetround(): " << round_name(mode));
 
     struct Guard {
       ~Guard() { fesetround(FE_TONEAREST); }
