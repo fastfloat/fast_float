@@ -417,7 +417,8 @@ FASTFLOAT_CONSTEXPR20
   const am_mant_t m = static_cast<am_mant_t>(mantissa);
 #else
   const bool is_negative = mantissa < 0;
-  const am_mant_t m = static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
+  const am_mant_t m =
+      static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
 #endif
   T value;
   if (clinger_fast_path_impl(m, decimal_exponent,
