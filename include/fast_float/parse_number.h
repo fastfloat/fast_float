@@ -418,7 +418,7 @@ FASTFLOAT_CONSTEXPR20
   const bool is_negative = mantissa < 0;
   const uint64_t m = static_cast<uint64_t>(is_negative ? -mantissa : mantissa);
 #endif
-  double value;
+  T value;
   if (clinger_fast_path_impl(m, decimal_exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                              is_negative,
