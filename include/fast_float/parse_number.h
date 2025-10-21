@@ -414,10 +414,10 @@ FASTFLOAT_CONSTEXPR20
                         int const decimal_exponent) noexcept {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_ASSUME(mantissa > 0);
-  const uint64_t m = static_cast<uint64_t>(mantissa);
+  const am_mant_t m = static_cast<am_mant_t>(mantissa);
 #else
   const bool is_negative = mantissa < 0;
-  const uint64_t m = static_cast<uint64_t>(is_negative ? -mantissa : mantissa);
+  const am_mant_t m = static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
 #endif
   T value;
   if (clinger_fast_path_impl(m, decimal_exponent,
