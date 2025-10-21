@@ -10,9 +10,7 @@
 
 #include "float_common.h"
 
-#if defined(FASTFLOAT_SSE42)
-#include <nmmintrin.h>   // SSE4.2 intrinsics
-#elif defined(FASTFLOAT_SSE2)
+#if defined(FASTFLOAT_SSE2)
 #include <emmintrin.h>
 #elif defined(FASTFLOAT_NEON)
 #include <arm_neon.h>
@@ -124,7 +122,7 @@ uint64_t simd_read8_to_u64(UC const *) {
 }
 
 // credit  @aqrit
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
 parse_eight_digits_unrolled(uint64_t val) noexcept {
   constexpr uint64_t mask = 0x000000FF000000FF;
   constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
@@ -132,12 +130,12 @@ parse_eight_digits_unrolled(uint64_t val) noexcept {
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
-  return uint32_t(val);
+  return val;
 }
 
 // Call this if chars are definitely 8 digits.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
 parse_eight_digits_unrolled(UC const *chars) noexcept {
   if (cpp20_and_in_constexpr() || !has_simd_opt<UC>()) {
     return parse_eight_digits_unrolled(read8_to_u64(chars)); // truncation okay
@@ -169,16 +167,6 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   __m128i const data =
       _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
 
-#ifdef FASTFLOAT_SSE42
-  // --- Digit range check using SSE4.2 comparisons ---
-  // Validate: '0' (0x0030) ≤ x ≤ '9' (0x0039)
-  __m128i const below0 = _mm_cmplt_epi16(data, _mm_set1_epi16(u'0')); // x < '0'
-  __m128i const above9 = _mm_cmpgt_epi16(data, _mm_set1_epi16(u'9')); // x > '9'
-  __m128i const invalid = _mm_or_si128(below0, above9);
-
-  // Check if any invalid byte exists
-  if (_mm_testz_si128(invalid, invalid)) { // SSE4.1/4.2: zero flag test
-#else
   // Branchless "are all digits?" trick from Lemire:
   // (x - '0') <= 9  <=> (x + 32720) <= 32729
   // encoded as signed comparison: (x + 32720) > -32759 ? not digit : digit
@@ -188,7 +176,6 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
 
   // If mask == 0 → all digits valid.
   if (_mm_movemask_epi8(mask) == 0) {
-#endif
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
   }
