@@ -177,9 +177,9 @@ round_down(adjusted_mantissa &am, am_pow_t shift) noexcept {
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 skip_zeros(UC const *&first, UC const *last) noexcept {
-  uint64_t val;
   while (!cpp20_and_in_constexpr() &&
          std::distance(first, last) >= int_cmp_len<UC>()) {
+    uint64_t val;
     ::memcpy(&val, first, sizeof(uint64_t));
     if (val != int_cmp_zeros<UC>()) {
       break;
@@ -190,7 +190,7 @@ skip_zeros(UC const *&first, UC const *last) noexcept {
     if (*first != UC('0')) {
       break;
     }
-    first++;
+    ++first;
   }
 }
 
@@ -200,9 +200,9 @@ template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
 is_truncated(UC const *first, UC const *last) noexcept {
   // do 8-bit optimizations, can just compare to 8 literal 0s.
-  uint64_t val;
   while (!cpp20_and_in_constexpr() &&
          std::distance(first, last) >= int_cmp_len<UC>()) {
+    uint64_t val;
     ::memcpy(&val, first, sizeof(uint64_t));
     if (val != int_cmp_zeros<UC>()) {
       return true;
