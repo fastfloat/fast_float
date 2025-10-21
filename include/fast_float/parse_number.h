@@ -387,7 +387,7 @@ from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
 template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
-    integer_times_pow10(uint64_t mantissa,
+    integer_times_pow10(uint64_t const mantissa,
                         int const decimal_exponent) noexcept {
   T value;
   if (clinger_fast_path_impl(mantissa, decimal_exponent,
@@ -410,7 +410,7 @@ FASTFLOAT_CONSTEXPR20
 template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
-    integer_times_pow10(int64_t mantissa, int const decimal_exponent) noexcept {
+    integer_times_pow10(int64_t const mantissa, int const decimal_exponent) noexcept {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_ASSUME(mantissa > 0);
   const uint64_t m = static_cast<uint64_t>(mantissa);
@@ -494,23 +494,27 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  // We are in parser code with external loop that checks bounds.
+  FASTFLOAT_ASSUME(first < last);
+  // base is already checked in the parse_options_t constructor.
+#else
   if (chars_format_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       ++first;
     }
   }
-  if (first == last || options.base < 2 || options.base > 36) {
+#endif
+  if (
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      first == last ||
+#endif
+      options.base < 2 || options.base > 36) {
     from_chars_result_t<UC> answer;
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
   }
-#else
-  // We are in parser code with external loop that checks bounds.
-  FASTFLOAT_ASSUME(first < last);
-  // base is already checked in the parse_options_t constructor.
-#endif
 
   return parse_int_string(first, last, value, options);
 }
