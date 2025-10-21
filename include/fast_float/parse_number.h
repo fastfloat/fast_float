@@ -437,12 +437,13 @@ FASTFLOAT_CONSTEXPR20
 }
 
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(uint64_t mantissa, int const decimal_exponent) noexcept {
+integer_times_pow10(uint64_t const mantissa,
+                    int const decimal_exponent) noexcept {
   return integer_times_pow10<double>(mantissa, decimal_exponent);
 }
 
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(int64_t mantissa, int const decimal_exponent) noexcept {
+integer_times_pow10(int64_t const mantissa, int const decimal_exponent) noexcept {
   return integer_times_pow10<double>(mantissa, decimal_exponent);
 }
 

@@ -2126,8 +2126,9 @@ TEST_CASE("bfloat16.general") {
 #endif
 
 template <typename Int, typename T, typename U>
-void verify_integer_times_pow10_result(Int mantissa, int decimal_exponent,
-                                       T actual, U expected) {
+void verify_integer_times_pow10_result(Int const mantissa,
+                                       int const decimal_exponent,
+                                       T const actual, U const expected) {
   static_assert(std::is_same<T, U>::value,
                 "expected and actual types must match");
 
@@ -2144,8 +2145,8 @@ void verify_integer_times_pow10_result(Int mantissa, int decimal_exponent,
 }
 
 template <typename T, typename Int>
-T calculate_integer_times_pow10_expected_result(Int mantissa,
-                                                int decimal_exponent) {
+T calculate_integer_times_pow10_expected_result(Int const mantissa,
+                                                int const decimal_exponent) {
   std::string constructed_string =
       std::to_string(mantissa) + "e" + std::to_string(decimal_exponent);
   T expected_result;
@@ -2158,8 +2159,9 @@ T calculate_integer_times_pow10_expected_result(Int mantissa,
 }
 
 template <typename Int>
-void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent,
-                                     double expected) {
+void verify_integer_times_pow10_dflt(Int const mantissa,
+                                     int const decimal_exponent,
+                                     double const expected) {
   static_assert(std::is_integral<Int>::value);
 
   // the "default" overload
@@ -2171,7 +2173,8 @@ void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent,
 }
 
 template <typename Int>
-void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent) {
+void verify_integer_times_pow10_dflt(Int const mantissa,
+                                     int const decimal_exponent) {
   static_assert(std::is_integral<Int>::value);
 
   const auto expected_result =
@@ -2182,8 +2185,8 @@ void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent) {
 }
 
 template <typename T, typename Int>
-void verify_integer_times_pow10(Int mantissa, int decimal_exponent,
-                                T expected) {
+void verify_integer_times_pow10(Int const mantissa, int const decimal_exponent,
+                                T const expected) {
   static_assert(std::is_floating_point<T>::value);
   static_assert(std::is_integral<Int>::value);
 
@@ -2196,7 +2199,8 @@ void verify_integer_times_pow10(Int mantissa, int decimal_exponent,
 }
 
 template <typename T, typename Int>
-void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
+void verify_integer_times_pow10(Int const mantissa,
+                                int const decimal_exponent) {
   static_assert(std::is_floating_point<T>::value);
   static_assert(std::is_integral<Int>::value);
 
@@ -2208,7 +2212,8 @@ void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
 
 namespace all_supported_types {
 template <typename Int>
-void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
+void verify_integer_times_pow10(Int const mantissa,
+                                int const decimal_exponent) {
   static_assert(std::is_integral<Int>::value);
 
   // verify the "default" overload

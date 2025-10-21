@@ -83,7 +83,9 @@ template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(
       chars_format const fmt = chars_format::general, UC const dot = UC('.'),
       uint_fast8_t const b = 10) noexcept
-      : format(fmt), decimal_point(dot), base(b) {}
+      : format(fmt), decimal_point(dot), base(b) {
+    FASTFLOAT_ASSUME(base >= 2 && base <= 36);
+  }
 
   /** Which number formats are accepted */
   chars_format format;
@@ -91,7 +93,6 @@ template <typename UC> struct parse_options_t {
   UC decimal_point;
   /** The base used for integers */
   uint_fast8_t base; /* only allowed from 2 to 36 */
-  FASTFLOAT_ASSUME(base >= 2 && base <= 36);
 };
 
 using parse_options = parse_options_t<char>;
@@ -214,7 +215,6 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_ASSERT(x)                                                    \
   {                                                                            \
     ((void)(x));                                                               \
-    FASTFLOAT_ASSUME(x);                                                       \
   }
 #endif
 
@@ -222,7 +222,6 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
   {                                                                            \
     ((void)(x));                                                               \
-    FASTFLOAT_ASSUME(x);                                                       \
   }
 #endif
 

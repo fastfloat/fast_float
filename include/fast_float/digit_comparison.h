@@ -270,9 +270,9 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   am_digits digits = 0;
   limb value = 0;
 #ifdef FASTFLOAT_64BIT_LIMB
-  am_digits const step = 19;
+  constexpr am_digits step = 19;
 #else
-  am_digits const step = 9;
+  constexpr am_digits step = 9;
 #endif
 
   // process all integer digits.
