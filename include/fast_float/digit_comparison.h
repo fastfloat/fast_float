@@ -40,9 +40,7 @@ constexpr static uint64_t powers_of_ten_uint64[] = {1UL,
 // to slow down performance for faster algorithms, and this is still fast.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_pow_t
-scientific_exponent(parsed_number_string_t<UC> const &num) noexcept {
-  am_mant_t mantissa = num.mantissa;
-  am_pow_t exponent = num.exponent;
+scientific_exponent(am_mant_t mantissa, am_pow_t exponent) noexcept {
   while (mantissa >= 10000) {
     mantissa /= 10000;
     exponent += 4;
@@ -413,7 +411,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
     FASTFLOAT_ASSERT(real_digits.pow2(-pow2_exp));
   }
 
-  // compare digits, and use it to director rounding
+  // compare digits, and use it to direct rounding
   int ord = real_digits.compare(theor_digits);
   round<T>(am, [ord](adjusted_mantissa &a, am_pow_t shift) {
     round_nearest_tie_even(
@@ -433,7 +431,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
   return am;
 }
 
-// parse the significant digits as a big integer to unambiguously round the
+// parse the significant digits as a big integer to unambiguously round
 // the significant digits. here, we are trying to determine how to round
 // an extended float representation close to `b+h`, halfway between `b`
 // (the float rounded-down) and `b+u`, the next positive float. this
@@ -452,9 +450,8 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
-  bigint bigmant;
   am_pow_t const sci_exp = scientific_exponent(num);
-
+  bigint bigmant;
   am_digits const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
   am_pow_t const exponent =
