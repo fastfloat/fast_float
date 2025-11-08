@@ -439,7 +439,7 @@ parse_number_string(UC const *p, UC const *pend,
     } else {
       // Now let's parse the explicit exponent.
       while ((p != pend) && is_integer(*p)) {
-        if (exp_number < 0x1000) {
+        if (exp_number < 0x10000000) {
           // check for exponent overflow if we have too many digits.
           UC const digit = UC(*p - UC('0'));
           exp_number = 10 * exp_number + static_cast<am_pow_t>(digit);
