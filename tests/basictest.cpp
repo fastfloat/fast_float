@@ -69,7 +69,7 @@ template <typename T> std::string fHexAndDec(T v) {
   return ss.str();
 }
 
-const std::string_view round_name(int const d) {
+const std::string round_name(int const d) {
   switch (d) {
   case FE_UPWARD:
     return "FE_UPWARD";
