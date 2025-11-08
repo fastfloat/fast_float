@@ -122,7 +122,7 @@ uint64_t simd_read8_to_u64(UC const *) {
 }
 
 // credit  @aqrit
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_eight_digits_unrolled(uint64_t val) noexcept {
   constexpr uint64_t mask = 0x000000FF000000FF;
   constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
@@ -130,12 +130,12 @@ parse_eight_digits_unrolled(uint64_t val) noexcept {
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
-  return val;
+  return uint32_t(val);
 }
 
 // Call this if chars are definitely 8 digits.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
 parse_eight_digits_unrolled(UC const *chars) noexcept {
   if (cpp20_and_in_constexpr() || !has_simd_opt<UC>()) {
     return parse_eight_digits_unrolled(read8_to_u64(chars)); // truncation okay

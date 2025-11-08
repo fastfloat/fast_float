@@ -604,11 +604,11 @@ struct bigint : pow5_tables<> {
       exp -= large_step;
     }
 #ifdef FASTFLOAT_64BIT_LIMB
-    limb_t const small_step = 27;
-    limb const max_native = 7450580596923828125UL;
+    limb_t constexpr small_step = 27;
+    limb constexpr max_native = 7450580596923828125UL;
 #else
-    limb_t const small_step = 13;
-    limb const max_native = 1220703125U;
+    limb_t constexpr small_step = 13;
+    limb constexpr max_native = 1220703125U;
 #endif
     while (exp >= small_step) {
       FASTFLOAT_TRY(small_mul(vec, max_native));

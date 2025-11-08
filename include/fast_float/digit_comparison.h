@@ -260,7 +260,7 @@ round_up_bigint(bigint &big, am_digits &count) noexcept {
 
 // parse the significant digits into a big integer
 template <typename T, typename UC>
-inline FASTFLOAT_CONSTEXPR20 am_digits
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 am_digits
 parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
