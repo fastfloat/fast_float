@@ -29,12 +29,11 @@
 #define FASTFLOAT_CONSTEVAL FASTFLOAT_CONSTEXPR14
 #endif
 
-// Try to fix precision error in x86 platform
-//#if defined(__cpp_lib_byteswap)
-//#define FASTFLOAT_HAS_BYTESWAP 1
-//#else
+#if defined(__cpp_lib_byteswap)
+#define FASTFLOAT_HAS_BYTESWAP 1
+#else
 #define FASTFLOAT_HAS_BYTESWAP 0
-//#endif
+#endif
 
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
 #define FASTFLOAT_IF_CONSTEXPR17(x) if constexpr (x)
