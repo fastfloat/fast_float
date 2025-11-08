@@ -446,7 +446,7 @@ typedef int_fast8_t am_bits_t;
 
 // Power bias is signed for handling a denormal float
 // or an invalid mantissa.
-typedef int16_t am_pow_t; // can't be int_fast16_t because invalid_am_bias
+typedef int64_t am_pow_t; // can't be int_fast16_t because invalid_am_bias
                           // hacks. Needs rewriting this.
 
 // Bias so we can get the real exponent with an invalid adjusted_mantissa.
