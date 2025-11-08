@@ -20,14 +20,14 @@ namespace fast_float {
 template <limb_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(int64_t q, uint64_t w) noexcept {
-  int const index = 2 * int(q - powers::smallest_power_of_five);
+  am_pow_t const index = 2 * am_pow_t(q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact
   // because The line value128 firstproduct = full_multiplication(w,
   // power_of_five_128[index]); gives the exact answer.
   value128 firstproduct =
       full_multiplication(w, powers::power_of_five_128[index]);
   static_assert((bit_precision >= 0) && (bit_precision <= 64),
-                " precision should  be in (0,64]");
+                " precision should be in [0,64]");
   constexpr uint64_t precision_mask =
       (bit_precision < 64) ? (uint64_t(0xFFFFFFFFFFFFFFFF) >> bit_precision)
                            : uint64_t(0xFFFFFFFFFFFFFFFF);
@@ -40,7 +40,7 @@ compute_product_approximation(int64_t q, uint64_t w) noexcept {
         full_multiplication(w, powers::power_of_five_128[index + 1]);
     firstproduct.low += secondproduct.high;
     if (secondproduct.high > firstproduct.low) {
-      firstproduct.high++;
+      ++firstproduct.high;
     }
   }
   return firstproduct;
@@ -71,8 +71,8 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
 // for significant digits already multiplied by 10 ** q.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
-compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
-  am_pow_t hilz = static_cast<am_pow_t>(uint64_t(w >> 63) ^ 1);
+compute_error_scaled(int64_t q, uint64_t w, limb_t lz) noexcept {
+  limb_t const hilz = static_cast<limb_t>((w >> 63) ^ 1);
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
   constexpr am_pow_t bias =
@@ -87,7 +87,7 @@ compute_error_scaled(int64_t q, uint64_t w, int32_t lz) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_error(int64_t q, uint64_t w) noexcept {
-  limb_t lz = leading_zeroes(w);
+  limb_t const lz = leading_zeroes(w);
   w <<= lz;
   value128 product =
       compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
@@ -119,7 +119,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   // powers::largest_power_of_five].
 
   // We want the most significant bit of i to be 1. Shift if needed.
-  limb_t lz = leading_zeroes(w);
+  limb_t const lz = leading_zeroes(w);
   w <<= lz;
 
   // The required precision is binary::mantissa_explicit_bits() + 3 because
