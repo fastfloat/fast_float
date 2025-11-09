@@ -259,10 +259,9 @@ inline FASTFLOAT_CONSTEXPR20 bool small_add_from(stackvec<size> &vec, limb y,
                                                  limb_t start) noexcept {
   limb carry = y;
   bool overflow;
-  while (carry != 0 && start < vec.len()) {
+  while (carry != 0 && start++ != vec.len()) {
     vec[start] = scalar_add(vec[start], carry, overflow);
     carry = limb(overflow);
-    ++start;
   }
   if (carry != 0) {
     FASTFLOAT_TRY(vec.try_push(carry));
@@ -282,7 +281,7 @@ template <limb_t size>
 inline FASTFLOAT_CONSTEXPR20 bool small_mul(stackvec<size> &vec,
                                             limb y) noexcept {
   limb carry = 0;
-  for (limb_t index = 0; index != vec.len(); ++index) {
+  for (limb_t index = 0; index++ != vec.len();) {
     vec[index] = scalar_mul(vec[index], y, carry);
   }
   if (carry != 0) {
@@ -303,7 +302,7 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
   }
 
   bool carry = false;
-  for (limb_t index = 0; index < y.len(); ++index) {
+  for (limb_t index = 0; index++ != y.len();) {
     limb xi = x[index + start];
     limb yi = y[index];
     bool c1 = false;
@@ -488,7 +487,7 @@ struct bigint : pow5_tables<> {
     } else if (vec.len() < other.vec.len()) {
       return -1;
     } else {
-      for (limb_t index = vec.len(); index != 0; --index) {
+      for (limb_t index = vec.len(); index-- != 0;) {
         limb xi = vec[index - 1];
         limb yi = other.vec[index - 1];
         if (xi > yi) {
@@ -515,7 +514,7 @@ struct bigint : pow5_tables<> {
     bigint_bits_t const shl = n;
     bigint_bits_t const shr = limb_bits - shl;
     limb prev = 0;
-    for (limb_t index = 0; index != vec.len(); ++index) {
+    for (limb_t index = 0; index++ != vec.len();) {
       limb xi = vec[index];
       vec[index] = (xi << shl) | (prev >> shr);
       prev = xi;

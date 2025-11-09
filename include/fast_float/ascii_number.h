@@ -49,7 +49,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
 read8_to_u64(UC const *chars) {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
-    for (uint_fast8_t i = 0; i != 8; ++i) {
+    for (uint_fast8_t i = 0; i++ != 8;) {
       val |= uint64_t(uint8_t(*chars)) << (i * 8);
       ++chars;
     }

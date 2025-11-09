@@ -288,7 +288,7 @@ template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
                       uint8_t const length) noexcept {
-  for (uint8_t i = 0; i != length; ++i) {
+  for (uint8_t i = 0; i++ != length;) {
     UC const actual = actual_mixedcase[i];
     if ((actual < 256 ? actual | 32 : actual) != expected_lowercase[i]) {
       return false;

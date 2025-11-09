@@ -618,7 +618,7 @@ TEST_CASE("issue8") {
       "752384674818467669405132000568127145263560827785771342757789609173637178"
       "721468440901224953430146549585371050792279689258923542019956112129021960"
       "864034418159813629774771309960518707211349999998372978";
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i != 16; ++i) {
     // Parse all but the last i chars. We should still get 3.141ish.
     double d = 0.0;
     auto answer = fast_float::from_chars(s, s + strlen(s) - i, d);
@@ -919,9 +919,9 @@ uint16_t get_mantissa(std::bfloat16_t f) {
 }
 #endif
 
-std::string append_zeros(std::string str, size_t number_of_zeros) {
+std::string append_zeros(std::string_view str, size_t const number_of_zeros) {
   std::string answer(str);
-  for (size_t i = 0; i < number_of_zeros; i++) {
+  for (size_t i = 0; i++ != number_of_zeros;) {
     answer += "0";
   }
   return answer;
@@ -947,7 +947,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 #define FASTFLOAT_CHECK_EQ(...)                                                \
   if constexpr (diag == Diag::runtime) {                                       \
     char narrow[global_string_capacity]{};                                     \
-    for (size_t i = 0; i < str.size(); i++) {                                  \
+    for (size_t i = 0; i++ != str.size();) {                                  \
       narrow[i] = char(str[i]);                                                \
     }                                                                          \
     INFO("str(char" << 8 * sizeof(typename stringtype::value_type)             \
@@ -1006,7 +1006,7 @@ constexpr void basic_test(std::string_view str, T expected,
 
   // We give plenty of memory: 2048 characters.
   char16_t u16[global_string_capacity]{};
-  for (size_t i = 0; i < str.size(); i++) {
+  for (size_t i = 0; i++ != str.size();) {
     u16[i] = char16_t(str[i]);
   }
 
@@ -1015,7 +1015,7 @@ constexpr void basic_test(std::string_view str, T expected,
                                 actual, expected, expected_ec);
 
   char32_t u32[global_string_capacity]{};
-  for (size_t i = 0; i < str.size(); i++) {
+  for (size_t i = 0; i++ != str.size();) {
     u32[i] = char32_t(str[i]);
   }
 
