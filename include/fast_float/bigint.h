@@ -369,7 +369,7 @@ FASTFLOAT_CONSTEXPR20 bool large_mul(stackvec<size> &x, limb_span y) noexcept {
 }
 
 template <typename = void> struct pow5_tables {
-  static constexpr uint8_t large_step = 135;
+  static constexpr uint_fast8_t large_step = 135;
   static constexpr uint64_t small_power_of_5[] = {
       1UL,
       5UL,
@@ -413,7 +413,7 @@ template <typename = void> struct pow5_tables {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint8_t pow5_tables<T>::large_step;
+template <typename T> constexpr uint_fast8_t pow5_tables<T>::large_step;
 
 template <typename T> constexpr uint64_t pow5_tables<T>::small_power_of_5[];
 

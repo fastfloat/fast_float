@@ -287,8 +287,8 @@ struct is_supported_char_type
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
-                      uint8_t const length) noexcept {
-  for (uint8_t i = 0; i++ != length;) {
+                      uint_fast8_t const length) noexcept {
+  for (uint_fast8_t i = 0; i++ != length;) {
     UC const actual = actual_mixedcase[i];
     if ((actual < 256 ? actual | 32 : actual) != expected_lowercase[i]) {
       return false;
@@ -1059,7 +1059,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <typename = void> struct space_lut {
-  static constexpr uint8_t value[] = {
+  static constexpr uint_fast8_t value[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1075,12 +1075,12 @@ template <typename = void> struct space_lut {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint8_t space_lut<T>::value[];
+template <typename T> constexpr uint_fast8_t space_lut<T>::value[];
 
 #endif
 
 template <typename UC> constexpr bool is_space(UC c) {
-  return c < 256 && space_lut<>::value[uint8_t(c)];
+  return c < 256 && space_lut<>::value[uint_fast8_t(c)];
 }
 
 #endif
@@ -1166,7 +1166,7 @@ template <typename = void> struct int_luts {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255};
 
-  static constexpr uint8_t maxdigits_u64[] = {
+  static constexpr uint_fast8_t maxdigits_u64[] = {
       64, 41, 32, 28, 25, 23, 22, 21, 20, 19, 18, 18, 17, 17, 16, 16, 16, 16,
       15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13};
 
@@ -1187,9 +1187,9 @@ template <typename = void> struct int_luts {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint8_t int_luts<T>::chdigit[];
+template <typename T> constexpr uint_fast8_t int_luts<T>::chdigit[];
 
-template <typename T> constexpr uint8_t int_luts<T>::maxdigits_u64[];
+template <typename T> constexpr uint_fast8_t int_luts<T>::maxdigits_u64[];
 
 template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 

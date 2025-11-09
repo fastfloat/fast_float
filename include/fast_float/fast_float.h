@@ -60,10 +60,10 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
  */
 FASTFLOAT_CONSTEXPR20 inline double
 integer_times_pow10(uint64_t const mantissa,
-                    int16_t const decimal_exponent) noexcept;
+                    int_fast16_t const decimal_exponent) noexcept;
 FASTFLOAT_CONSTEXPR20 inline double
 integer_times_pow10(int64_t const mantissa,
-                    int16_t const decimal_exponent) noexcept;
+                    int_fast16_t const decimal_exponent) noexcept;
 
 /**
  * This function is a template overload of `integer_times_pow10()`
@@ -74,12 +74,12 @@ template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(uint64_t const mantissa,
-                        int16_t const decimal_exponent) noexcept;
+                        int_fast16_t const decimal_exponent) noexcept;
 template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(int64_t const mantissa,
-                        int16_t const decimal_exponent) noexcept;
+                        int_fast16_t const decimal_exponent) noexcept;
 
 /**
  * from_chars for integer types.
@@ -88,7 +88,7 @@ template <typename T, typename UC = char,
           typename = FASTFLOAT_ENABLE_IF(is_supported_integer_type<T>::value)>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
-           int const base = 10) noexcept;
+           uint_fast8_t const base = 10) noexcept;
 
 } // namespace fast_float
 
