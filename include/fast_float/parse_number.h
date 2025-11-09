@@ -336,14 +336,16 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
       ++first;
     }
   }
+#endif
+#ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
+  // We are in parser code with external loop that checks bounds.
+  FASTFLOAT_ASSUME(first < last);
+#else
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
     return answer;
   }
-#else
-  // We are in parser code with external loop that checks bounds.
-  FASTFLOAT_ASSUME(first < last);
 #endif
   parsed_number_string_t<UC> const pns =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -498,19 +500,19 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  // We are in parser code with external loop that checks bounds.
-  FASTFLOAT_ASSUME(first < last);
-  // base is already checked in the parse_options_t constructor.
-#else
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if (chars_format_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       ++first;
     }
   }
 #endif
+#ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
+  // We are in parser code with external loop that checks bounds.
+  FASTFLOAT_ASSUME(first < last);
+#endif
   if (
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
       first == last ||
 #endif
       options.base < 2 || options.base > 36) {

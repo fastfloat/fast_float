@@ -380,15 +380,17 @@ int main() {
 
 ## You also can also use some additional options (currently only configure by macroses):
 
-There is a really common use case in mathematical and other abstract syntax tree (AST) like parsers,
-that already process sign and all other symbols before any number by itself. In this case you can 
-use FastFloat for only parse positive numbers in all supported formats with macros 
-`FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, that significantly reduce the code size and improve
-performance. Additionally you can use macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you 
-only uneed `FE_TONEAREST` rounding mode in the parsing: this option is also improve performance a bit.
+There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
+the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
+in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
+and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
+it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
+macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing;
+this option also improves performance a bit and reduces code size.
 
 ```C++
 #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 #include "fast_float/fast_float.h"
 #include <iostream>
