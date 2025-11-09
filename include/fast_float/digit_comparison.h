@@ -373,11 +373,9 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa positive_digit_comp(
 // we then need to scale by `2^(f- e)`, and then the two significant digits
 // are of the same magnitude.
 template <typename T>
-inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
-    bigint &bigmant, adjusted_mantissa am, am_pow_t const exponent) noexcept {
-  bigint &real_digits = bigmant;
-  am_pow_t const &real_exp = exponent;
-
+inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
+negative_digit_comp(bigint &real_digits, adjusted_mantissa am,
+                    am_pow_t const real_exp) noexcept {
   // get the value of `b`, rounded down, and get a bigint representation of
   // b+h
   adjusted_mantissa am_b = am;
@@ -391,12 +389,12 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
       false,
 #endif
       am_b, b);
-  adjusted_mantissa theor = to_extended_halfway(b);
+  adjusted_mantissa const theor = to_extended_halfway(b);
   bigint theor_digits(theor.mantissa);
-  am_pow_t theor_exp = theor.power2;
+  am_pow_t const theor_exp = theor.power2;
 
   // scale real digits and theor digits to be same power.
-  am_pow_t pow2_exp = theor_exp - real_exp;
+  am_pow_t const pow2_exp = theor_exp - real_exp;
   am_pow_t pow5_exp = -real_exp;
   if (pow5_exp != 0) {
     FASTFLOAT_ASSERT(theor_digits.pow5(pow5_exp));
@@ -408,7 +406,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
   }
 
   // compare digits, and use it to direct rounding
-  int ord = real_digits.compare(theor_digits);
+  int const ord = real_digits.compare(theor_digits);
   round<T>(am, [ord](adjusted_mantissa &a, am_pow_t shift) {
     round_nearest_tie_even(
         a, shift, [ord](bool is_odd, bool _, bool __) -> bool {

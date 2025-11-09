@@ -535,19 +535,17 @@ struct bigint : pow5_tables<> {
       // we can't shift more than the capacity of the vector.
       return false;
     }
-    if (vec.is_empty()) {
-      // nothing to do
-      return true;
+    if (!vec.is_empty()) {
+      // move limbs
+      limb *dst = vec.data + n;
+      limb const *src = vec.data;
+      std::copy_backward(src, src + vec.len(), dst + vec.len());
+      // fill in empty limbs
+      limb *first = vec.data;
+      limb *last = first + n;
+      ::std::fill(first, last, 0);
+      vec.set_len(limb_t(n + vec.len()));
     }
-    // move limbs
-    limb *dst = vec.data + n;
-    limb const *src = vec.data;
-    std::copy_backward(src, src + vec.len(), dst + vec.len());
-    // fill in empty limbs
-    limb *first = vec.data;
-    limb *last = first + n;
-    ::std::fill(first, last, 0);
-    vec.set_len(limb_t(n + vec.len()));
     return true;
   }
 
@@ -590,12 +588,14 @@ struct bigint : pow5_tables<> {
   FASTFLOAT_CONSTEXPR20 bool add(limb y) noexcept { return small_add(vec, y); }
 
   // multiply as if by 2 raised to a power.
-  FASTFLOAT_CONSTEXPR20 bool pow2(am_pow_t exp) noexcept {
+  FASTFLOAT_CONSTEXPR20 bool pow2(am_pow_t const exp) noexcept {
+    FASTFLOAT_ASSERT(exp >= 0);
     return shl(static_cast<fast_float::bigint_bits_t>(exp));
   }
 
   // multiply as if by 5 raised to a power.
   FASTFLOAT_CONSTEXPR20 bool pow5(am_pow_t exp) noexcept {
+    FASTFLOAT_ASSERT(exp >= 0);
     // multiply by a power of 5
     limb_t const large_length = sizeof(large_power_of_5) / sizeof(limb);
     limb_span const large = limb_span(large_power_of_5, large_length);
@@ -627,6 +627,7 @@ struct bigint : pow5_tables<> {
 
   // multiply as if by 10 raised to a power.
   FASTFLOAT_CONSTEXPR20 bool pow10(am_pow_t exp) noexcept {
+    FASTFLOAT_ASSERT(exp >= 0);
     FASTFLOAT_TRY(pow5(exp));
     return pow2(exp);
   }
