@@ -69,7 +69,7 @@ template <typename T> std::string fHexAndDec(T v) {
   return ss.str();
 }
 
-const std::string round_name(int const d) {
+const std::string_view round_name(int const d) {
   switch (d) {
   case FE_UPWARD:
     return "FE_UPWARD";
@@ -107,9 +107,9 @@ TEST_CASE("system_info") {
 #endif
 #ifdef FASTFLOAT_IS_BIG_ENDIAN
 #if FASTFLOAT_IS_BIG_ENDIAN
-  printf("big endian\n");
+  std::cout << "big endian" << std::endl;
 #else
-  printf("little endian\n");
+  std::cout << "little endian" << std::endl;
 #endif
 #endif
 #ifdef FASTFLOAT_32BIT
