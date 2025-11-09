@@ -70,7 +70,7 @@ read8_to_u64(UC const *chars) {
 
 #ifdef FASTFLOAT_SSE2
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   // _mm_packus_epi16 is SSE2+, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
@@ -94,7 +94,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
 
 #elif defined(FASTFLOAT_NEON)
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const &data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint8x8_t utf8_packed = vmovn_u16(data);
   return vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);

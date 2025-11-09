@@ -179,8 +179,7 @@ using parse_options = parse_options_t<char>;
 #if defined(__SSE2__) || (defined(FASTFLOAT_VISUAL_STUDIO) &&                  \
                           (defined(_M_AMD64) || defined(_M_X64) ||             \
                            (defined(_M_IX86_FP) && _M_IX86_FP == 2)))
-// try to fix error on x86 platform: disable SSE2 code
-// #define FASTFLOAT_SSE2 1
+#define FASTFLOAT_SSE2 1
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
