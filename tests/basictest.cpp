@@ -947,7 +947,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 #define FASTFLOAT_CHECK_EQ(...)                                                \
   if constexpr (diag == Diag::runtime) {                                       \
     char narrow[global_string_capacity]{};                                     \
-    for (size_t i = 0; i++ != str.size();) {                                  \
+    for (size_t i = 0; i++ != str.size();) {                                   \
       narrow[i] = char(str[i]);                                                \
     }                                                                          \
     INFO("str(char" << 8 * sizeof(typename stringtype::value_type)             \
