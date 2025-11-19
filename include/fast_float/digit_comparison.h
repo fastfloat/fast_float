@@ -64,19 +64,12 @@ to_extended(T const &value) noexcept {
   constexpr equiv_uint mantissa_mask = binary_format<T>::mantissa_mask();
   constexpr equiv_uint hidden_bit_mask = binary_format<T>::hidden_bit_mask();
 
-  adjusted_mantissa am;
   constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
                             binary_format<T>::minimum_exponent();
-  equiv_uint bits;
-#if FASTFLOAT_HAS_BIT_CAST
-  bits =
-#if FASTFLOAT_HAS_BIT_CAST == 1
-      std::
-#endif
-          bit_cast<equiv_uint>(value);
-#else
-  ::memcpy(&bits, &value, sizeof(T));
-#endif
+
+  equiv_uint const bits = bit_cast<T, equiv_uint>(value);
+
+  adjusted_mantissa am;
   if ((bits & exponent_mask) == 0) {
     // denormal
     am.power2 = 1 - bias;

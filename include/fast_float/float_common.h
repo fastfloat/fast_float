@@ -101,6 +101,23 @@ using parse_options = parse_options_t<char>;
 #include <bit>
 #endif
 
+namespace fast_float {
+template <typename To, typename From>
+FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) {
+#if FASTFLOAT_HAS_BIT_CAST
+  return std::bit_cast<To>(from);
+#else
+  // Implementation of std::bit_cast for pre-C++20.
+  static_assert(sizeof(To) == sizeof(From),
+                "bit_cast requires source and destination to be the same size");
+  auto to = To();
+  // The cast suppresses a bogus -Wclass-memaccess on GCC.
+  std::memcpy(static_cast<void *>(&to), &from, sizeof(to));
+  return to;
+#endif
+}
+} // namespace fast_float
+
 #if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64) ||            \
      defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) ||          \
      defined(__MINGW64__) || defined(__s390x__) ||                             \
@@ -1029,6 +1046,7 @@ binary_format<double>::hidden_bit_mask() {
   return 0x0010000000000000;
 }
 
+// Fix for C2672: Ensure bit_cast is called with explicit template arguments
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -1043,15 +1061,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
   word =
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
 #endif
-#if FASTFLOAT_HAS_BIT_CAST
-  value =
-#if FASTFLOAT_HAS_BIT_CAST == 1
-      std::
-#endif
-          bit_cast<T>(word);
-#else
-  ::memcpy(&value, &word, sizeof(T));
-#endif
+  value = bit_cast<T, equiv_uint>(word);
 }
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN

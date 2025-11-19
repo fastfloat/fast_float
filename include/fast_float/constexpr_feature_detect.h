@@ -32,7 +32,6 @@
 
 // C++20 std::bit_cast
 #if defined(__cpp_lib_bit_cast) && __cpp_lib_bit_cast >= 201806L
-#include <bit>
 #define FASTFLOAT_HAS_BIT_CAST 1
 #else
 #define FASTFLOAT_HAS_BIT_CAST 0
