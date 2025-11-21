@@ -67,7 +67,7 @@ to_extended(T const &value) noexcept {
   constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
                             binary_format<T>::minimum_exponent();
 
-  equiv_uint const bits = bit_cast<T, equiv_uint>(value);
+  equiv_uint const bits = bit_cast<equiv_uint, T>(value);
 
   adjusted_mantissa am;
   if ((bits & exponent_mask) == 0) {
