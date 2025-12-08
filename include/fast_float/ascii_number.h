@@ -330,21 +330,20 @@ parse_number_string(UC const *p, UC const *pend,
   }
 #endif
 
-  UC const *const start_digits = p;
+  auto const *const start_digits = p;
 
   while ((p != pend) && is_integer(*p)) {
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     answer.mantissa = static_cast<fast_float::am_mant_t>(
         answer.mantissa * 10 +
-        static_cast<fast_float::am_mant_t>(
+        static_cast<uint8_t>(
             *p - UC('0'))); // might overflow, we will handle the overflow later
     ++p;
   }
 
-  UC const *const end_of_integer_part = p;
-  am_digits digit_count =
-      static_cast<am_digits>(end_of_integer_part - start_digits);
+  auto const *const end_of_integer_part = p;
+  auto digit_count = static_cast<am_digits>(end_of_integer_part - start_digits);
   answer.integer = span<UC const>(start_digits, digit_count);
   // We have now parsed the integer part of the mantissa.
 
@@ -364,17 +363,16 @@ parse_number_string(UC const *p, UC const *pend,
   // We can now parse the fraction part of the mantissa.
   if ((p != pend) && (*p == options.decimal_point)) {
     ++p;
-    UC const *const before = p;
+    auto const *const before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     loop_parse_if_eight_digits(p, pend, answer.mantissa);
 
     while ((p != pend) && is_integer(*p)) {
-      UC const digit = UC(*p - UC('0'));
+      auto const digit = uint8_t(*p - UC('0'));
       answer.mantissa = static_cast<fast_float::am_mant_t>(
           answer.mantissa * 10 +
-          static_cast<am_mant_t>(
-              digit)); // in rare cases, this will overflow, but that's ok
+          digit); // in rare cases, this will overflow, but that's ok
       ++p;
     }
     answer.exponent = static_cast<am_pow_t>(before - p);
@@ -407,7 +405,7 @@ parse_number_string(UC const *p, UC const *pend,
             (UC('D') == *p)))
 #endif
            )) {
-    UC const *location_of_e = p;
+    auto const *location_of_e = p;
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     ++p;
 #else
@@ -439,10 +437,10 @@ parse_number_string(UC const *p, UC const *pend,
     } else {
       // Now let's parse the explicit exponent.
       while ((p != pend) && is_integer(*p)) {
-        if (exp_number < 0x10000) {
+        if (exp_number < std::numeric_limits<am_pow_t>::max()) {
           // check for exponent overflow if we have too many digits.
-          UC const digit = UC(*p - UC('0'));
-          exp_number = 10 * exp_number + static_cast<am_pow_t>(digit);
+          auto const digit = uint8_t(*p - UC('0'));
+          exp_number = 10 * exp_number + digit;
         }
         ++p;
       }
@@ -474,7 +472,7 @@ parse_number_string(UC const *p, UC const *pend,
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
-    UC const *start = start_digits;
+    auto const *start = start_digits;
     while ((start != pend) &&
            (*start == UC('0') || *start == options.decimal_point)) {
       if (*start == UC('0')) {
@@ -529,7 +527,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   from_chars_result_t<UC> answer;
 
-  UC const *const first = p;
+  auto const *const first = p;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   // Read sign
@@ -553,7 +551,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   }
 #endif
 
-  UC const *const start_num = p;
+  auto const *const start_num = p;
 
   // Skip leading zeros
   while (p != pend && *p == UC('0')) {
@@ -562,23 +560,23 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   bool const has_leading_zeros = p > start_num;
 
-  UC const *const start_digits = p;
+  auto const *const start_digits = p;
 
   // Parse digits
-  uint64_t i = 0;
+  am_mant_t i = 0;
   if (options.base == 10) {
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
   }
   while (p != pend) {
-    uint_fast8_t const digit = ch_to_digit(*p);
+    auto const digit = ch_to_digit(*p);
     if (digit >= options.base) {
       break;
     }
-    i = uint64_t(options.base) * i + digit; // might overflow, check this later
-    p++;
+    i = am_mant_t(options.base) * i + digit; // might overflow, check this later
+    ++p;
   }
 
-  am_digits const digit_count = static_cast<am_digits>(p - start_digits);
+  auto const digit_count = static_cast<am_digits>(p - start_digits);
 
   if (digit_count == 0) {
     if (has_leading_zeros) {
@@ -595,7 +593,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   answer.ptr = p;
 
   // check u64 overflow
-  uint_fast8_t const max_digits = max_digits_u64(options.base);
+  auto const max_digits = max_digits_u64(options.base);
   if (digit_count > max_digits) {
     answer.ec = std::errc::result_out_of_range;
     return answer;
@@ -608,10 +606,10 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   }
 
   // check other types overflow
-  if (!std::is_same<T, uint64_t>::value) {
-    if (i > uint64_t(std::numeric_limits<T>::max())
+  if (!std::is_same<T, am_mant_t>::value) {
+    if (i > am_mant_t(std::numeric_limits<T>::max())
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-                + uint64_t(negative)
+                + uint8_t(negative)
 #endif
     ) {
       answer.ec = std::errc::result_out_of_range;
@@ -634,7 +632,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     // this is always optimized into a neg instruction (note: T is an integer
     // type)
     value = T(-std::numeric_limits<T>::max() -
-              T(i - uint64_t(std::numeric_limits<T>::max())));
+              T(i - am_mant_t(std::numeric_limits<T>::max())));
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(pop)
 #endif
