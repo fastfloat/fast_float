@@ -1,6 +1,7 @@
 
 // #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 // #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+// #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
@@ -50,14 +51,16 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
            size_t repeat) {
   std::vector<event_count> aggregate;
   bool printed_bug = false;
-  for (size_t i = 0; i < repeat; i++) {
+  for (size_t i = 0; i != repeat; ++i) {
+
     collector.start();
     auto const ts = function(lines);
+    aggregate.push_back(collector.end());
+
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
     }
-    aggregate.push_back(collector.end());
   }
   return aggregate;
 }
@@ -130,18 +133,21 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   double average = 0;
   double min_value = DBL_MAX;
   bool printed_bug = false;
-  for (size_t i = 0; i < repeat; i++) {
+  for (size_t i = 0; i != repeat; ++i) {
+
     t1 = std::chrono::high_resolution_clock::now();
     auto const ts = function(lines);
-    if (ts == 0 && !printed_bug) {
-      printf("bug\n");
-      printed_bug = true;
-    }
     t2 = std::chrono::high_resolution_clock::now();
+
     double const dif = static_cast<double>(
         std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count());
     average += dif;
     min_value = min_value < dif ? min_value : dif;
+
+    if (ts == 0 && !printed_bug) {
+      printf("bug\n");
+      printed_bug = true;
+    }
   }
   average /= repeat;
   return std::make_pair(min_value, average);
@@ -162,7 +168,7 @@ void pretty_print(size_t volume, size_t number_of_floats,
 inline std::u16string widen(std::string const &line) {
   std::u16string u16line;
   u16line.resize(line.size());
-  for (size_t i = 0; i < line.size(); ++i) {
+  for (size_t i = 0; i != line.size(); ++i) {
     u16line[i] = char16_t(line[i]);
   }
   return u16line;
@@ -178,7 +184,7 @@ std::vector<std::u16string> widen(const std::vector<std::string> &lines) {
 }
 
 void process(std::vector<std::string> &lines, size_t volume) {
-  size_t const repeat = 1000;
+  size_t constexpr repeat = 1000;
   double volumeMB = volume / (1024. * 1024.);
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
@@ -231,6 +237,9 @@ int main(int argc, char **argv) {
 #ifdef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
   std::cout << "# FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED is enabled"
             << std::endl;
+#endif
+#ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
+  std::cout << "# FASTFLOAT_ISNOT_CHECKED_BOUNDS is enabled" << std::endl;
 #endif
 #ifdef USING_COUNTERS
   if (collector.has_events()) {
