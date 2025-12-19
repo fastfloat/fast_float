@@ -6,3 +6,7 @@ $CXX $CFLAGS $CXXFLAGS \
 
 $CXX $CFLAGS $CXXFLAGS $LIB_FUZZING_ENGINE from_chars.o \
      -o $OUT/from_chars
+
+# Build unit tests
+cmake -DFASTFLOAT_TEST=ON -DCMAKE_EXE_LINKER_FLAGS="-lpthread"
+make
