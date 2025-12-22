@@ -1,4 +1,4 @@
-#include "counters/event_counter.h"
+#include "counters/bench.h"
 #include "fast_float/fast_float.h"
 #include <charconv>
 #include <cstdint>
@@ -8,39 +8,14 @@
 #include <random>
 #include <atomic>
 #include <string>
-event_collector collector;
-
-template <class function_type>
-event_aggregate bench(const function_type &function, size_t min_repeat = 10,
-                      size_t min_time_ns = 1000000000,
-                      size_t max_repeat = 1000000) {
-  event_aggregate aggregate{};
-  size_t N = min_repeat;
-  if (N == 0) {
-    N = 1;
-  }
-  for (size_t i = 0; i < N; i++) {
-    std::atomic_thread_fence(std::memory_order_acquire);
-    collector.start();
-    function();
-    std::atomic_thread_fence(std::memory_order_release);
-    event_count allocate_count = collector.end();
-    aggregate << allocate_count;
-    if ((i + 1 == N) && (aggregate.total_elapsed_ns() < min_time_ns) &&
-        (N < max_repeat)) {
-      N *= 10;
-    }
-  }
-  return aggregate;
-}
 
 void pretty_print(size_t volume, size_t bytes, std::string name,
-                  event_aggregate agg) {
+                  counters::event_aggregate agg) {
   printf("%-40s : ", name.c_str());
   printf(" %5.2f GB/s ", bytes / agg.fastest_elapsed_ns());
   printf(" %5.1f Ma/s ", volume * 1000.0 / agg.fastest_elapsed_ns());
   printf(" %5.2f ns/d ", agg.fastest_elapsed_ns() / volume);
-  if (collector.has_events()) {
+  if (counters::event_collector().has_events()) {
     printf(" %5.2f GHz ", agg.fastest_cycles() / agg.fastest_elapsed_ns());
     printf(" %5.2f c/d ", agg.fastest_cycles() / volume);
     printf(" %5.2f i/d ", agg.fastest_instructions() / volume);
@@ -158,7 +133,7 @@ int main() {
 
   uint32_t sink = 0;
 
-  pretty_print(volume, bytes, "parse_ip_std_fromchars", bench([&]() {
+  pretty_print(volume, bytes, "parse_ip_std_fromchars", counters::bench([&]() {
                  const char *p = buf.data();
                  const char *pend = buf.data() + bytes;
                  uint32_t sum = 0;
@@ -171,7 +146,7 @@ int main() {
                  sink += sum;
                }));
 
-  pretty_print(volume, bytes, "parse_ip_fastfloat", bench([&]() {
+  pretty_print(volume, bytes, "parse_ip_fastfloat", counters::bench([&]() {
                  const char *p = buf.data();
                  const char *pend = buf.data() + bytes;
                  uint32_t sum = 0;

@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
   counters
   GIT_REPOSITORY https://github.com/lemire/counters.git
-  GIT_TAG v1.0.4
+  GIT_TAG v2.0.0
 )
 
 FetchContent_MakeAvailable(counters)
