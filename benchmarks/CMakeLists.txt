@@ -1,9 +1,27 @@
+include(FetchContent)
+
+FetchContent_Declare(
+  counters
+  GIT_REPOSITORY https://github.com/lemire/counters.git
+  GIT_TAG v1.0.1
+)
+
+FetchContent_MakeAvailable(counters)
+
 add_executable(realbenchmark benchmark.cpp)
+target_link_libraries(realbenchmark PRIVATE Counters::counters)
+add_executable(bench_ip bench_ip.cpp)
+target_link_libraries(bench_ip PRIVATE Counters::counters)
+
 set_property(
     TARGET realbenchmark
     PROPERTY CXX_STANDARD 17)
-
+set_property(
+    TARGET bench_ip
+    PROPERTY CXX_STANDARD 17)
 target_link_libraries(realbenchmark PUBLIC fast_float)
+target_link_libraries(bench_ip PUBLIC fast_float)
+
 include(ExternalProject)
 
 # Define the external project

@@ -1,7 +1,7 @@
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
 #endif
-#include "event_counter.h"
+#include "counters/event_counter.h"
 #include <algorithm>
 #include "fast_float/fast_float.h"
 #include <chrono>
@@ -102,7 +102,7 @@ void pretty_print(double volume, size_t number_of_floats, std::string name,
     branches_avg += branches;
     branches_min = branches_min < branches ? branches_min : branches;
 
-    double branch_misses = e.missed_branches();
+    double branch_misses = e.branch_misses();
     branch_misses_avg += branch_misses;
     branch_misses_min =
         branch_misses_min < branch_misses ? branch_misses_min : branch_misses;
