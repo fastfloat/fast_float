@@ -1,7 +1,7 @@
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
 #endif
-#include "event_counter.h"
+#include "counters/event_counter.h"
 #include <algorithm>
 #include "fast_float/fast_float.h"
 #include <chrono>
@@ -50,14 +50,14 @@ double findmax_fastfloat32(std::vector<std::basic_string<CharT>> &s) {
   return answer;
 }
 
-event_collector collector{};
+counters::event_collector collector{};
 
 #ifdef USING_COUNTERS
 template <class T, class CharT>
-std::vector<event_count>
+std::vector<counters::event_count>
 time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
            size_t repeat) {
-  std::vector<event_count> aggregate;
+  std::vector<counters::event_count> aggregate;
   bool printed_bug = false;
   for (size_t i = 0; i < repeat; i++) {
     collector.start();
@@ -72,7 +72,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
 }
 
 void pretty_print(double volume, size_t number_of_floats, std::string name,
-                  std::vector<event_count> events) {
+                  std::vector<counters::event_count> events) {
   double volumeMB = volume / (1024. * 1024.);
   double average_ns{0};
   double min_ns{DBL_MAX};
@@ -84,7 +84,7 @@ void pretty_print(double volume, size_t number_of_floats, std::string name,
   double branches_avg{0};
   double branch_misses_min{0};
   double branch_misses_avg{0};
-  for (event_count e : events) {
+  for (counters::event_count e : events) {
     double ns = e.elapsed_ns();
     average_ns += ns;
     min_ns = min_ns < ns ? min_ns : ns;
@@ -102,7 +102,7 @@ void pretty_print(double volume, size_t number_of_floats, std::string name,
     branches_avg += branches;
     branches_min = branches_min < branches ? branches_min : branches;
 
-    double branch_misses = e.missed_branches();
+    double branch_misses = e.branch_misses();
     branch_misses_avg += branch_misses;
     branch_misses_min =
         branch_misses_min < branch_misses ? branch_misses_min : branch_misses;
