@@ -7,6 +7,7 @@
 #include <cstring>
 #include <random>
 #include <atomic>
+#include <string>
 event_collector collector;
 
 template <class function_type>
