@@ -3,15 +3,15 @@ include(FetchContent)
 FetchContent_Declare(
   counters
   GIT_REPOSITORY https://github.com/lemire/counters.git
-  GIT_TAG v1.0.1
+  GIT_TAG v1.0.4
 )
 
 FetchContent_MakeAvailable(counters)
 
 add_executable(realbenchmark benchmark.cpp)
-target_link_libraries(realbenchmark PRIVATE Counters::counters)
+target_link_libraries(realbenchmark PRIVATE counters::counters)
 add_executable(bench_ip bench_ip.cpp)
-target_link_libraries(bench_ip PRIVATE Counters::counters)
+target_link_libraries(bench_ip PRIVATE counters::counters)
 
 set_property(
     TARGET realbenchmark
