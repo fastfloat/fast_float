@@ -6,26 +6,31 @@
 #include <cstdlib>
 #include <cstring>
 #include <random>
-#include  <atomic>
+#include <atomic>
 event_collector collector;
 
-template <class function_type> 
-event_aggregate bench(const function_type& function, size_t min_repeat = 10, size_t min_time_ns = 1000000000, size_t max_repeat = 1000000) {
-    event_aggregate aggregate{};
-    size_t N = min_repeat;
-    if(N == 0) { N = 1; }
-    for (size_t i = 0; i < N; i++) {
-      std::atomic_thread_fence(std::memory_order_acquire);
-      collector.start();
-      function();
-      std::atomic_thread_fence(std::memory_order_release);
-      event_count allocate_count = collector.end();
-      aggregate << allocate_count;
-      if((i+1 == N) && (aggregate.total_elapsed_ns() < min_time_ns) && (N<max_repeat)) {
-        N *= 10;
-      }
+template <class function_type>
+event_aggregate bench(const function_type &function, size_t min_repeat = 10,
+                      size_t min_time_ns = 1000000000,
+                      size_t max_repeat = 1000000) {
+  event_aggregate aggregate{};
+  size_t N = min_repeat;
+  if (N == 0) {
+    N = 1;
+  }
+  for (size_t i = 0; i < N; i++) {
+    std::atomic_thread_fence(std::memory_order_acquire);
+    collector.start();
+    function();
+    std::atomic_thread_fence(std::memory_order_release);
+    event_count allocate_count = collector.end();
+    aggregate << allocate_count;
+    if ((i + 1 == N) && (aggregate.total_elapsed_ns() < min_time_ns) &&
+        (N < max_repeat)) {
+      N *= 10;
     }
-    return aggregate;
+  }
+  return aggregate;
 }
 
 void pretty_print(size_t volume, size_t bytes, std::string name,
@@ -45,7 +50,7 @@ void pretty_print(size_t volume, size_t bytes, std::string name,
   printf("\n");
 }
 
-int parse_u8_fastswar(const char *&p, const char *pend, uint8_t *out) {
+int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
   if (p == pend)
     return 0;
   auto r = fast_float::from_chars(p, pend, *out);
@@ -142,7 +147,7 @@ int main() {
       }
       p = start;
       pend = end;
-      ok = parse_ip_line(p, pend, sum, parse_u8_fastswar);
+      ok = parse_ip_line(p, pend, sum, parse_u8_fastfloat);
       if (!ok) {
         std::fprintf(stderr, "fastswar parse failed at line %zu\n", i);
         std::abort();
@@ -152,7 +157,7 @@ int main() {
 
   uint32_t sink = 0;
 
-  pretty_print(volume, bytes, "parse_ip_fromchars", bench([&]() {
+  pretty_print(volume, bytes, "parse_ip_std_fromchars", bench([&]() {
                  const char *p = buf.data();
                  const char *pend = buf.data() + bytes;
                  uint32_t sum = 0;
@@ -165,13 +170,13 @@ int main() {
                  sink += sum;
                }));
 
-  pretty_print(volume, bytes, "parse_ip_fastswar", bench([&]() {
+  pretty_print(volume, bytes, "parse_ip_fastfloat", bench([&]() {
                  const char *p = buf.data();
                  const char *pend = buf.data() + bytes;
                  uint32_t sum = 0;
                  int ok = 0;
                  for (size_t i = 0; i < N; ++i) {
-                   ok = parse_ip_line(p, pend, sum, parse_u8_fastswar);
+                   ok = parse_ip_line(p, pend, sum, parse_u8_fastfloat);
                    if (!ok)
                      std::abort();
                  }
