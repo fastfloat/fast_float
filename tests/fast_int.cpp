@@ -95,6 +95,201 @@ int main() {
     }
   }
 
+  // char basic test
+  std::vector<char> const char_basic_test_expected{0, 10, 40, 100, 9};
+  std::vector<std::string_view> const char_basic_test{"0", "10 ", "40",
+                                                      "100 with text", "9.999"};
+
+  for (std::size_t i = 0; i < char_basic_test.size(); ++i) {
+    auto const f = char_basic_test[i];
+    char result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to char for input: \"" << f
+                << "\" because of invalid argument" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != char_basic_test_expected[i]) {
+      std::cerr << "result \"" << f << "\" did not match with expected char: "
+                << static_cast<int>(char_basic_test_expected[i]) << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // short basic test
+  std::vector<short> const short_basic_test_expected{0, 10, -40, 1001, 9};
+  std::vector<std::string_view> const short_basic_test{
+      "0", "10 ", "-40", "1001 with text", "9.999"};
+
+  for (std::size_t i = 0; i < short_basic_test.size(); ++i) {
+    auto const f = short_basic_test[i];
+    short result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to short for input: \"" << f
+                << "\" because of invalid argument" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != short_basic_test_expected[i]) {
+      std::cerr << "result \"" << f << "\" did not match with expected short: "
+                << short_basic_test_expected[i] << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // long basic test
+  std::vector<long> const long_basic_test_expected{0, 10, -40, 1001, 9};
+  std::vector<std::string_view> const long_basic_test{
+      "0", "10 ", "-40", "1001 with text", "9.999"};
+
+  for (std::size_t i = 0; i < long_basic_test.size(); ++i) {
+    auto const f = long_basic_test[i];
+    long result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to long for input: \"" << f
+                << "\" because of invalid argument" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != long_basic_test_expected[i]) {
+      std::cerr << "result \"" << f << "\" did not match with expected long: "
+                << long_basic_test_expected[i] << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // long long basic test
+  std::vector<long long> const long_long_basic_test_expected{0, 10, -40, 1001,
+                                                             9};
+  std::vector<std::string_view> const long_long_basic_test{
+      "0", "10 ", "-40", "1001 with text", "9.999"};
+
+  for (std::size_t i = 0; i < long_long_basic_test.size(); ++i) {
+    auto const f = long_long_basic_test[i];
+    long long result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to long long for input: \"" << f
+                << "\" because of invalid argument" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != long_long_basic_test_expected[i]) {
+      std::cerr << "result \"" << f
+                << "\" did not match with expected long long: "
+                << long_long_basic_test_expected[i] << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // unsigned char basic test
+  std::vector<unsigned char> const unsigned_char_basic_test_expected{0, 10, 100,
+                                                                     9};
+  std::vector<std::string_view> const unsigned_char_basic_test{
+      "0", "10 ", "100 with text", "9.999"};
+
+  for (std::size_t i = 0; i < unsigned_char_basic_test.size(); ++i) {
+    auto const &f = unsigned_char_basic_test[i];
+    unsigned char result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to unsigned char for input: \"" << f
+                << "\"" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != unsigned_char_basic_test_expected[i]) {
+      std::cerr << "result \"" << f
+                << "\" did not match with expected unsigned char: "
+                << static_cast<int>(unsigned_char_basic_test_expected[i])
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // unsigned short basic test
+  std::vector<unsigned short> const unsigned_short_basic_test_expected{0, 10,
+                                                                       1001, 9};
+  std::vector<std::string_view> const unsigned_short_basic_test{
+      "0", "10 ", "1001 with text", "9.999"};
+
+  for (std::size_t i = 0; i < unsigned_short_basic_test.size(); ++i) {
+    auto const &f = unsigned_short_basic_test[i];
+    unsigned short result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to unsigned short for input: \"" << f
+                << "\"" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != unsigned_short_basic_test_expected[i]) {
+      std::cerr << "result \"" << f
+                << "\" did not match with expected unsigned short: "
+                << unsigned_short_basic_test_expected[i] << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // unsigned long basic test
+  std::vector<unsigned long> const unsigned_long_basic_test_expected{0, 10,
+                                                                     1001, 9};
+  std::vector<std::string_view> const unsigned_long_basic_test{
+      "0", "10 ", "1001 with text", "9.999"};
+
+  for (std::size_t i = 0; i < unsigned_long_basic_test.size(); ++i) {
+    auto const &f = unsigned_long_basic_test[i];
+    unsigned long result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to unsigned long for input: \"" << f
+                << "\"" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != unsigned_long_basic_test_expected[i]) {
+      std::cerr << "result \"" << f
+                << "\" did not match with expected unsigned long: "
+                << unsigned_long_basic_test_expected[i] << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // unsigned long long basic test
+  std::vector<unsigned long long> const unsigned_long_long_basic_test_expected{
+      0, 10, 1001, 9};
+  std::vector<std::string_view> const unsigned_long_long_basic_test{
+      "0", "10 ", "1001 with text", "9.999"};
+
+  for (std::size_t i = 0; i < unsigned_long_long_basic_test.size(); ++i) {
+    auto const &f = unsigned_long_long_basic_test[i];
+    unsigned long long result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to unsigned long long for input: \"" << f
+                << "\"" << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != unsigned_long_long_basic_test_expected[i]) {
+      std::cerr << "result \"" << f
+                << "\" did not match with expected unsigned long long: "
+                << unsigned_long_long_basic_test_expected[i] << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // bool basic test
+  std::vector<bool> const bool_basic_test_expected{false, true};
+  std::vector<std::string_view> const bool_basic_test{"0", "1"};
+
+  for (std::size_t i = 0; i < bool_basic_test.size(); ++i) {
+    auto const &f = bool_basic_test[i];
+    bool result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+    if (answer.ec != std::errc()) {
+      std::cerr << "could not convert to bool for input: \"" << f << "\""
+                << std::endl;
+      return EXIT_FAILURE;
+    } else if (result != bool_basic_test_expected[i]) {
+      std::cerr << "result \"" << f << "\" did not match with expected bool: "
+                << (bool_basic_test_expected[i] ? "true" : "false")
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
   // int invalid error test
   std::vector<std::string_view> const int_invalid_argument_test{
       "text", "text with 1002", "+50", " 50"};
