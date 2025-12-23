@@ -26,7 +26,7 @@ void pretty_print(size_t volume, size_t bytes, std::string name,
   printf("\n");
 }
 
-const char *seek_ip_end(const char *p, const char *pend) {
+fastfloat_really_inline const char *seek_ip_end(const char *p, const char *pend) {
   const char *current = p;
   size_t count = 0;
   for (; current != pend; ++current) {
@@ -48,7 +48,7 @@ const char *seek_ip_end(const char *p, const char *pend) {
   return current;
 }
 
-int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
+fastfloat_really_inline int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
   if (p == pend)
     return 0;
   auto r = fast_float::from_chars(p, pend, *out);
@@ -59,7 +59,7 @@ int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
   return 0;
 }
 
-static inline int parse_u8_fromchars(const char *&p, const char *pend,
+fastfloat_really_inline int parse_u8_fromchars(const char *&p, const char *pend,
                                      uint8_t *out) {
   if (p == pend) {
     return 0;
@@ -73,7 +73,7 @@ static inline int parse_u8_fromchars(const char *&p, const char *pend,
 }
 
 template <typename Parser>
-std::pair<bool, uint32_t> simple_parse_ip_line(const char *p, const char *pend,
+fastfloat_really_inline std::pair<bool, uint32_t> simple_parse_ip_line(const char *p, const char *pend,
                                                Parser parse_uint8) {
   uint8_t v1;
   if (!parse_uint8(p, pend, &v1)) {
