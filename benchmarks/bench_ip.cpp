@@ -26,7 +26,8 @@ void pretty_print(size_t volume, size_t bytes, std::string name,
   printf("\n");
 }
 
-fastfloat_really_inline const char *seek_ip_end(const char *p, const char *pend) {
+fastfloat_really_inline const char *seek_ip_end(const char *p,
+                                                const char *pend) {
   const char *current = p;
   size_t count = 0;
   for (; current != pend; ++current) {
@@ -48,7 +49,8 @@ fastfloat_really_inline const char *seek_ip_end(const char *p, const char *pend)
   return current;
 }
 
-fastfloat_really_inline int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
+fastfloat_really_inline int parse_u8_fastfloat(const char *&p, const char *pend,
+                                               uint8_t *out) {
   if (p == pend)
     return 0;
   auto r = fast_float::from_chars(p, pend, *out);
@@ -60,7 +62,7 @@ fastfloat_really_inline int parse_u8_fastfloat(const char *&p, const char *pend,
 }
 
 fastfloat_really_inline int parse_u8_fromchars(const char *&p, const char *pend,
-                                     uint8_t *out) {
+                                               uint8_t *out) {
   if (p == pend) {
     return 0;
   }
@@ -73,8 +75,8 @@ fastfloat_really_inline int parse_u8_fromchars(const char *&p, const char *pend,
 }
 
 template <typename Parser>
-fastfloat_really_inline std::pair<bool, uint32_t> simple_parse_ip_line(const char *p, const char *pend,
-                                               Parser parse_uint8) {
+fastfloat_really_inline std::pair<bool, uint32_t>
+simple_parse_ip_line(const char *p, const char *pend, Parser parse_uint8) {
   uint8_t v1;
   if (!parse_uint8(p, pend, &v1)) {
     return {false, 0};
@@ -146,11 +148,9 @@ int main() {
   volatile uint32_t sink = 0;
   std::string buffer(ip_size * N, ' ');
 
-  pretty_print(volume, bytes, "memcpy baseline",
-               counters::bench([&]() {
-                std::memcpy((char *)buffer.data(), buf.data(), bytes);
+  pretty_print(volume, bytes, "memcpy baseline", counters::bench([&]() {
+                 std::memcpy((char *)buffer.data(), buf.data(), bytes);
                }));
-
 
   pretty_print(volume, bytes, "just_seek_ip_end (no parse)",
                counters::bench([&]() {
