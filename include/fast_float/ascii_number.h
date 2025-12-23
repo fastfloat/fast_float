@@ -509,7 +509,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_digits = p;
 
-  if constexpr (std::is_same_v<T, std::uint8_t>) {
+  FASTFLOAT_IF_CONSTEXPR17(std::is_same<T, std::uint8_t>::value) {
     const size_t len = (size_t)(pend - p);
     if (len == 0) {
       if (has_leading_zeros) {
@@ -550,7 +550,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     uint32_t magic =
         ((digits.as_int + 0x46464646u) | (digits.as_int - 0x30303030u)) &
         0x80808080u;
-    uint32_t tz = (uint32_t)std::__countr_zero(magic); // 7, 15, 23, 31, or 32
+    uint32_t tz = (uint32_t)countr_zero_32(magic); // 7, 15, 23, 31, or 32
     uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
     nd = (uint32_t)std::min((size_t)nd, len);
     if (nd == 0) {
