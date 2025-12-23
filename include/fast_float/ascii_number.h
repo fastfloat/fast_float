@@ -509,6 +509,92 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_digits = p;
 
+  if constexpr (std::is_same_v<T, std::uint8_t>) {
+    const size_t len = (size_t)(pend - p);
+    if (len == 0) {
+      if (has_leading_zeros) {
+        value = 0;
+        answer.ec = std::errc();
+        answer.ptr = p;
+      } else {
+        answer.ec = std::errc::invalid_argument;
+        answer.ptr = first;
+      }
+      return answer;
+    }
+
+    union {
+      uint8_t as_str[4];
+      uint32_t as_int;
+    } digits;
+
+    if (cpp20_and_in_constexpr()) {
+      digits.as_int = 0;
+      for (size_t j = 0; j < 4 && j < len; ++j) {
+        digits.as_str[j] = static_cast<uint8_t>(p[j]);
+      }
+    } else if (len >= 4) {
+      memcpy(&digits.as_int, p, 4);
+    } else {
+      uint32_t b0 = static_cast<uint8_t>(p[0]);
+      uint32_t b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0xFFu;
+      uint32_t b2 = (len > 2) ? static_cast<uint8_t>(p[2]) : 0xFFu;
+      uint32_t b3 = 0xFFu;
+#if FASTFLOAT_IS_BIG_ENDIAN
+      digits.as_int = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
+#else
+      digits.as_int = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+#endif
+    }
+
+    uint32_t magic =
+        ((digits.as_int + 0x46464646u) | (digits.as_int - 0x30303030u)) &
+        0x80808080u;
+    uint32_t tz = (uint32_t)std::__countr_zero(magic); // 7, 15, 23, 31, or 32
+    uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
+    nd = (uint32_t)std::min((size_t)nd, len);
+    if (nd == 0) {
+      if (has_leading_zeros) {
+        value = 0;
+        answer.ec = std::errc();
+        answer.ptr = p;
+        return answer;
+      }
+      answer.ec = std::errc::invalid_argument;
+      answer.ptr = first;
+      return answer;
+    }
+    if (nd > 3) {
+      const UC *q = p + nd;
+      size_t rem = len - nd;
+      while (rem) {
+        if (*q < UC('0') || *q > UC('9'))
+          break;
+        ++q;
+        --rem;
+      }
+      answer.ec = std::errc::result_out_of_range;
+      answer.ptr = q;
+      return answer;
+    }
+
+    digits.as_int ^= 0x30303030u;
+    digits.as_int <<= ((4 - nd) * 8);
+
+    uint32_t check = ((digits.as_int >> 24) & 0xff) |
+                     ((digits.as_int >> 8) & 0xff00) |
+                     ((digits.as_int << 8) & 0xff0000);
+    if (check > 0x00020505) {
+      answer.ec = std::errc::result_out_of_range;
+      answer.ptr = p + nd;
+      return answer;
+    }
+    value = (uint8_t)((0x640a01 * digits.as_int) >> 24);
+    answer.ec = std::errc();
+    answer.ptr = p + nd;
+    return answer;
+  }
+
   uint64_t i = 0;
   if (base == 10) {
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
