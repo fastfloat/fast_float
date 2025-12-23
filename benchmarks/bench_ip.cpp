@@ -13,12 +13,12 @@ void pretty_print(size_t volume, size_t bytes, std::string name,
                   counters::event_aggregate agg) {
   printf("%-40s : ", name.c_str());
   printf(" %5.2f GB/s ", bytes / agg.fastest_elapsed_ns());
-  printf(" %5.1f Ma/s ", volume * 1000.0 / agg.fastest_elapsed_ns());
-  printf(" %5.2f ns/d ", agg.fastest_elapsed_ns() / volume);
+  printf(" %5.1f Mip/s ", volume * 1000.0 / agg.fastest_elapsed_ns());
+  printf(" %5.2f ns/ip ", agg.fastest_elapsed_ns() / volume);
   if (counters::event_collector().has_events()) {
     printf(" %5.2f GHz ", agg.fastest_cycles() / agg.fastest_elapsed_ns());
-    printf(" %5.2f c/d ", agg.fastest_cycles() / volume);
-    printf(" %5.2f i/d ", agg.fastest_instructions() / volume);
+    printf(" %5.2f c/ip ", agg.fastest_cycles() / volume);
+    printf(" %5.2f i/ip ", agg.fastest_instructions() / volume);
     printf(" %5.2f c/b ", agg.fastest_cycles() / bytes);
     printf(" %5.2f i/b ", agg.fastest_instructions() / bytes);
     printf(" %5.2f i/c ", agg.fastest_instructions() / agg.fastest_cycles());
@@ -144,6 +144,13 @@ int main() {
   const size_t volume = N;
 
   volatile uint32_t sink = 0;
+  std::string buffer(ip_size * N, ' ');
+
+  pretty_print(volume, bytes, "memcpy baseline",
+               counters::bench([&]() {
+                std::memcpy((char *)buffer.data(), buf.data(), bytes);
+               }));
+
 
   pretty_print(volume, bytes, "just_seek_ip_end (no parse)",
                counters::bench([&]() {
