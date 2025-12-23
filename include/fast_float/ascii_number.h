@@ -509,7 +509,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_digits = p;
 
-  FASTFLOAT_IF_CONSTEXPR17(std::is_same<T, std::uint8_t>::value) {
+  FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint8_t>::value)) {
     const size_t len = (size_t)(pend - p);
     if (len == 0) {
       if (has_leading_zeros) {
