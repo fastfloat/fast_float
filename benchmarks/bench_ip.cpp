@@ -11,6 +11,9 @@
 
 void pretty_print(size_t volume, size_t bytes, std::string name,
                   counters::event_aggregate agg) {
+  if (agg.inner_count > 1) {
+    printf("# (inner count: %d)\n", agg.inner_count);
+  }
   printf("%-40s : ", name.c_str());
   printf(" %5.2f GB/s ", bytes / agg.fastest_elapsed_ns());
   printf(" %5.1f Mip/s ", volume * 1000.0 / agg.fastest_elapsed_ns());
