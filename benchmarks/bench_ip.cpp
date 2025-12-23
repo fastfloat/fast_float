@@ -26,6 +26,28 @@ void pretty_print(size_t volume, size_t bytes, std::string name,
   printf("\n");
 }
 
+const char *seek_ip_end(const char *p, const char *pend) {
+  const char *current = p;
+  size_t count = 0;
+  for (; current != pend; ++current) {
+    if (*current == '.') {
+      count++;
+      if (count == 3) {
+        ++current;
+        break;
+      }
+    }
+  }
+  while (current != pend) {
+    if (*current <= '9' && *current >= '0') {
+      ++current;
+    } else {
+      break;
+    }
+  }
+  return current;
+}
+
 int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
   if (p == pend)
     return 0;
@@ -39,8 +61,9 @@ int parse_u8_fastfloat(const char *&p, const char *pend, uint8_t *out) {
 
 static inline int parse_u8_fromchars(const char *&p, const char *pend,
                                      uint8_t *out) {
-  if (p == pend)
+  if (p == pend) {
     return 0;
+  }
   auto r = std::from_chars(p, pend, *out);
   if (r.ec == std::errc()) {
     p = r.ptr;
@@ -50,26 +73,35 @@ static inline int parse_u8_fromchars(const char *&p, const char *pend,
 }
 
 template <typename Parser>
-static inline int parse_ip_line(const char *&p, const char *pend, uint32_t &sum,
-                                Parser parse_uint8) {
-  uint8_t o = 0;
-  for (int i = 0; i < 4; ++i) {
-    if (!parse_uint8(p, pend, &o))
-      return 0;
-    sum += o;
-    if (i != 3) {
-      if (p == pend || *p != '.')
-        return 0;
-      ++p;
-    }
+std::pair<bool, uint32_t> simple_parse_ip_line(const char *p, const char *pend,
+                                               Parser parse_uint8) {
+  uint8_t v1;
+  if (!parse_uint8(p, pend, &v1)) {
+    return {false, 0};
   }
-  // consume optional '\r'
-  if (p != pend && *p == '\r')
-    ++p;
-  // expect '\n' or end
-  if (p != pend && *p == '\n')
-    ++p;
-  return 1;
+  if (p == pend || *p++ != '.') {
+    return {false, 0};
+  }
+  uint8_t v2;
+  if (!parse_uint8(p, pend, &v2)) {
+    return {false, 0};
+  }
+  if (p == pend || *p++ != '.') {
+    return {false, 0};
+  }
+  uint8_t v3;
+  if (!parse_uint8(p, pend, &v3)) {
+    return {false, 0};
+  }
+  if (p == pend || *p++ != '.') {
+    return {false, 0};
+  }
+  uint8_t v4;
+  if (!parse_uint8(p, pend, &v4)) {
+    return {false, 0};
+  }
+  return {true, (uint32_t(v1) << 24) | (uint32_t(v2) << 16) |
+                    (uint32_t(v3) << 8) | uint32_t(v4)};
 }
 
 static std::string make_ip_line(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
@@ -87,19 +119,22 @@ static std::string make_ip_line(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 }
 
 int main() {
-  constexpr size_t N = 500000;
+  constexpr size_t N = 15000;
   std::mt19937 rng(1234);
   std::uniform_int_distribution<int> dist(0, 255);
 
   std::string buf;
-  buf.reserve(N * 16);
+  constexpr size_t ip_size = 16;
+  buf.reserve(N * ip_size);
 
   for (size_t i = 0; i < N; ++i) {
     uint8_t a = (uint8_t)dist(rng);
     uint8_t b = (uint8_t)dist(rng);
     uint8_t c = (uint8_t)dist(rng);
     uint8_t d = (uint8_t)dist(rng);
-    buf += make_ip_line(a, b, c, d);
+    std::string ip_line = make_ip_line(a, b, c, d);
+    ip_line.resize(ip_size, ' '); // pad to fixed size
+    buf.append(ip_line);
   }
 
   // sentinel to allow 4-byte loads at end
@@ -108,30 +143,21 @@ int main() {
   const size_t bytes = buf.size() - 4; // exclude sentinel from throughput
   const size_t volume = N;
 
-  // validate correctness
-  {
-    const char *start = buf.data();
-    const char *end = buf.data() + bytes;
-    const char *p = start;
-    const char *pend = end;
-    uint32_t sum = 0;
-    for (size_t i = 0; i < N; ++i) {
-      int ok = parse_ip_line(p, pend, sum, parse_u8_fromchars);
-      if (!ok) {
-        std::fprintf(stderr, "fromchars parse failed at line %zu\n", i);
-        std::abort();
-      }
-      p = start;
-      pend = end;
-      ok = parse_ip_line(p, pend, sum, parse_u8_fastfloat);
-      if (!ok) {
-        std::fprintf(stderr, "fastswar parse failed at line %zu\n", i);
-        std::abort();
-      }
-    }
-  }
+  volatile uint32_t sink = 0;
 
-  uint32_t sink = 0;
+  pretty_print(volume, bytes, "just_seek_ip_end (no parse)",
+               counters::bench([&]() {
+                 const char *p = buf.data();
+                 const char *pend = buf.data() + bytes;
+                 uint32_t sum = 0;
+                 int ok = 0;
+                 for (size_t i = 0; i < N; ++i) {
+                   const char *q = seek_ip_end(p, pend);
+                   sum += (uint32_t)(q - p);
+                   p += ip_size;
+                 }
+                 sink += sum;
+               }));
 
   pretty_print(volume, bytes, "parse_ip_std_fromchars", counters::bench([&]() {
                  const char *p = buf.data();
@@ -139,9 +165,13 @@ int main() {
                  uint32_t sum = 0;
                  int ok = 0;
                  for (size_t i = 0; i < N; ++i) {
-                   ok = parse_ip_line(p, pend, sum, parse_u8_fromchars);
-                   if (!ok)
+                   auto [ok, ip] =
+                       simple_parse_ip_line(p, pend, parse_u8_fromchars);
+                   sum += ip;
+                   if (!ok) {
                      std::abort();
+                   }
+                   p += ip_size;
                  }
                  sink += sum;
                }));
@@ -152,13 +182,16 @@ int main() {
                  uint32_t sum = 0;
                  int ok = 0;
                  for (size_t i = 0; i < N; ++i) {
-                   ok = parse_ip_line(p, pend, sum, parse_u8_fastfloat);
-                   if (!ok)
+                   auto [ok, ip] =
+                       simple_parse_ip_line(p, pend, parse_u8_fastfloat);
+                   sum += ip;
+                   if (!ok) {
                      std::abort();
+                   }
+                   p += ip_size;
                  }
                  sink += sum;
                }));
 
-  std::printf("sink=%u\n", sink);
   return EXIT_SUCCESS;
 }
