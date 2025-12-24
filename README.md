@@ -18,9 +18,9 @@ requires C++11):
 from_chars_result from_chars(char const *first, char const *last, float &value, ...);
 from_chars_result from_chars(char const *first, char const *last, double &value, ...);
 ```
+If they are available on your system, we also support fixed-width floating-point types such as `std::float64_t`, `std::float32_t`, `std::float16_t`, and `std::bfloat16_t`.
 
-You can also parse integer types:
-
+You can also parse integer types such as `char`, `short`, `long`, `long long`,  `unsigned char`, `unsigned short`, `unsigned long`, `unsigned long long`, `bool` (0/1),  `int8_t`, `int16_t`, `int32_t`, `int64_t`, `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t`.
 ```C++
 from_chars_result from_chars(char const *first, char const *last, int &value, ...);
 from_chars_result from_chars(char const *first, char const *last, unsigned &value, ...);

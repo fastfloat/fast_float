@@ -1,6 +1,6 @@
 #
 # Reference :
-# Noble Mushtak and Daniel Lemire, Fast Number Parsing Without Fallback (to appear)
+# Noble Mushtak and Daniel Lemire, Fast Number Parsing Without Fallback, Software: Practice and Experience 53 (6), 2023 https://arxiv.org/abs/2212.06644
 #
 
 all_tqs = []
@@ -74,8 +74,8 @@ for j, tq in enumerate(all_tqs):
     for _, w in convergents(continued_fraction(tq, 2 ** 137)):
         if w >= 2 ** 64:
             break
-            if (tq * w) % 2 ** 137 > 2 ** 137 - 2 ** 64:
-                print(f"SOLUTION: q={j-342} T[q]={tq} w={w}")
-                found_solution = True
+        if (tq * w) % 2 ** 137 > 2 ** 137 - 2 ** 64:
+            print(f"SOLUTION: q={j-342} T[q]={tq} w={w}")
+            found_solution = True
 if not found_solution:
     print("No solutions!")
