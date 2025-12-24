@@ -52,61 +52,37 @@ fastfloat_really_inline const char *seek_ip_end(const char *p,
   return current;
 }
 
-fastfloat_really_inline int parse_u8_fastfloat(const char *&p, const char *pend,
-                                               uint8_t *out) {
-  if (p == pend)
-    return 0;
-  auto r = fast_float::from_chars(p, pend, *out);
-  if (r.ec == std::errc()) {
-    p = r.ptr;
-    return 1;
-  }
-  return 0;
-}
+enum class parse_method { standard, fast_float };
 
-fastfloat_really_inline int parse_u8_fromchars(const char *&p, const char *pend,
-                                               uint8_t *out) {
-  if (p == pend) {
-    return 0;
-  }
-  auto r = std::from_chars(p, pend, *out);
-  if (r.ec == std::errc()) {
-    p = r.ptr;
-    return 1;
-  }
-  return 0;
-}
 
-template <typename Parser>
+template <parse_method use_standard>
 fastfloat_really_inline std::pair<bool, uint32_t>
-simple_parse_ip_line(const char *p, const char *pend, Parser parse_uint8) {
-  uint8_t v1;
-  if (!parse_uint8(p, pend, &v1)) {
-    return {false, 0};
+simple_parse_ip_line(const char *p, const char *pend) {
+  const char *current = p;
+  uint32_t ip = 0;
+  for (int i = 0; i < 4; ++i) {
+    uint8_t value;
+    if constexpr (use_standard == parse_method::standard) {
+      auto r = std::from_chars(current, pend, value);
+      if (r.ec != std::errc()) {
+        return {false, 0};
+      }
+      current = r.ptr;
+    } else if constexpr (use_standard == parse_method::fast_float) {
+      auto r = fast_float::from_chars(current, pend, value);
+      if (r.ec != std::errc()) {
+        return {false, 0};
+      }
+      current = r.ptr;
+    }
+    ip = (ip << 8) | value;
+    if (i < 3) {
+      if (current == pend || *current++ != '.') {
+        return {false, 0};
+      }
+    }
   }
-  if (p == pend || *p++ != '.') {
-    return {false, 0};
-  }
-  uint8_t v2;
-  if (!parse_uint8(p, pend, &v2)) {
-    return {false, 0};
-  }
-  if (p == pend || *p++ != '.') {
-    return {false, 0};
-  }
-  uint8_t v3;
-  if (!parse_uint8(p, pend, &v3)) {
-    return {false, 0};
-  }
-  if (p == pend || *p++ != '.') {
-    return {false, 0};
-  }
-  uint8_t v4;
-  if (!parse_uint8(p, pend, &v4)) {
-    return {false, 0};
-  }
-  return {true, (uint32_t(v1) << 24) | (uint32_t(v2) << 16) |
-                    (uint32_t(v3) << 8) | uint32_t(v4)};
+  return {true, ip};
 }
 
 static std::string make_ip_line(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
@@ -176,7 +152,7 @@ int main() {
                  int ok = 0;
                  for (size_t i = 0; i < N; ++i) {
                    auto [ok, ip] =
-                       simple_parse_ip_line(p, pend, parse_u8_fromchars);
+                       simple_parse_ip_line<parse_method::standard>(p, pend);
                    sum += ip;
                    if (!ok) {
                      std::abort();
@@ -193,7 +169,7 @@ int main() {
                  int ok = 0;
                  for (size_t i = 0; i < N; ++i) {
                    auto [ok, ip] =
-                       simple_parse_ip_line(p, pend, parse_u8_fastfloat);
+                       simple_parse_ip_line<parse_method::fast_float>(p, pend);
                    sum += ip;
                    if (!ok) {
                      std::abort();
