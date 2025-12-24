@@ -54,7 +54,6 @@ fastfloat_really_inline const char *seek_ip_end(const char *p,
 
 enum class parse_method { standard, fast_float };
 
-
 template <parse_method use_standard>
 fastfloat_really_inline std::pair<bool, uint32_t>
 simple_parse_ip_line(const char *p, const char *pend) {
