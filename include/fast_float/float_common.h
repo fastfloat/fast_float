@@ -362,6 +362,52 @@ leading_zeroes(uint64_t input_num) {
 #endif
 }
 
+/* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int
+countr_zero_generic_32(uint32_t input_num) {
+  if (input_num == 0) {
+    return 32;
+  }
+  int last_bit = 0;
+  if (!(input_num & 0x0000FFFF)) {
+    input_num >>= 16;
+    last_bit |= 16;
+  }
+  if (!(input_num & 0x00FF)) {
+    input_num >>= 8;
+    last_bit |= 8;
+  }
+  if (!(input_num & 0x0F)) {
+    input_num >>= 4;
+    last_bit |= 4;
+  }
+  if (!(input_num & 0x3)) {
+    input_num >>= 2;
+    last_bit |= 2;
+  }
+  if (!(input_num & 0x1)) {
+    last_bit |= 1;
+  }
+  return last_bit;
+}
+
+/* count trailing zeroes for 32-bit integers */
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
+countr_zero_32(uint32_t input_num) {
+  if (cpp20_and_in_constexpr()) {
+    return countr_zero_generic_32(input_num);
+  }
+#ifdef FASTFLOAT_VISUAL_STUDIO
+  unsigned long trailing_zero = 0;
+  if (_BitScanForward(&trailing_zero, input_num)) {
+    return (int)trailing_zero;
+  }
+  return 32;
+#else
+  return input_num == 0 ? 32 : __builtin_ctz(input_num);
+#endif
+}
+
 // slow emulation routine for 32-bit
 fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) {
   return x * (uint64_t)y;
