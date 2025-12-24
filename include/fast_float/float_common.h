@@ -205,20 +205,20 @@ FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) {
 #define FASTFLOAT_HAS_SIMD 1
 #endif
 
-#if defined(__GNUC__)
+//#if defined(__GNUC__)
 // disable -Wcast-align=strict (GCC only)
-#define FASTFLOAT_SIMD_DISABLE_WARNINGS                                        \
-  _Pragma("GCC diagnostic push")                                               \
-      _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
-#else
+//#define FASTFLOAT_SIMD_DISABLE_WARNINGS                                        \
+//  _Pragma("GCC diagnostic push")                                               \
+//      _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
+//#else
 #define FASTFLOAT_SIMD_DISABLE_WARNINGS
-#endif
+//#endif
 
-#if defined(__GNUC__)
-#define FASTFLOAT_SIMD_RESTORE_WARNINGS _Pragma("GCC diagnostic pop")
-#else
+//#if defined(__GNUC__)
+//#define FASTFLOAT_SIMD_RESTORE_WARNINGS _Pragma("GCC diagnostic pop")
+//#else
 #define FASTFLOAT_SIMD_RESTORE_WARNINGS
-#endif
+//#endif
 
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #define fastfloat_really_inline __forceinline
