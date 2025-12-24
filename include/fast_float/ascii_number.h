@@ -71,7 +71,6 @@ read8_to_u64(UC const *chars) {
 #ifdef FASTFLOAT_SSE2
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
-  FASTFLOAT_SIMD_DISABLE_WARNINGS
   // _mm_packus_epi16 is SSE2+, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
 #ifdef FASTFLOAT_64BIT
@@ -82,30 +81,23 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
   _mm_storel_epi64(reinterpret_cast<__m128i *>(&value), packed);
   return value;
 #endif
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
-  FASTFLOAT_SIMD_DISABLE_WARNINGS
   return simd_read8_to_u64(
-      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)));
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
+      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars))); //TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/ The pointer 'chars' is cast to a more strictly aligned pointer type.
 }
 
 #elif defined(FASTFLOAT_NEON)
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const &data) {
-  FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint8x8_t utf8_packed = vmovn_u16(data);
   return vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
-  FASTFLOAT_SIMD_DISABLE_WARNINGS
   return simd_read8_to_u64(
       vld1q_u16(reinterpret_cast<uint16_t const *>(chars)));
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 #endif
@@ -162,10 +154,9 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
     return false;
   }
 #ifdef FASTFLOAT_SSE2
-  FASTFLOAT_SIMD_DISABLE_WARNINGS
   // Load 8 UTF-16 characters (16 bytes)
   __m128i const data =
-      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
+      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)); //TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/ The pointer 'chars' is cast to a more strictly aligned pointer type.
 
   // Branchless "are all digits?" trick from Lemire:
   // (x - '0') <= 9  <=> (x + 32720) <= 32729
@@ -179,9 +170,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
   }
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
 #elif defined(FASTFLOAT_NEON)
-  FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint16x8_t const data = vld1q_u16(reinterpret_cast<uint16_t const *>(chars));
 
   // (x - '0') <= 9
@@ -193,7 +182,6 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
   }
-  FASTFLOAT_SIMD_RESTORE_WARNINGS
 #else
   (void)chars;
   (void)i;
