@@ -502,7 +502,7 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 }
 
 // Value of the mantissa.
-typedef uint_fast64_t am_mant_t;
+typedef uint_fast64_t am_mant_t; // an unsigned int avoids signed overflows (which are bad)
 // Size of bits in the mantissa and path and rounding shifts
 typedef int_fast8_t am_bits_t;
 
