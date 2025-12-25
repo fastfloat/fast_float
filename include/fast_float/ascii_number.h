@@ -53,7 +53,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
 read8_to_u64(UC const *chars) {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
-    for (uint_fast8_t i = 0; i++ != 8;) {
+    for (uint_fast8_t i = 0; i != 8; ++i) {
       val |= uint64_t(uint8_t(*chars)) << (i * 8);
       ++chars;
     }
@@ -259,7 +259,7 @@ template <typename UC> struct parsed_number_string_t {
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
   span<UC const> fraction{}; // nullable
-  UC const *lastmatch{nullptr};
+  UC const *lastmatch;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
