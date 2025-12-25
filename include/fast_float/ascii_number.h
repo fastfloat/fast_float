@@ -259,7 +259,7 @@ template <typename UC> struct parsed_number_string_t {
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
   span<UC const> fraction{}; // nullable
-  UC const *lastmatch;
+  UC const *lastmatch{nullptr};
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
