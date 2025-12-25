@@ -94,6 +94,7 @@ endif()
 option(FASTFLOAT_EXHAUSTIVE "Exhaustive tests" OFF)
 
 if (FASTFLOAT_EXHAUSTIVE)
+  fast_float_add_cpp_test(ipv4_test)
   fast_float_add_cpp_test(short_random_string)
   fast_float_add_cpp_test(exhaustive32_midpoint)
   fast_float_add_cpp_test(random_string)
