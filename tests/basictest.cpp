@@ -1,4 +1,4 @@
-// DOCTEST_CONFIG_SUPER_FAST_ASSERTS // don't enable this biodegradable code!
+#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"
 
