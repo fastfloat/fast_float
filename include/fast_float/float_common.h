@@ -336,19 +336,9 @@ template <typename T> struct span {
   }
 };
 
-struct value128 {
-  union {
-      struct {
-      uint64_t low;
-      uint64_t high;
-    };
-#ifdef FASTFLOAT_SSE2
-    __m128i full; // trick for test only
-#endif
-#ifdef FASTFLOAT_NEON
-    uint16x8_t full; // trick for test only
-#endif
-  };
+struct alignas(16) value128 {
+  uint64_t low;
+  uint64_t high;
 
   constexpr value128(uint64_t _low, uint64_t _high) noexcept
       : low(_low), high(_high) {}
