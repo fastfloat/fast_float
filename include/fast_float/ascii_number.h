@@ -41,6 +41,10 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
 }
+#elif FASTFLOAT_HAS_BYTESWAP == 1
+fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
+  return std::byteswap(val);
+}
 #endif
 
 // Read 8 UC into a u64. Truncates UC if not char.
@@ -59,11 +63,7 @@ read8_to_u64(UC const *chars) {
   ::memcpy(&val, chars, sizeof(uint64_t));
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
-  val =
-#if FASTFLOAT_HAS_BYTESWAP == 1
-      std::
-#endif
-          byteswap(val);
+  val = byteswap(val);
 #endif
   return val;
 }
