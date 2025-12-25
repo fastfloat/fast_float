@@ -84,10 +84,10 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
 }
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
-  return simd_read8_to_u64(_mm_loadu_si128(reinterpret_cast<__m128i const *>(
-      chars))); // TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/
-                // The pointer 'chars' is cast to a more strictly aligned
-                // pointer type.
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  return simd_read8_to_u64(
+      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 #elif defined(FASTFLOAT_NEON)
@@ -98,8 +98,10 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const &data) {
 }
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
   return simd_read8_to_u64(
       vld1q_u16(reinterpret_cast<uint16_t const *>(chars)));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
 #endif
@@ -118,9 +120,9 @@ uint64_t simd_read8_to_u64(UC const *) {
 // credit  @aqrit
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_eight_digits_unrolled(uint64_t val) noexcept {
-  constexpr uint64_t mask = 0x000000FF000000FF;
-  constexpr uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
-  constexpr uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  uint64_t const mask = 0x000000FF000000FF;
+  uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  uint64_t const mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
   val -= 0x3030303030303030;
   val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
   val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
@@ -156,11 +158,11 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
     return false;
   }
 #ifdef FASTFLOAT_SSE2
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
   // Load 8 UTF-16 characters (16 bytes)
-  __m128i const data = _mm_loadu_si128(reinterpret_cast<__m128i const *>(
-      chars)); // TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/ The
-               // pointer 'chars' is cast to a more strictly aligned pointer
-               // type.
+  __m128i const data =
+      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
 
   // Branchless "are all digits?" trick from Lemire:
   // (x - '0') <= 9  <=> (x + 32720) <= 32729
@@ -175,7 +177,9 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
     return true;
   }
 #elif defined(FASTFLOAT_NEON)
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
   uint16x8_t const data = vld1q_u16(reinterpret_cast<uint16_t const *>(chars));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
 
   // (x - '0') <= 9
   // http://0x80.pl/articles/simd-parsing-int-sequences.html
@@ -286,7 +290,7 @@ report_parse_error(UC const *p, parse_error error) noexcept {
 template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
-                    parse_options_t<UC> const &options) noexcept {
+                    parse_options_t<UC> const options) noexcept {
   // Cyclomatic complexity https://en.wikipedia.org/wiki/Cyclomatic_complexity
   // Consider refactoring the 'parse_number_string' function.
   // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
@@ -295,8 +299,8 @@ parse_number_string(UC const *p, UC const *pend,
   FASTFLOAT_ASSUME(p < pend);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   answer.negative = (*p == UC('-'));
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   if (answer.negative ||
-      // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
       ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
        (!basic_json_fmt && *p == UC('+')))) {
     ++p;
@@ -400,8 +404,11 @@ parse_number_string(UC const *p, UC const *pend,
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     ++p;
 #else
-    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
-        (UC('D') == *p)) {
+    if ((UC('e') == *p) || (UC('E') == *p)
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    || (UC('d') == *p) || (UC('D') == *p)
+#endif
+    ) {
       ++p;
     }
 #endif
@@ -483,8 +490,8 @@ parse_number_string(UC const *p, UC const *pend,
       p = answer.integer.ptr;
       UC const *int_end = p + answer.integer.len();
       constexpr am_mant_t minimal_nineteen_digit_integer{1000000000000000000};
-      while ((answer.mantissa < minimal_nineteen_digit_integer) &&
-             (p != int_end)) {
+      while ((p != int_end) &&
+             (answer.mantissa < minimal_nineteen_digit_integer)) {
         answer.mantissa = static_cast<am_mant_t>(
             answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
         ++p;
@@ -496,8 +503,8 @@ parse_number_string(UC const *p, UC const *pend,
         // We have a value with a significant fractional component.
         p = answer.fraction.ptr;
         UC const *const frac_end = p + answer.fraction.len();
-        while ((answer.mantissa < minimal_nineteen_digit_integer) &&
-               (p != frac_end)) {
+        while ((p != frac_end) &&
+               (answer.mantissa < minimal_nineteen_digit_integer)) {
           answer.mantissa = static_cast<am_mant_t>(
               answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
           ++p;
@@ -514,7 +521,7 @@ parse_number_string(UC const *p, UC const *pend,
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
-                 parse_options_t<UC> const &options) noexcept {
+                 parse_options_t<UC> const options) noexcept {
 
   from_chars_result_t<UC> answer;
 
@@ -645,14 +652,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
   }
   while (p != pend) {
-#ifdef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
-    const auto digit = *p;
-    if (!is_integer(digit)) {
-      break;
-    }
-#else
     auto const digit = ch_to_digit(*p);
-#endif
     if (digit >= options.base) {
       break;
     }

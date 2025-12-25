@@ -43,7 +43,7 @@ from_chars(UC const *first, UC const *last, T &value,
 template <typename T, typename UC = char>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
-                    parse_options_t<UC> const &options) noexcept;
+                    parse_options_t<UC> const options) noexcept;
 
 /**
  * This function multiplies an integer number by a power of 10 and returns

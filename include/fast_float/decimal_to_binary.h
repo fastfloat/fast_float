@@ -139,8 +139,8 @@ compute_float(int64_t q, uint64_t w) noexcept {
   // branchless approach: value128 product = compute_product(q, w); but in
   // practice, we can win big with the compute_product_approximation if its
   // additional branch is easily predicted. Which is best is data specific.
-  limb_t const upperbit = limb_t(product.high >> 63);
-  limb_t const shift =
+  auto const upperbit = limb_t(product.high >> 63);
+  auto const shift =
       limb_t(upperbit + 64 - binary::mantissa_explicit_bits() - 3);
 
   answer.mantissa = product.high >> shift;

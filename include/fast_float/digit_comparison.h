@@ -58,18 +58,18 @@ scientific_exponent(am_mant_t mantissa, am_pow_t exponent) noexcept {
 // this converts a native floating-point number to an extended-precision float.
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-to_extended(T const &value) noexcept {
+to_extended(T const value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   constexpr equiv_uint exponent_mask = binary_format<T>::exponent_mask();
   constexpr equiv_uint mantissa_mask = binary_format<T>::mantissa_mask();
   constexpr equiv_uint hidden_bit_mask = binary_format<T>::hidden_bit_mask();
 
+  adjusted_mantissa am;
   constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
                             binary_format<T>::minimum_exponent();
 
   equiv_uint const bits = bit_cast<equiv_uint, T>(value);
 
-  adjusted_mantissa am;
   if ((bits & exponent_mask) == 0) {
     // denormal
     am.power2 = 1 - bias;
@@ -90,7 +90,7 @@ to_extended(T const &value) noexcept {
 // halfway between b and b+u.
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-to_extended_halfway(T const &value) noexcept {
+to_extended_halfway(T const value) noexcept {
   adjusted_mantissa am = to_extended(value);
   am.mantissa <<= 1;
   am.mantissa += 1;
@@ -253,7 +253,7 @@ round_up_bigint(bigint &big, am_digits &count) noexcept {
 
 // parse the significant digits into a big integer
 template <typename T, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 am_digits
+inline FASTFLOAT_CONSTEXPR20 am_digits
 parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   // try to minimize the number of big integer and scalar multiplication.
   // therefore, try to parse 8 digits at a time, and multiply by the largest
@@ -369,8 +369,7 @@ template <typename T>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 negative_digit_comp(bigint &real_digits, adjusted_mantissa am,
                     am_pow_t const real_exp) noexcept {
-  // get the value of `b`, rounded down, and get a bigint representation of
-  // b+h
+  // get the value of `b`, rounded down, and get a bigint representation of b+h
   adjusted_mantissa am_b = am;
   // gcc7 bug: use a lambda to remove the noexcept qualifier bug with
   // -Wnoexcept-type.

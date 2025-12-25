@@ -205,6 +205,21 @@ FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) {
 #define FASTFLOAT_HAS_SIMD 1
 #endif
 
+#if defined(__GNUC__)
+// disable -Wcast-align=strict (GCC only)
+#define FASTFLOAT_SIMD_DISABLE_WARNINGS                                        \
+  _Pragma("GCC diagnostic push")                                               \
+      _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
+#else
+#define FASTFLOAT_SIMD_DISABLE_WARNINGS
+#endif
+
+#if defined(__GNUC__)
+#define FASTFLOAT_SIMD_RESTORE_WARNINGS _Pragma("GCC diagnostic pop")
+#else
+#define FASTFLOAT_SIMD_RESTORE_WARNINGS
+#endif
+
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #define fastfloat_really_inline __forceinline
 #else
@@ -288,7 +303,7 @@ template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
                       uint_fast8_t const length) noexcept {
-  for (uint_fast8_t i = 0; i++ != length;) {
+  for (uint_fast8_t i = 0; i != length; ++i) {
     UC const actual = actual_mixedcase[i];
     if ((actual < 256 ? actual | 32 : actual) != expected_lowercase[i]) {
       return false;
@@ -450,8 +465,10 @@ umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
-_umul128(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t_umul128(uint64_t ab,
+                                                               uint64_t cd,
+                                                               uint64_t *hi)
+                                                               noexcept {
   return umul128_generic(ab, cd, hi);
 }
 #endif // !__MINGW64__
@@ -1186,7 +1203,6 @@ template <> constexpr char8_t const *str_const_inf<char8_t>() {
 #endif
 
 template <typename = void> struct int_luts {
-#ifndef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
   static constexpr uint8_t chdigit[] = {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -1206,7 +1222,6 @@ template <typename = void> struct int_luts {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255};
-#endif
 
   static constexpr uint_fast8_t maxdigits_u64[] = {
       64, 41, 32, 28, 25, 23, 22, 21, 20, 19, 18, 18, 17, 17, 16, 16, 16, 16,
@@ -1237,7 +1252,6 @@ template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 #endif
 
-#ifndef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
 template <typename UC>
 fastfloat_really_inline constexpr uint_fast8_t ch_to_digit(UC c) noexcept {
   // wchar_t and char can be signed, so we need to be careful.
@@ -1247,7 +1261,6 @@ fastfloat_really_inline constexpr uint_fast8_t ch_to_digit(UC c) noexcept {
       static_cast<UnsignedUC>(
           -((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
 }
-#endif
 
 fastfloat_really_inline constexpr uint_fast8_t
 max_digits_u64(uint_fast8_t base) noexcept {

@@ -148,7 +148,7 @@ template <typename T> struct from_chars_caller {
   template <typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     return from_chars_advanced(first, last, value, options);
   }
 };
@@ -322,7 +322,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
-                          parse_options_t<UC> const &options) noexcept {
+                          parse_options_t<UC> const options) noexcept {
 
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
@@ -400,7 +400,7 @@ FASTFLOAT_CONSTEXPR20
     return value;
 
   adjusted_mantissa am =
-      compute_float<binary_format<double>>(decimal_exponent, mantissa);
+      compute_float<binary_format<T>>(decimal_exponent, mantissa);
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       false,
@@ -415,7 +415,7 @@ FASTFLOAT_CONSTEXPR20
     integer_times_pow10(int64_t const mantissa,
                         int_fast16_t const decimal_exponent) noexcept {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  FASTFLOAT_ASSUME(mantissa > 0);
+  FASTFLOAT_ASSUME(mantissa >= 0);
   const am_mant_t m = static_cast<am_mant_t>(mantissa);
 #else
   const bool is_negative = mantissa < 0;
@@ -493,7 +493,7 @@ integer_times_pow10(Int mantissa, int_fast16_t decimal_exponent) noexcept {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_int_advanced(UC const *first, UC const *last, T &value,
-                        parse_options_t<UC> const &options) noexcept {
+                        parse_options_t<UC> const options) noexcept {
 
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
@@ -533,7 +533,7 @@ template <> struct from_chars_advanced_caller<1> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     return from_chars_float_advanced(first, last, value, options);
   }
 };
@@ -542,7 +542,7 @@ template <> struct from_chars_advanced_caller<2> {
   template <typename T, typename UC>
   FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const &options) noexcept {
+       parse_options_t<UC> const options) noexcept {
     return from_chars_int_advanced(first, last, value, options);
   }
 };
@@ -550,7 +550,7 @@ template <> struct from_chars_advanced_caller<2> {
 template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
-                    parse_options_t<UC> const &options) noexcept {
+                    parse_options_t<UC> const options) noexcept {
   return from_chars_advanced_caller<
       size_t(is_supported_float_type<T>::value) +
       2 * size_t(is_supported_integer_type<T>::value)>::call(first, last, value,
