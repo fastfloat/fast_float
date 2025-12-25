@@ -513,7 +513,7 @@ typedef int_fast16_t am_pow_t;
 // Bias so we can get the real exponent with an invalid adjusted_mantissa.
 constexpr static am_pow_t invalid_am_bias = -0x8000;
 
-struct adjusted_mantissa {
+struct alignas(16) adjusted_mantissa {
   am_mant_t mantissa;
   am_pow_t power2;
   adjusted_mantissa() noexcept = default;
@@ -1201,6 +1201,7 @@ template <> constexpr char8_t const *str_const_inf<char8_t>() {
 #endif
 
 template <typename = void> struct int_luts {
+#ifndef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
   static constexpr uint8_t chdigit[] = {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -1220,6 +1221,7 @@ template <typename = void> struct int_luts {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255};
+#endif
 
   static constexpr uint_fast8_t maxdigits_u64[] = {
       64, 41, 32, 28, 25, 23, 22, 21, 20, 19, 18, 18, 17, 17, 16, 16, 16, 16,
@@ -1250,6 +1252,7 @@ template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 #endif
 
+#ifndef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
 template <typename UC>
 fastfloat_really_inline constexpr uint_fast8_t ch_to_digit(UC c) noexcept {
   // wchar_t and char can be signed, so we need to be careful.
@@ -1259,6 +1262,7 @@ fastfloat_really_inline constexpr uint_fast8_t ch_to_digit(UC c) noexcept {
       static_cast<UnsignedUC>(
           -((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
 }
+#endif
 
 fastfloat_really_inline constexpr uint_fast8_t
 max_digits_u64(uint_fast8_t base) noexcept {

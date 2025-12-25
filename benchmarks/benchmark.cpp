@@ -1,5 +1,6 @@
 
 // #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+// #define FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
 // #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 // #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 
@@ -232,6 +233,10 @@ void fileload(std::string filename) {
 int main(int argc, char **argv) {
 #ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   std::cout << "# FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled"
+            << std::endl;
+#endif
+#ifdef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
+  std::cout << "# FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED is enabled"
             << std::endl;
 #endif
 #ifdef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED

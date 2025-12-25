@@ -383,13 +383,15 @@ int main() {
 There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
 the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
 in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
-and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
-it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
-macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing;
-this option also improves performance a bit and reduces code size.
-
+and improve performance. An additional option for high performance and very fast processing is
+`FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED`; it reduces data size and speeds up parsing because a data cache is used for your
+real data, not for a 256-byte table that flushes out at least 3 cache lines on x86. You also can use macros
+`FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds; it's very likely because all parsers need to check the first
+character by itself before parsing. Additionally, you can use macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need
+`FE_TONEAREST` rounding mode in the parsing; this option also improves performance a bit and reduces code size.
 ```C++
 #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
 #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 #include "fast_float/fast_float.h"

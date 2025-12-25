@@ -642,7 +642,14 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
   }
   while (p != pend) {
+#ifdef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
+    const auto digit = *p;
+    if (!is_integer(digit)) {
+      break;
+    }
+#else
     auto const digit = ch_to_digit(*p);
+#endif
     if (digit >= options.base) {
       break;
     }
