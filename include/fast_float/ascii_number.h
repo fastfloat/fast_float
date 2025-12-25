@@ -406,7 +406,7 @@ parse_number_string(UC const *p, UC const *pend,
 #else
     if ((UC('e') == *p) || (UC('E') == *p)
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    || (UC('d') == *p) || (UC('D') == *p)
+        || (UC('d') == *p) || (UC('D') == *p)
 #endif
     ) {
       ++p;

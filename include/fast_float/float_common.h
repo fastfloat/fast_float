@@ -465,10 +465,8 @@ umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t_umul128(uint64_t ab,
-                                                               uint64_t cd,
-                                                               uint64_t *hi)
-                                                               noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14
+uint64_t_umul128(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
   return umul128_generic(ab, cd, hi);
 }
 #endif // !__MINGW64__

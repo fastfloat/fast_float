@@ -26,9 +26,9 @@
 // compile-time tests in this file on MSVC; disable the constexpr tests when
 // compiling with MSVC (but allow them for clang/clang-cl).
 #if defined(_MSC_VER) && !defined(__clang__)
-#  ifdef FASTFLOAT_CONSTEXPR_TESTS
-#    undef FASTFLOAT_CONSTEXPR_TESTS
-#  endif
+#ifdef FASTFLOAT_CONSTEXPR_TESTS
+#undef FASTFLOAT_CONSTEXPR_TESTS
+#endif
 #endif
 
 #if FASTFLOAT_HAS_BIT_CAST
