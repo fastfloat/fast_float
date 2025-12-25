@@ -84,8 +84,10 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
 }
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
-  return simd_read8_to_u64(
-      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars))); //TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/ The pointer 'chars' is cast to a more strictly aligned pointer type.
+  return simd_read8_to_u64(_mm_loadu_si128(reinterpret_cast<__m128i const *>(
+      chars))); // TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/
+                // The pointer 'chars' is cast to a more strictly aligned
+                // pointer type.
 }
 
 #elif defined(FASTFLOAT_NEON)
@@ -155,8 +157,10 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   }
 #ifdef FASTFLOAT_SSE2
   // Load 8 UTF-16 characters (16 bytes)
-  __m128i const data =
-      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)); //TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/ The pointer 'chars' is cast to a more strictly aligned pointer type.
+  __m128i const data = _mm_loadu_si128(reinterpret_cast<__m128i const *>(
+      chars)); // TODO: V1032 https://pvs-studio.com/en/docs/warnings/v1032/ The
+               // pointer 'chars' is cast to a more strictly aligned pointer
+               // type.
 
   // Branchless "are all digits?" trick from Lemire:
   // (x - '0') <= 9  <=> (x + 32720) <= 32729
@@ -259,8 +263,8 @@ template <typename UC> struct parsed_number_string_t {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
-  bool invalid{false}; // be optimistic
-  bool too_many_digits{false}; // be optimistic
+  bool invalid{false};                      // be optimistic
+  bool too_many_digits{false};              // be optimistic
   parse_error error{parse_error::no_error}; // be optimistic
 };
 

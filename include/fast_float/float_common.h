@@ -205,22 +205,6 @@ FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) {
 #define FASTFLOAT_HAS_SIMD 1
 #endif
 
-// Don't silent this. This is an important warning!
-//#if defined(__GNUC__)
-// disable -Wcast-align=strict (GCC only)
-//#define FASTFLOAT_SIMD_DISABLE_WARNINGS                                        \
-//  _Pragma("GCC diagnostic push")                                               \
-//      _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
-//#else
-//#define FASTFLOAT_SIMD_DISABLE_WARNINGS
-//#endif
-
-//#if defined(__GNUC__)
-//#define FASTFLOAT_SIMD_RESTORE_WARNINGS _Pragma("GCC diagnostic pop")
-//#else
-//#define FASTFLOAT_SIMD_RESTORE_WARNINGS
-//#endif
-
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #define fastfloat_really_inline __forceinline
 #else
@@ -501,8 +485,9 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
   return answer;
 }
 
-// Value of the mantissa.
-typedef uint_fast64_t am_mant_t; // an unsigned int avoids signed overflows (which are bad)
+// Value of the mantissa. An unsigned int avoids signed overflows (which are
+// bad)
+typedef uint_fast64_t am_mant_t;
 // Size of bits in the mantissa and path and rounding shifts
 typedef int_fast8_t am_bits_t;
 
