@@ -86,11 +86,11 @@ template <typename UC> struct parse_options_t {
       : format(fmt), decimal_point(dot), base(b) {}
 
   /** Which number formats are accepted */
-  chars_format format;
+  const chars_format format;
   /** The character used as decimal point */
-  UC decimal_point;
+  const UC decimal_point;
   /** The base used for integers */
-  uint_fast8_t base; /* only allowed from 2 to 36 */
+  const uint_fast8_t base; /* only allowed from 2 to 36 */
 };
 
 using parse_options = parse_options_t<char>;
@@ -465,10 +465,8 @@ umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
 
 // slow emulation routine for 32-bit
 #if !defined(__MINGW64__)
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t _umul128(uint64_t ab,
-                                                                uint64_t cd,
-                                                                uint64_t *hi)
-                                                                 noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
+_umul128(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
   return umul128_generic(ab, cd, hi);
 }
 #endif // !__MINGW64__
@@ -510,7 +508,7 @@ typedef int_fast8_t am_bits_t;
 
 // Power bias is signed for handling a denormal float
 // or an invalid mantissa.
-typedef int_fast16_t am_pow_t;
+typedef int_fast64_t am_pow_t;
 
 // Bias so we can get the real exponent with an invalid adjusted_mantissa.
 constexpr static am_pow_t invalid_am_bias = -0x8000;
