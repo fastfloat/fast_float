@@ -86,11 +86,11 @@ template <typename UC> struct parse_options_t {
       : format(fmt), decimal_point(dot), base(b) {}
 
   /** Which number formats are accepted */
-  const chars_format format;
+  chars_format format;
   /** The character used as decimal point */
-  const UC decimal_point;
+  UC decimal_point;
   /** The base used for integers */
-  const uint_fast8_t base; /* only allowed from 2 to 36 */
+  uint_fast8_t base; /* only allowed from 2 to 36 */
 };
 
 using parse_options = parse_options_t<char>;
