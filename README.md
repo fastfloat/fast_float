@@ -378,33 +378,36 @@ int main() {
 }
 ```
 
-## You also can also use some additional options (currently only configure by macroses):
+## You also can use some additional options to maximize performance and reduce size (made by HedgehogInTheCPP):
 
 There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
 the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
 in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
-and improve performance. An additional option for high performance and very fast processing is
-`FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED`; it reduces data size and speeds up parsing because a data cache is used for your
-real data, not for a 256-byte table that flushes out at least 3 cache lines on x86. You also can use macros
-`FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds; it's very likely because all parsers need to check the first
-character by itself before parsing. Additionally, you can use macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need
-`FE_TONEAREST` rounding mode in the parsing; this option also improves performance a bit and reduces code size.
+and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
+it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
+macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
+also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
+supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
+since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with O3 optimization and LTO!
 ```C++
 #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-#define FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
 #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 #include "fast_float/fast_float.h"
-#include <iostream>
+#include "fmt/base.h"
+#include <string_view>
 
 int main() {
-  std::string input = "23.14069263277926900572";
+  std::string_view input = "23.14069263277926900572";
   double result;
   auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
   if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
-    { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
-
-  return EXIT_SUCCESS;
+  {
+    fmt::print(stderr, "parsing failure!\n    the number {}.", result);
+    return 1;
+  }
+  fmt::print("parsed the number {}.", result);
+  return 0;
 }
 ```
 
