@@ -41,6 +41,8 @@ typedef uint_fast8_t limb_t;
 
 typedef uint_fast8_t chars_format_t;
 
+typedef uint_fast8_t base_t;
+
 enum class chars_format : chars_format_t;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -82,7 +84,7 @@ using from_chars_result = from_chars_result_t<char>;
 template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(
       chars_format const fmt = chars_format::general, UC const dot = UC('.'),
-      uint_fast8_t const b = 10) noexcept
+      base_t const b = 10) noexcept
       : format(fmt), decimal_point(dot), base(b) {}
 
   /** Which number formats are accepted */
@@ -90,7 +92,7 @@ template <typename UC> struct parse_options_t {
   /** The character used as decimal point */
   UC decimal_point;
   /** The base used for integers */
-  uint_fast8_t base; /* only allowed from 2 to 36 */
+  base_t base; /* only allowed from 2 to 36 */
 };
 
 using parse_options = parse_options_t<char>;
@@ -298,6 +300,10 @@ struct is_supported_char_type
 };
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
+// TODO use SSE4.2 there when SSE2 compiler switch in MSVC
+// or in other compiler SSE4.2 available.
+
 // Compares two ASCII strings in a case insensitive manner.
 template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
@@ -320,16 +326,17 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 // a pointer and a length to a contiguous block of memory
 template <typename T> struct span {
   T const *ptr;
-  am_digits length;
+  uint_fast16_t length;
 
-  constexpr span(T const *_ptr, am_digits _length) noexcept
+  constexpr span(T const *_ptr, uint_fast16_t _length) noexcept
       : ptr(_ptr), length(_length) {}
 
   constexpr span() noexcept : ptr(nullptr), length(0) {}
 
-  constexpr am_digits len() const noexcept { return length; }
+  constexpr uint_fast16_t len() const noexcept { return length; }
 
-  FASTFLOAT_CONSTEXPR14 const T &operator[](am_digits index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const T &
+  operator[](uint_fast16_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -345,7 +352,7 @@ struct alignas(16) value128 {
   constexpr value128() noexcept : low(0), high(0) {}
 };
 
-/* Helper C++14 constexpr generic implementation of leading_zeroes */
+/* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
 leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0xffffffff00000000)) {
@@ -371,7 +378,7 @@ leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0x2)) { /* input_num >>=  1; */
     last_bit |= 1;
   }
-  return 63 - (limb_t)last_bit;
+  return 63 - static_cast<limb_t>(last_bit);
 }
 
 /* result might be undefined when input_num is zero */
@@ -388,22 +395,22 @@ leading_zeroes(uint64_t input_num) noexcept {
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
   _BitScanReverse64(&leading_zero, input_num);
-  return (limb_t)(63 - leading_zero);
+  return static_cast<limb_t>(63 - leading_zero);
 #else
-  return (limb_t)leading_zeroes_generic(input_num);
+  return static_cast<limb_t>(leading_zeroes_generic(input_num));
 #endif
 #else
-  return (limb_t)__builtin_clzll(input_num);
+  return static_cast<limb_t>(__builtin_clzll(input_num));
 #endif
 }
 
 /* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
 countr_zero_generic_32(uint32_t input_num) {
   if (input_num == 0) {
     return 32;
   }
-  int last_bit = 0;
+  uint32_t last_bit = 0;
   if (!(input_num & 0x0000FFFF)) {
     input_num >>= 16;
     last_bit |= 16;
@@ -1099,7 +1106,6 @@ binary_format<double>::hidden_bit_mask() {
   return 0x0010000000000000;
 }
 
-// Fix for C2672: Ensure bit_cast is called with explicit template arguments
 template <typename T>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -1120,7 +1126,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <typename = void> struct space_lut {
-  static constexpr uint_fast8_t value[] = {
+  static constexpr uint8_t value[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1136,12 +1142,12 @@ template <typename = void> struct space_lut {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint_fast8_t space_lut<T>::value[];
+template <typename T> constexpr uint8_t space_lut<T>::value[];
 
 #endif
 
 template <typename UC> constexpr bool is_space(UC c) {
-  return c < 256 && space_lut<>::value[uint_fast8_t(c)];
+  return c < 256 && space_lut<>::value[uint8_t(c)];
 }
 
 #endif
@@ -1227,7 +1233,7 @@ template <typename = void> struct int_luts {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255};
 
-  static constexpr uint_fast8_t maxdigits_u64[] = {
+  static constexpr limb_t maxdigits_u64[] = {
       64, 41, 32, 28, 25, 23, 22, 21, 20, 19, 18, 18, 17, 17, 16, 16, 16, 16,
       15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13};
 
@@ -1248,16 +1254,16 @@ template <typename = void> struct int_luts {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint_fast8_t int_luts<T>::chdigit[];
+template <typename T> constexpr uint8_t int_luts<T>::chdigit[];
 
-template <typename T> constexpr uint_fast8_t int_luts<T>::maxdigits_u64[];
+template <typename T> constexpr limb_t int_luts<T>::maxdigits_u64[];
 
 template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 #endif
 
 template <typename UC>
-fastfloat_really_inline constexpr uint_fast8_t ch_to_digit(UC c) noexcept {
+fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) noexcept {
   // wchar_t and char can be signed, so we need to be careful.
   using UnsignedUC = typename std::make_unsigned<UC>::type;
   return int_luts<>::chdigit[static_cast<unsigned char>(
@@ -1266,15 +1272,13 @@ fastfloat_really_inline constexpr uint_fast8_t ch_to_digit(UC c) noexcept {
           -((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
 }
 
-fastfloat_really_inline constexpr uint_fast8_t
-max_digits_u64(uint_fast8_t base) noexcept {
+fastfloat_really_inline constexpr limb_t max_digits_u64(base_t base) noexcept {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t
-min_safe_u64(uint_fast8_t base) noexcept {
+fastfloat_really_inline constexpr uint64_t min_safe_u64(base_t base) noexcept {
   return int_luts<>::min_safe_u64[base - 2];
 }
 

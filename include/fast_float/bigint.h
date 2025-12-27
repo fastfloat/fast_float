@@ -41,7 +41,7 @@ constexpr limb_t bigint_limbs = bigint_bits / limb_bits;
 template <limb_t size> struct stackvec {
   limb data[size];
   // we never need more than 150 limbs
-  uint_fast8_t length{0};
+  limb_t length{0};
 
   FASTFLOAT_CONSTEXPR20 stackvec() noexcept = default;
   stackvec(stackvec const &) = delete;
@@ -100,7 +100,7 @@ template <limb_t size> struct stackvec {
   FASTFLOAT_CONSTEXPR20 void extend_unchecked(limb_span s) noexcept {
     limb *ptr = data + length;
     std::copy_n(s.ptr, s.len(), ptr);
-    set_len(limb_t(len() + s.len()));
+    set_len(static_cast<limb_t>(len() + s.len()));
   }
 
   // try to add items to the vector, returning if items were added
@@ -123,17 +123,20 @@ template <limb_t size> struct stackvec {
       limb *first = data + len();
       limb *last = first + count;
       ::std::fill(first, last, value);
+      set_len(new_len);
+    } else {
+      set_len(new_len);
     }
-    set_len(new_len);
   }
 
   // try to resize the vector, returning if the vector was resized.
   FASTFLOAT_CONSTEXPR20 bool try_resize(limb_t new_len, limb value) noexcept {
     if (new_len > capacity()) {
       return false;
+    } else {
+      resize_unchecked(new_len, value);
+      return true;
     }
-    resize_unchecked(new_len, value);
-    return true;
   }
 
   // check if any limbs are non-zero after the given index.
@@ -259,9 +262,10 @@ inline FASTFLOAT_CONSTEXPR20 bool small_add_from(stackvec<size> &vec, limb y,
                                                  limb_t start) noexcept {
   limb carry = y;
   bool overflow;
-  while (carry != 0 && start++ != vec.len()) {
+  while (carry != 0 && start < vec.len()) {
     vec[start] = scalar_add(vec[start], carry, overflow);
     carry = limb(overflow);
+    ++start;
   }
   if (carry != 0) {
     FASTFLOAT_TRY(vec.try_push(carry));
@@ -297,8 +301,8 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
                                           limb_t start) noexcept {
   // the effective x buffer is from `xstart..x.len()`, so exit early
   // if we can't get that current range.
-  if (x.len() < start || y.len() > limb_t(x.len() - start)) {
-    FASTFLOAT_TRY(x.try_resize(limb_t(y.len() + start), 0));
+  if (x.len() < start || y.len() > static_cast<limb_t>(x.len() - start)) {
+    FASTFLOAT_TRY(x.try_resize(static_cast<limb_t>(y.len() + start), 0));
   }
 
   bool carry = false;
@@ -317,7 +321,7 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
 
   // handle overflow
   if (carry) {
-    FASTFLOAT_TRY(small_add_from(x, 1, limb_t(y.len() + start)));
+    FASTFLOAT_TRY(small_add_from(x, 1, static_cast<limb_t>(y.len() + start)));
   }
   return true;
 }
@@ -369,7 +373,7 @@ FASTFLOAT_CONSTEXPR20 bool large_mul(stackvec<size> &x, limb_span y) noexcept {
 }
 
 template <typename = void> struct pow5_tables {
-  static constexpr uint_fast8_t large_step = 135;
+  static constexpr limb_t large_step = 135;
   static constexpr uint64_t small_power_of_5[] = {
       1UL,
       5UL,
@@ -413,7 +417,7 @@ template <typename = void> struct pow5_tables {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr uint_fast8_t pow5_tables<T>::large_step;
+template <typename T> constexpr limb_t pow5_tables<T>::large_step;
 
 template <typename T> constexpr uint64_t pow5_tables<T>::small_power_of_5[];
 
@@ -487,7 +491,7 @@ struct bigint : pow5_tables<> {
     } else if (vec.len() < other.vec.len()) {
       return -1;
     } else {
-      for (limb_t index = vec.len(); index != 0; --index) {
+      for (limb_t index = vec.len(); index > 0; --index) {
         limb xi = vec[index - 1];
         limb yi = other.vec[index - 1];
         if (xi > yi) {
@@ -502,7 +506,7 @@ struct bigint : pow5_tables<> {
 
   // shift left each limb n bits, carrying over to the new limb
   // returns true if we were able to shift all the digits.
-  FASTFLOAT_CONSTEXPR20 bool shl_bits(bigint_bits_t n) noexcept {
+  FASTFLOAT_CONSTEXPR20 bool shl_bits(limb_t n) noexcept {
     // Internally, for each item, we shift left by n, and add the previous
     // right shifted limb-bits.
     // For example, we transform (for u8) shifted left 2, to:
@@ -511,10 +515,10 @@ struct bigint : pow5_tables<> {
     FASTFLOAT_DEBUG_ASSERT(n != 0);
     FASTFLOAT_DEBUG_ASSERT(n < sizeof(limb) * 8);
 
-    bigint_bits_t const shl = n;
-    bigint_bits_t const shr = limb_bits - shl;
+    limb_t const shl = n;
+    limb_t const shr = limb_bits - shl;
     limb prev = 0;
-    for (limb_t index = 0; index != vec.len(); ++index) {
+    for (limb_t index = 0; index < vec.len(); ++index) {
       limb xi = vec[index];
       vec[index] = (xi << shl) | (prev >> shr);
       prev = xi;
@@ -528,13 +532,12 @@ struct bigint : pow5_tables<> {
   }
 
   // move the limbs left by `n` limbs.
-  FASTFLOAT_CONSTEXPR20 bool shl_limbs(bigint_bits_t n) noexcept {
+  FASTFLOAT_CONSTEXPR20 bool shl_limbs(limb_t n) noexcept {
     FASTFLOAT_DEBUG_ASSERT(n != 0);
     if (n + vec.len() > vec.capacity()) {
       // we can't shift more than the capacity of the vector.
       return false;
-    }
-    if (!vec.is_empty()) {
+    } else if (!vec.is_empty()) {
       // move limbs
       limb *dst = vec.data + n;
       limb const *src = vec.data;
@@ -543,15 +546,17 @@ struct bigint : pow5_tables<> {
       limb *first = vec.data;
       limb *last = first + n;
       ::std::fill(first, last, 0);
-      vec.set_len(limb_t(n + vec.len()));
+      vec.set_len(n + vec.len());
+      return true;
+    } else {
+      return true;
     }
-    return true;
   }
 
   // move the limbs left by `n` bits.
   FASTFLOAT_CONSTEXPR20 bool shl(bigint_bits_t n) noexcept {
-    bigint_bits_t const rem = n % limb_bits;
-    bigint_bits_t const div = n / limb_bits;
+    auto const rem = static_cast<limb_t>(n % limb_bits);
+    auto const div = static_cast<limb_t>(n / limb_bits);
     if (rem != 0) {
       FASTFLOAT_TRY(shl_bits(rem));
     }
@@ -566,14 +571,15 @@ struct bigint : pow5_tables<> {
     if (vec.is_empty()) {
       // empty vector, no bits, no zeros.
       return 0;
-    }
+    } else {
 #ifdef FASTFLOAT_64BIT_LIMB
-    return leading_zeroes(vec.rindex(0));
+      return leading_zeroes(vec.rindex(0));
 #else
-    // no use defining a specialized leading_zeroes for a 32-bit type.
-    uint64_t r0 = vec.rindex(0);
-    return leading_zeroes(r0 << 32);
+      // no use defining a specialized leading_zeroes for a 32-bit type.
+      uint64_t r0 = vec.rindex(0);
+      return leading_zeroes(r0 << 32);
 #endif
+    }
   }
 
   // get the number of bits in the bigint.

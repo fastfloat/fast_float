@@ -139,7 +139,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
 round_nearest_tie_even(adjusted_mantissa &am, am_pow_t shift,
                        callback cb) noexcept {
   am_mant_t const mask =
-      (shift == 64) ? UINT64_MAX : (am_mant_t(1) << shift) - 1;
+      (shift == 64) ? std::numeric_limits<am_mant_t>::max() : (am_mant_t(1) << shift) - 1;
   am_mant_t const halfway = (shift == 0) ? 0 : am_mant_t(1) << (shift - 1);
   am_mant_t truncated_bits = am.mantissa & mask;
   bool is_above = truncated_bits > halfway;

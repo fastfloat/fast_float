@@ -602,9 +602,9 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         ((digits.as_int + 0x46464646u) | (digits.as_int - 0x30303030u)) &
         0x80808080u;
     const auto tz =
-        static_cast<uint32_t>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
-    uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
-    nd = std::min(static_cast<uint32_t>(nd), len);
+        static_cast<am_digits>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
+    am_digits nd = (tz == 32) ? 4 : (tz >> 3);
+    nd = std::min(nd, len);
     if (nd == 0) {
       if (has_leading_zeros) {
         value = 0;
@@ -618,7 +618,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
     if (nd > 3) {
       const UC *q = p + nd;
-      uint_fast8_t rem = len - nd;
+      am_digits rem = len - nd;
       while (rem) {
         if (*q < UC('0') || *q > UC('9'))
           break;
