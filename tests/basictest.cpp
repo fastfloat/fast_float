@@ -21,6 +21,16 @@
 #endif // #ifndef FASTFLOAT_CONSTEXPR_TESTS
 #endif // FASTFLOAT_IS_CONSTEXPR
 
+// MSVC's constexpr evaluation and some constexpr-friendly std library pieces
+// (like i/o and certain std::numeric_limits members) aren't suitable for the
+// compile-time tests in this file on MSVC; disable the constexpr tests when
+// compiling with MSVC (but allow them for clang/clang-cl).
+#if defined(_MSC_VER) && !defined(__clang__)
+#ifdef FASTFLOAT_CONSTEXPR_TESTS
+#undef FASTFLOAT_CONSTEXPR_TESTS
+#endif
+#endif
+
 #if FASTFLOAT_HAS_BIT_CAST
 #include <bit>
 #endif
@@ -69,7 +79,7 @@ template <typename T> std::string fHexAndDec(T v) {
   return ss.str();
 }
 
-char const *round_name(int d) {
+constexpr std::string_view round_name(int const d) noexcept {
   switch (d) {
   case FE_UPWARD:
     return "FE_UPWARD";
@@ -107,9 +117,9 @@ TEST_CASE("system_info") {
 #endif
 #ifdef FASTFLOAT_IS_BIG_ENDIAN
 #if FASTFLOAT_IS_BIG_ENDIAN
-  printf("big endian\n");
+  std::cout << "big endian" << std::endl;
 #else
-  printf("little endian\n");
+  std::cout << "little endian" << std::endl;
 #endif
 #endif
 #ifdef FASTFLOAT_32BIT
@@ -618,7 +628,7 @@ TEST_CASE("issue8") {
       "752384674818467669405132000568127145263560827785771342757789609173637178"
       "721468440901224953430146549585371050792279689258923542019956112129021960"
       "864034418159813629774771309960518707211349999998372978";
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i != 16; ++i) {
     // Parse all but the last i chars. We should still get 3.141ish.
     double d = 0.0;
     auto answer = fast_float::from_chars(s, s + strlen(s) - i, d);
@@ -919,9 +929,9 @@ uint16_t get_mantissa(std::bfloat16_t f) {
 }
 #endif
 
-std::string append_zeros(std::string str, size_t number_of_zeros) {
+std::string append_zeros(std::string_view str, size_t const number_of_zeros) {
   std::string answer(str);
-  for (size_t i = 0; i < number_of_zeros; i++) {
+  for (size_t i = 0; i++ != number_of_zeros;) {
     answer += "0";
   }
   return answer;
@@ -947,7 +957,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 #define FASTFLOAT_CHECK_EQ(...)                                                \
   if constexpr (diag == Diag::runtime) {                                       \
     char narrow[global_string_capacity]{};                                     \
-    for (size_t i = 0; i < str.size(); i++) {                                  \
+    for (size_t i = 0; i++ != str.size();) {                                   \
       narrow[i] = char(str[i]);                                                \
     }                                                                          \
     INFO("str(char" << 8 * sizeof(typename stringtype::value_type)             \
@@ -1006,7 +1016,7 @@ constexpr void basic_test(std::string_view str, T expected,
 
   // We give plenty of memory: 2048 characters.
   char16_t u16[global_string_capacity]{};
-  for (size_t i = 0; i < str.size(); i++) {
+  for (size_t i = 0; i++ != str.size();) {
     u16[i] = char16_t(str[i]);
   }
 
@@ -1015,7 +1025,7 @@ constexpr void basic_test(std::string_view str, T expected,
                                 actual, expected, expected_ec);
 
   char32_t u32[global_string_capacity]{};
-  for (size_t i = 0; i < str.size(); i++) {
+  for (size_t i = 0; i++ != str.size();) {
     u32[i] = char32_t(str[i]);
   }
 
@@ -2126,8 +2136,9 @@ TEST_CASE("bfloat16.general") {
 #endif
 
 template <typename Int, typename T, typename U>
-void verify_integer_times_pow10_result(Int mantissa, int decimal_exponent,
-                                       T actual, U expected) {
+void verify_integer_times_pow10_result(Int const mantissa,
+                                       int_fast16_t const decimal_exponent,
+                                       T const actual, U const expected) {
   static_assert(std::is_same<T, U>::value,
                 "expected and actual types must match");
 
@@ -2144,8 +2155,8 @@ void verify_integer_times_pow10_result(Int mantissa, int decimal_exponent,
 }
 
 template <typename T, typename Int>
-T calculate_integer_times_pow10_expected_result(Int mantissa,
-                                                int decimal_exponent) {
+T calculate_integer_times_pow10_expected_result(
+    Int const mantissa, int_fast16_t const decimal_exponent) {
   std::string constructed_string =
       std::to_string(mantissa) + "e" + std::to_string(decimal_exponent);
   T expected_result;
@@ -2158,8 +2169,9 @@ T calculate_integer_times_pow10_expected_result(Int mantissa,
 }
 
 template <typename Int>
-void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent,
-                                     double expected) {
+void verify_integer_times_pow10_dflt(Int const mantissa,
+                                     int_fast16_t const decimal_exponent,
+                                     double const expected) {
   static_assert(std::is_integral<Int>::value);
 
   // the "default" overload
@@ -2171,7 +2183,8 @@ void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent,
 }
 
 template <typename Int>
-void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent) {
+void verify_integer_times_pow10_dflt(Int const mantissa,
+                                     int_fast16_t const decimal_exponent) {
   static_assert(std::is_integral<Int>::value);
 
   const auto expected_result =
@@ -2182,8 +2195,9 @@ void verify_integer_times_pow10_dflt(Int mantissa, int decimal_exponent) {
 }
 
 template <typename T, typename Int>
-void verify_integer_times_pow10(Int mantissa, int decimal_exponent,
-                                T expected) {
+void verify_integer_times_pow10(Int const mantissa,
+                                int_fast16_t const decimal_exponent,
+                                T const expected) {
   static_assert(std::is_floating_point<T>::value);
   static_assert(std::is_integral<Int>::value);
 
@@ -2196,7 +2210,8 @@ void verify_integer_times_pow10(Int mantissa, int decimal_exponent,
 }
 
 template <typename T, typename Int>
-void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
+void verify_integer_times_pow10(Int const mantissa,
+                                int_fast16_t const decimal_exponent) {
   static_assert(std::is_floating_point<T>::value);
   static_assert(std::is_integral<Int>::value);
 
@@ -2208,7 +2223,8 @@ void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
 
 namespace all_supported_types {
 template <typename Int>
-void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
+void verify_integer_times_pow10(Int const mantissa,
+                                int_fast16_t const decimal_exponent) {
   static_assert(std::is_integral<Int>::value);
 
   // verify the "default" overload
@@ -2313,7 +2329,7 @@ TEST_CASE("integer_times_pow10") {
 
   for (int mode : {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST}) {
     fesetround(mode);
-    INFO("fesetround(): " << std::string{round_name(mode)});
+    INFO("fesetround(): " << round_name(mode));
 
     struct Guard {
       ~Guard() { fesetround(FE_TONEAREST); }
