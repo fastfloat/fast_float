@@ -500,18 +500,24 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
   return answer;
 }
 
-// Value of the mantissa. An unsigned int avoids signed overflows (which are
-// bad)
+// 64 bit integer is used because mantissa can be up to 53 bits for double.
+// Value of the int mantissa in the API.
+typedef int_fast64_t am_sign_mant_t;
+// An unsigned int avoids signed overflows (which are bad)
 typedef uint_fast64_t am_mant_t;
+
 // Size of bits in the mantissa and path and rounding shifts
 typedef int_fast8_t am_bits_t;
 
+// 16 bit signed integer is used for power to cover all double exponents.
 // Power bias is signed for handling a denormal float
 // or an invalid mantissa.
-typedef int_fast64_t am_pow_t;
-
+typedef int_fast16_t am_pow_t;
 // Bias so we can get the real exponent with an invalid adjusted_mantissa.
-constexpr static am_pow_t invalid_am_bias = -0x8000;
+constexpr static am_pow_t invalid_am_bias =
+    std::numeric_limits<int16_t>::min() + 1;
+constexpr static am_pow_t am_bias_limit =
+    (std::numeric_limits<int16_t>::max() + 1) / 8;
 
 struct alignas(16) adjusted_mantissa {
   am_mant_t mantissa;

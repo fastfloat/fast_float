@@ -59,11 +59,11 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
  * `new` or `malloc`).
  */
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(uint64_t const mantissa,
-                    int_fast16_t const decimal_exponent) noexcept;
+integer_times_pow10(am_mant_t const mantissa,
+                    am_pow_t const decimal_exponent) noexcept;
 FASTFLOAT_CONSTEXPR20 inline double
-integer_times_pow10(int64_t const mantissa,
-                    int_fast16_t const decimal_exponent) noexcept;
+integer_times_pow10(am_sign_mant_t const mantissa,
+                    am_pow_t const decimal_exponent) noexcept;
 
 /**
  * This function is a template overload of `integer_times_pow10()`
@@ -73,13 +73,13 @@ integer_times_pow10(int64_t const mantissa,
 template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
-    integer_times_pow10(uint64_t const mantissa,
-                        int_fast16_t const decimal_exponent) noexcept;
+    integer_times_pow10(am_mant_t const mantissa,
+                        am_pow_t const decimal_exponent) noexcept;
 template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
-    integer_times_pow10(int64_t const mantissa,
-                        int_fast16_t const decimal_exponent) noexcept;
+    integer_times_pow10(am_sign_mant_t const mantissa,
+                        am_pow_t const decimal_exponent) noexcept;
 
 /**
  * from_chars for integer types.

@@ -435,7 +435,7 @@ parse_number_string(UC const *p, UC const *pend,
     } else {
       // Now let's parse the explicit exponent.
       while ((p != pend) && is_integer(*p)) {
-        if (exp_number < std::numeric_limits<am_pow_t>::max()) {
+        if (exp_number < am_bias_limit) {
           // check for exponent overflow if we have too many digits.
           auto const digit = uint8_t(*p - UC('0'));
           exp_number = 10 * exp_number + digit;
@@ -561,7 +561,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   auto const *const start_digits = p;
 
   FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint8_t>::value)) {
-    const size_t len = (size_t)(pend - p);
+    const auto len = static_cast<am_digits>(pend - p);
     if (len == 0) {
       if (has_leading_zeros) {
         value = 0;
@@ -581,7 +581,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
     if (cpp20_and_in_constexpr()) {
       digits.as_int = 0;
-      for (size_t j = 0; j < 4 && j < len; ++j) {
+      for (uint_fast8_t j = 0; j < 4 && j < len; ++j) {
         digits.as_str[j] = static_cast<uint8_t>(p[j]);
       }
     } else if (len >= 4) {
@@ -598,12 +598,13 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #endif
     }
 
-    uint32_t magic =
+    const uint32_t magic =
         ((digits.as_int + 0x46464646u) | (digits.as_int - 0x30303030u)) &
         0x80808080u;
-    uint32_t tz = (uint32_t)countr_zero_32(magic); // 7, 15, 23, 31, or 32
+    const auto tz =
+        static_cast<uint32_t>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
     uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
-    nd = (uint32_t)std::min((size_t)nd, len);
+    nd = std::min(nd, len);
     if (nd == 0) {
       if (has_leading_zeros) {
         value = 0;
@@ -617,7 +618,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
     if (nd > 3) {
       const UC *q = p + nd;
-      size_t rem = len - nd;
+      uint_fast8_t rem = len - nd;
       while (rem) {
         if (*q < UC('0') || *q > UC('9'))
           break;
@@ -632,15 +633,15 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     digits.as_int ^= 0x30303030u;
     digits.as_int <<= ((4 - nd) * 8);
 
-    uint32_t check = ((digits.as_int >> 24) & 0xff) |
-                     ((digits.as_int >> 8) & 0xff00) |
-                     ((digits.as_int << 8) & 0xff0000);
+    const uint32_t check = ((digits.as_int >> 24) & 0xff) |
+                           ((digits.as_int >> 8) & 0xff00) |
+                           ((digits.as_int << 8) & 0xff0000);
     if (check > 0x00020505) {
       answer.ec = std::errc::result_out_of_range;
       answer.ptr = p + nd;
       return answer;
     }
-    value = (uint8_t)((0x640a01 * digits.as_int) >> 24);
+    value = static_cast<uint8_t>((0x640a01 * digits.as_int) >> 24);
     answer.ec = std::errc();
     answer.ptr = p + nd;
     return answer;
