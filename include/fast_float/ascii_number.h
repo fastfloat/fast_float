@@ -604,7 +604,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     const auto tz =
         static_cast<uint32_t>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
     uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
-    nd = std::min(nd, len);
+    nd = std::min(static_cast<uint32_t>(nd), len);
     if (nd == 0) {
       if (has_leading_zeros) {
         value = 0;
