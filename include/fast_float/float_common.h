@@ -405,7 +405,7 @@ leading_zeroes(uint64_t input_num) noexcept {
 }
 
 /* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
 countr_zero_generic_32(uint32_t input_num) {
   if (input_num == 0) {
     return 32;
@@ -430,11 +430,11 @@ countr_zero_generic_32(uint32_t input_num) {
   if (!(input_num & 0x1)) {
     last_bit |= 1;
   }
-  return last_bit;
+  return static_cast<limb_t>(last_bit);
 }
 
 /* count trailing zeroes for 32-bit integers */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
 countr_zero_32(uint32_t input_num) {
   if (cpp20_and_in_constexpr()) {
     return countr_zero_generic_32(input_num);
@@ -442,11 +442,11 @@ countr_zero_32(uint32_t input_num) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
   unsigned long trailing_zero = 0;
   if (_BitScanForward(&trailing_zero, input_num)) {
-    return (int)trailing_zero;
+    return static_cast<limb_t>(trailing_zero);
   }
   return 32;
 #else
-  return input_num == 0 ? 32 : __builtin_ctz(input_num);
+  return input_num == 0 ? 32 : static_cast<limb_t>(__builtin_ctz(input_num));
 #endif
 }
 

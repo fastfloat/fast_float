@@ -33,9 +33,8 @@ from_chars_result_t<UC>
 
   bool const minusSign = (*first == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if (minusSign ||
-      ((chars_format_t(fmt & chars_format::allow_leading_plus)) &&
-       (*first == UC('+')))) {
+  if (minusSign || ((chars_format_t(fmt & chars_format::allow_leading_plus)) &&
+                    (*first == UC('+')))) {
     ++first;
   }
 
@@ -481,7 +480,8 @@ template <typename Int>
 FASTFLOAT_CONSTEXPR20 typename std::enable_if<
     std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
 integer_times_pow10(Int mantissa, am_pow_t decimal_exponent) noexcept {
-  return integer_times_pow10(static_cast<am_mant_t>(mantissa), decimal_exponent);
+  return integer_times_pow10(static_cast<am_mant_t>(mantissa),
+                             decimal_exponent);
 }
 
 template <typename Int>
