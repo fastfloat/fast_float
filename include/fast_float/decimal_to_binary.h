@@ -20,7 +20,7 @@ namespace fast_float {
 template <limb_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(am_pow_t q, am_mant_t w) noexcept {
-  am_pow_t const index = 2 * am_pow_t(q - powers::smallest_power_of_five);
+  am_pow_t const index = 2 * (q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact
   // because The line value128 firstproduct = full_multiplication(w,
   // power_of_five_128[index]); gives the exact answer.
@@ -71,7 +71,7 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
 // for significant digits already multiplied by 10 ** q.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
-compute_error_scaled(am_pow_t q, am_mant_t w, am_digits lz) noexcept {
+compute_error_scaled(am_pow_t q, am_mant_t w, am_bits_t lz) noexcept {
   auto const hilz = static_cast<am_pow_t>((w >> 63) ^ 1);
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
@@ -86,7 +86,7 @@ compute_error_scaled(am_pow_t q, am_mant_t w, am_digits lz) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_error(am_pow_t q, am_mant_t w) noexcept {
-  am_digits const lz = leading_zeroes(w);
+  auto const lz = leading_zeroes(w);
   w <<= lz;
   value128 product =
       compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
@@ -118,7 +118,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   // powers::largest_power_of_five].
 
   // We want the most significant bit of i to be 1. Shift if needed.
-  am_digits const lz = leading_zeroes(w);
+  auto const lz = leading_zeroes(w);
   w <<= lz;
 
   // The required precision is binary::mantissa_explicit_bits() + 3 because
@@ -138,7 +138,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   // branchless approach: value128 product = compute_product(q, w); but in
   // practice, we can win big with the compute_product_approximation if its
   // additional branch is easily predicted. Which is best is data specific.
-  limb_t const upperbit = static_cast<limb_t>(product.high >> 63);
+  auto const upperbit = static_cast<limb_t>(product.high >> 63);
   limb_t const shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
 
   answer.mantissa = product.high >> shift;

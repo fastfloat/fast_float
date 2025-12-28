@@ -169,18 +169,18 @@ empty_hi64(bool &truncated) noexcept {
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint64_hi64(uint64_t r0, bool &truncated) noexcept {
   truncated = false;
-  int shl = leading_zeroes(r0);
+  auto shl = leading_zeroes(r0);
   return r0 << shl;
 }
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint64_hi64(uint64_t r0, uint64_t r1, bool &truncated) noexcept {
-  int shl = leading_zeroes(r0);
+  auto shl = leading_zeroes(r0);
   if (shl == 0) {
     truncated = r1 != 0;
     return r0;
   } else {
-    int shr = 64 - shl;
+    limb_t shr = 64 - shl;
     truncated = (r1 << shl) != 0;
     return (r0 << shl) | (r1 >> shr);
   }

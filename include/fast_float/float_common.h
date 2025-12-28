@@ -33,11 +33,30 @@
 
 namespace fast_float {
 
+// 64 bit integer is used because mantissa can be up to 53 bits for double.
+// Value of the int mantissa in the API.
+typedef int_fast64_t am_sign_mant_t;
+// An unsigned int avoids signed overflows (which are bad)
+typedef uint_fast64_t am_mant_t;
+
 // The number of digits in the mantissa.
 typedef uint_fast16_t am_digits;
 
 // The number of bits in the limb.
 typedef uint_fast8_t limb_t;
+
+// Size of bits in the mantissa and path and rounding shifts
+typedef int_fast8_t am_bits_t;
+
+// 16 bit signed integer is used for power to cover all double exponents.
+typedef int16_t am_pow_t;
+// Power bias is signed for handling a denormal float
+// or an invalid mantissa.
+// Bias so we can get the real exponent with an invalid adjusted_mantissa.
+constexpr static am_pow_t invalid_am_bias =
+    std::numeric_limits<am_pow_t>::min() + 1;
+constexpr static am_pow_t am_bias_limit =
+    (std::numeric_limits<am_pow_t>::max() / 8) - 1;
 
 // Type for enum chars_format.
 typedef uint_fast8_t chars_format_t;
@@ -355,8 +374,11 @@ struct alignas(16) value128 {
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_digits
-leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
+leading_zeroes_generic(uint64_t input_num) noexcept {
+  assert(input_num > 0);
+  FASTFLOAT_ASSUME(input_num > 0);
+  uint_fast32_t last_bit = 0;
   if (input_num & uint64_t(0xffffffff00000000)) {
     input_num >>= 32;
     last_bit |= 32;
@@ -380,11 +402,11 @@ leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0x2)) { /* input_num >>=  1; */
     last_bit |= 1;
   }
-  return 63 - static_cast<am_digits>(last_bit);
+  return 63 - static_cast<limb_t>(last_bit);
 }
 
 /* result might be undefined when input_num is zero */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 am_digits
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
 leading_zeroes(uint64_t input_num) noexcept {
   assert(input_num > 0);
   FASTFLOAT_ASSUME(input_num > 0);
@@ -397,21 +419,20 @@ leading_zeroes(uint64_t input_num) noexcept {
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
   _BitScanReverse64(&leading_zero, input_num);
-  return static_cast<am_digits>(63 - leading_zero);
+  return static_cast<limb_t>(63 - leading_zero);
 #else
-  return static_cast<am_digits>(leading_zeroes_generic(input_num));
+  return static_cast<limb_t>(leading_zeroes_generic(input_num));
 #endif
 #else
-  return static_cast<am_digits>(__builtin_clzll(input_num));
+  return static_cast<limb_t>(__builtin_clzll(input_num));
 #endif
 }
 
 /* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_digits
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
 countr_zero_generic_32(uint32_t input_num) {
-  if (input_num == 0) {
-    return 32;
-  }
+  assert(input_num > 0);
+  FASTFLOAT_ASSUME(input_num > 0);
   uint_fast16_t last_bit = 0;
   if (!(input_num & 0x0000FFFF)) {
     input_num >>= 16;
@@ -432,11 +453,11 @@ countr_zero_generic_32(uint32_t input_num) {
   if (!(input_num & 0x1)) {
     last_bit |= 1;
   }
-  return static_cast<am_digits>(last_bit);
+  return static_cast<limb_t>(last_bit);
 }
 
 /* count trailing zeroes for 32-bit integers */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 am_digits
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
 countr_zero_32(uint32_t input_num) {
   if (cpp20_and_in_constexpr()) {
     return countr_zero_generic_32(input_num);
@@ -444,11 +465,11 @@ countr_zero_32(uint32_t input_num) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
   unsigned long trailing_zero = 0;
   if (_BitScanForward(&trailing_zero, input_num)) {
-    return static_cast<am_digits>(trailing_zero);
+    return static_cast<limb_t>(trailing_zero);
   }
   return 32;
 #else
-  return input_num == 0 ? 32 : static_cast<am_digits>(__builtin_ctz(input_num));
+  return input_num == 0 ? 32 : static_cast<limb_t>(__builtin_ctz(input_num));
 #endif
 }
 
@@ -509,25 +530,6 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
   return answer;
 }
 
-// 64 bit integer is used because mantissa can be up to 53 bits for double.
-// Value of the int mantissa in the API.
-typedef int_fast64_t am_sign_mant_t;
-// An unsigned int avoids signed overflows (which are bad)
-typedef uint_fast64_t am_mant_t;
-
-// Size of bits in the mantissa and path and rounding shifts
-typedef int_fast8_t am_bits_t;
-
-// 16 bit signed integer is used for power to cover all double exponents.
-// Power bias is signed for handling a denormal float
-// or an invalid mantissa.
-typedef int_fast16_t am_pow_t;
-// Bias so we can get the real exponent with an invalid adjusted_mantissa.
-constexpr static am_pow_t invalid_am_bias =
-    std::numeric_limits<int16_t>::min() + 1;
-constexpr static am_pow_t am_bias_limit =
-    (std::numeric_limits<int16_t>::max() + 1) / 8;
-
 struct alignas(16) adjusted_mantissa {
   am_mant_t mantissa;
   am_pow_t power2;
@@ -550,21 +552,21 @@ template <typename T, typename U = void> struct binary_format_lookup_tables;
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   using equiv_uint = equiv_uint_t<T>;
 
-  static constexpr limb_t mantissa_explicit_bits();
+  static constexpr am_bits_t mantissa_explicit_bits();
   static constexpr am_pow_t minimum_exponent();
   static constexpr am_pow_t infinite_power();
   static constexpr am_bits_t sign_index();
   static constexpr am_bits_t
   min_exponent_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr am_bits_t max_exponent_fast_path();
-  static constexpr am_bits_t max_exponent_round_to_even();
-  static constexpr am_bits_t min_exponent_round_to_even();
-  static constexpr equiv_uint max_mantissa_fast_path(am_pow_t power);
+  static constexpr am_pow_t max_exponent_round_to_even();
+  static constexpr am_pow_t min_exponent_round_to_even();
+  static constexpr equiv_uint max_mantissa_fast_path(am_pow_t const power);
   static constexpr equiv_uint
   max_mantissa_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr am_pow_t largest_power_of_ten();
   static constexpr am_pow_t smallest_power_of_ten();
-  static constexpr T exact_power_of_ten(am_pow_t power);
+  static constexpr T exact_power_of_ten(am_pow_t const power);
   static constexpr am_digits max_digits();
   static constexpr equiv_uint exponent_mask();
   static constexpr equiv_uint mantissa_mask();
@@ -673,32 +675,32 @@ inline constexpr am_bits_t binary_format<float>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr limb_t binary_format<double>::mantissa_explicit_bits() {
+inline constexpr am_bits_t binary_format<double>::mantissa_explicit_bits() {
   return 52;
 }
 
 template <>
-inline constexpr limb_t binary_format<float>::mantissa_explicit_bits() {
+inline constexpr am_bits_t binary_format<float>::mantissa_explicit_bits() {
   return 23;
 }
 
 template <>
-inline constexpr am_bits_t binary_format<double>::max_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<double>::max_exponent_round_to_even() {
   return 23;
 }
 
 template <>
-inline constexpr am_bits_t binary_format<float>::max_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<float>::max_exponent_round_to_even() {
   return 10;
 }
 
 template <>
-inline constexpr am_bits_t binary_format<double>::min_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<double>::min_exponent_round_to_even() {
   return -4;
 }
 
 template <>
-inline constexpr am_bits_t binary_format<float>::min_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<float>::min_exponent_round_to_even() {
   return -17;
 }
 
@@ -807,7 +809,7 @@ binary_format<std::float16_t>::max_exponent_fast_path() {
 }
 
 template <>
-inline constexpr limb_t
+inline constexpr am_bits_t
 binary_format<std::float16_t>::mantissa_explicit_bits() {
   return 10;
 }
@@ -829,13 +831,13 @@ binary_format<std::float16_t>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr am_bits_t
+inline constexpr am_pow_t
 binary_format<std::float16_t>::max_exponent_round_to_even() {
   return 5;
 }
 
 template <>
-inline constexpr am_bits_t
+inline constexpr am_pow_t
 binary_format<std::float16_t>::min_exponent_round_to_even() {
   return -22;
 }
@@ -934,7 +936,7 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr limb_t
+inline constexpr am_bits_t
 binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
   return 7;
 }
@@ -956,13 +958,13 @@ binary_format<std::bfloat16_t>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr am_bits_t
+inline constexpr am_pow_t
 binary_format<std::bfloat16_t>::max_exponent_round_to_even() {
   return 3;
 }
 
 template <>
-inline constexpr am_bits_t
+inline constexpr am_pow_t
 binary_format<std::bfloat16_t>::min_exponent_round_to_even() {
   return -24;
 }

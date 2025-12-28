@@ -33,7 +33,7 @@ template <class unused = void> struct powers_template {
       binary_format<double>::smallest_power_of_ten();
   constexpr static am_pow_t largest_power_of_five =
       binary_format<double>::largest_power_of_ten();
-  constexpr static am_digits number_of_entries =
+  constexpr static am_pow_t number_of_entries =
       2 * (largest_power_of_five - smallest_power_of_five + 1);
   // Powers of five from 5^-342 all the way to 5^308 rounded toward one.
   constexpr static am_mant_t power_of_five_128[number_of_entries] = {
