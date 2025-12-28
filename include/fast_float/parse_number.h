@@ -336,11 +336,13 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
       ++first;
     }
   }
-#endif
+#else
 #ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   // We are in parser code with external loop that checks bounds.
   FASTFLOAT_ASSUME(first < last);
-#else
+#endif
+#endif
+#ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   if (first == last) {
     answer.ec = std::errc::invalid_argument;
     answer.ptr = first;
@@ -414,13 +416,12 @@ FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(am_sign_mant_t const mantissa,
                         am_pow_t const decimal_exponent) noexcept {
-#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  FASTFLOAT_ASSUME(mantissa >= 0);
-  const am_mant_t m = static_cast<am_mant_t>(mantissa);
-#else
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   const bool is_negative = mantissa < 0;
-  const am_mant_t m =
-      static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
+  const auto m = static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
+#else
+  FASTFLOAT_ASSUME(mantissa >= 0);
+  const auto m = static_cast<am_mant_t>(mantissa);
 #endif
   T value;
   if (clinger_fast_path_impl(m, decimal_exponent,
@@ -460,7 +461,8 @@ FASTFLOAT_CONSTEXPR20
                                 std::is_integral<Int>::value &&
                                 !std::is_signed<Int>::value,
                             T>::type
-    integer_times_pow10(Int mantissa, am_pow_t decimal_exponent) noexcept {
+    integer_times_pow10(Int const mantissa,
+                        am_pow_t const decimal_exponent) noexcept {
   return integer_times_pow10<T>(static_cast<am_mant_t>(mantissa),
                                 decimal_exponent);
 }
@@ -471,7 +473,8 @@ FASTFLOAT_CONSTEXPR20
                                 std::is_integral<Int>::value &&
                                 std::is_signed<Int>::value,
                             T>::type
-    integer_times_pow10(Int mantissa, am_pow_t decimal_exponent) noexcept {
+    integer_times_pow10(Int const mantissa,
+                        am_pow_t const decimal_exponent) noexcept {
   return integer_times_pow10<T>(static_cast<am_sign_mant_t>(mantissa),
                                 decimal_exponent);
 }
@@ -479,7 +482,8 @@ FASTFLOAT_CONSTEXPR20
 template <typename Int>
 FASTFLOAT_CONSTEXPR20 typename std::enable_if<
     std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int mantissa, am_pow_t decimal_exponent) noexcept {
+integer_times_pow10(Int const mantissa,
+                    am_pow_t const decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<am_mant_t>(mantissa),
                              decimal_exponent);
 }
@@ -487,7 +491,8 @@ integer_times_pow10(Int mantissa, am_pow_t decimal_exponent) noexcept {
 template <typename Int>
 FASTFLOAT_CONSTEXPR20 typename std::enable_if<
     std::is_integral<Int>::value && std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int mantissa, am_pow_t decimal_exponent) noexcept {
+integer_times_pow10(Int const mantissa,
+                    am_pow_t const decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<am_sign_mant_t>(mantissa),
                              decimal_exponent);
 }
@@ -508,10 +513,11 @@ from_chars_int_advanced(UC const *first, UC const *last, T &value,
       ++first;
     }
   }
-#endif
+#else
 #ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   // We are in parser code with external loop that checks bounds.
   FASTFLOAT_ASSUME(first < last);
+#endif
 #endif
   if (
 #ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
