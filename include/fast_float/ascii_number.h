@@ -277,8 +277,8 @@ using parsed_number_string = parsed_number_string_t<char>;
 
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
-report_parse_error(UC const *p, parse_error error) noexcept {
-  parsed_number_string_t<UC> answer;
+report_parse_error(parsed_number_string_t<UC> &answer, UC const *p,
+                   parse_error error) noexcept {
   answer.invalid = true;
   answer.lastmatch = p;
   answer.error = error;
@@ -303,12 +303,12 @@ parse_number_string(UC const *p, UC const *pend,
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
-          p, parse_error::missing_integer_or_dot_after_sign);
+          answer, p, parse_error::missing_integer_or_dot_after_sign);
     }
     FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
       // a sign must be followed by an integer
       if (!is_integer(*p)) {
-        return report_parse_error<UC>(p,
+        return report_parse_error<UC>(answer, p,
                                       parse_error::missing_integer_after_sign);
       }
     }
@@ -316,7 +316,7 @@ parse_number_string(UC const *p, UC const *pend,
       // a sign must be followed by an integer or the dot
       if (!is_integer(*p) && (*p != options.decimal_point)) {
         return report_parse_error<UC>(
-            p, parse_error::missing_integer_or_dot_after_sign);
+            answer, p, parse_error::missing_integer_or_dot_after_sign);
       }
     }
   }
@@ -343,10 +343,11 @@ parse_number_string(UC const *p, UC const *pend,
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0) {
-      return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
+      return report_parse_error<UC>(answer, p,
+                                    parse_error::no_digits_in_integer_part);
     }
     if ((start_digits[0] == UC('0') && digit_count > 1)) {
-      return report_parse_error<UC>(start_digits,
+      return report_parse_error<UC>(answer, start_digits,
                                     parse_error::leading_zeros_in_integer_part);
     }
   }
@@ -376,13 +377,14 @@ parse_number_string(UC const *p, UC const *pend,
       // at least 1 digit in fractional part
       if (answer.exponent == 0) {
         return report_parse_error<UC>(
-            p, parse_error::no_digits_in_fractional_part);
+            answer, p, parse_error::no_digits_in_fractional_part);
       }
     }
 #endif
   } else if (digit_count == 0) {
     // We must have encountered at least one integer!
-    return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
+    return report_parse_error<UC>(answer, p,
+                                  parse_error::no_digits_in_mantissa);
   }
   // We have now parsed the integer and the fraction part of the mantissa.
 
@@ -425,7 +427,8 @@ parse_number_string(UC const *p, UC const *pend,
         // The exponential part is invalid for scientific notation, so it
         // must be a trailing token for fixed notation. However, fixed
         // notation is disabled, so report a scientific notation error.
-        return report_parse_error<UC>(p, parse_error::missing_exponential_part);
+        return report_parse_error<UC>(answer, p,
+                                      parse_error::missing_exponential_part);
       }
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
@@ -448,7 +451,8 @@ parse_number_string(UC const *p, UC const *pend,
     // If it scientific and not fixed, we have to bail out.
     if ((chars_format_t(options.format & chars_format::scientific)) &&
         !(chars_format_t(options.format & chars_format::fixed))) {
-      return report_parse_error<UC>(p, parse_error::missing_exponential_part);
+      return report_parse_error<UC>(answer, p,
+                                    parse_error::missing_exponential_part);
     }
   }
 
