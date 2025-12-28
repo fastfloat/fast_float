@@ -72,7 +72,7 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
 compute_error_scaled(am_pow_t q, am_mant_t w, am_bits_t lz) noexcept {
-  auto const hilz = static_cast<am_pow_t>((w >> 63) ^ 1);
+  auto const hilz = static_cast<am_bits_t>((w >> 63) ^ 1);
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
   constexpr am_pow_t bias =
@@ -138,8 +138,8 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   // branchless approach: value128 product = compute_product(q, w); but in
   // practice, we can win big with the compute_product_approximation if its
   // additional branch is easily predicted. Which is best is data specific.
-  auto const upperbit = static_cast<limb_t>(product.high >> 63);
-  limb_t const shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
+  auto const upperbit = static_cast<am_bits_t>(product.high >> 63);
+  am_bits_t const shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
 
   answer.mantissa = product.high >> shift;
 

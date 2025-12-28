@@ -49,19 +49,19 @@ typedef uint_fast8_t limb_t;
 typedef int_fast8_t am_bits_t;
 
 // 16 bit signed integer is used for power to cover all double exponents.
-typedef int16_t am_pow_t;
+typedef int_fast16_t am_pow_t;
 // Power bias is signed for handling a denormal float
 // or an invalid mantissa.
 // Bias so we can get the real exponent with an invalid adjusted_mantissa.
 constexpr static am_pow_t invalid_am_bias =
-    std::numeric_limits<am_pow_t>::min() + 1;
+    std::numeric_limits<int16_t>::min() + 1;
 constexpr static am_pow_t am_bias_limit =
-    (std::numeric_limits<am_pow_t>::max() / 8) - 1;
+    (std::numeric_limits<int16_t>::max() / 16) - 1;
 
 // Type for enum chars_format.
 typedef uint_fast8_t chars_format_t;
 
-// Type for base.
+// Type for base, only allowed from 2 to 36.
 typedef uint_fast8_t base_t;
 
 enum class chars_format : chars_format_t;
@@ -110,10 +110,10 @@ template <typename UC> struct parse_options_t {
 
   /** Which number formats are accepted */
   chars_format format;
-  /** The character used as decimal point */
+  /** The character used as decimal point for floats */
   UC decimal_point;
   /** The base used for integers */
-  base_t base; /* only allowed from 2 to 36 */
+  base_t base;
 };
 
 using parse_options = parse_options_t<char>;

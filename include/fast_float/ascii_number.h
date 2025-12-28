@@ -291,9 +291,6 @@ template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
                     parse_options_t<UC> const options) noexcept {
-  // Cyclomatic complexity https://en.wikipedia.org/wiki/Cyclomatic_complexity
-  // Consider refactoring the 'parse_number_string' function.
-  // FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN fix this.
   parsed_number_string_t<UC> answer;
   // so dereference without checks
   FASTFLOAT_ASSUME(p < pend);
@@ -460,12 +457,12 @@ parse_number_string(UC const *p, UC const *pend,
 
   // Now we can check for errors.
 
-  // TODO: If we frequently had to deal with long strings of digits,
+  // If we frequently had to deal with long strings of digits,
   // we could extend our code by using a 128-bit integer instead
   // of a 64-bit integer. However, this is uncommon.
-
+  //
   // We can deal with up to 19 digits.
-  if (digit_count > 19) {
+  if (digit_count > 19) { // this is uncommon
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
@@ -479,8 +476,7 @@ parse_number_string(UC const *p, UC const *pend,
       ++start;
     }
 
-    // We have to check if we have a number with more than 19 significant
-    // digits.
+    // We have to check if number has more than 19 significant digits.
     if (digit_count > 19) {
       answer.too_many_digits = true;
       // Let us start again, this time, avoiding overflows.
@@ -492,8 +488,8 @@ parse_number_string(UC const *p, UC const *pend,
       constexpr am_mant_t minimal_nineteen_digit_integer{1000000000000000000};
       while ((p != int_end) &&
              (answer.mantissa < minimal_nineteen_digit_integer)) {
-        answer.mantissa = static_cast<am_mant_t>(
-            answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0')));
+        answer.mantissa =
+            answer.mantissa * 10 + static_cast<am_mant_t>(*p - UC('0'));
         ++p;
       }
       if (answer.mantissa >= minimal_nineteen_digit_integer) {

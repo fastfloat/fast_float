@@ -76,15 +76,6 @@
 #define FASTFLOAT_INLINE_VARIABLE static constexpr
 #endif
 
-#if defined(__cpp_lib_is_constant_evaluated) &&                                \
-    __cpp_lib_is_constant_evaluated >= 201811L
-#define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 1
-#define FASTFLOAT_CONSTEVAL consteval
-#else
-#define FASTFLOAT_HAS_IS_CONSTANT_EVALUATED 0
-#define FASTFLOAT_CONSTEVAL FASTFLOAT_CONSTEXPR14
-#endif
-
 // Testing for relevant C++20 constexpr library features
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST &&           \
     defined(__cpp_lib_constexpr_algorithms) &&                                 \

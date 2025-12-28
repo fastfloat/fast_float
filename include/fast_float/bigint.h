@@ -67,7 +67,7 @@ template <limb_t size> struct stackvec {
   // index from the end of the container
   FASTFLOAT_CONSTEXPR14 const limb &rindex(limb_t index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
-    limb_t rindex = static_cast<limb_t>(length - index - 1);
+    auto rindex = length - index - 1;
     return data[rindex];
   }
 
@@ -100,7 +100,7 @@ template <limb_t size> struct stackvec {
   FASTFLOAT_CONSTEXPR20 void extend_unchecked(limb_span s) noexcept {
     limb *ptr = data + length;
     std::copy_n(s.ptr, s.len(), ptr);
-    set_len(static_cast<limb_t>(len() + s.len()));
+    set_len(len() + static_cast<limb_t>(s.len()));
   }
 
   // try to add items to the vector, returning if items were added
@@ -119,7 +119,7 @@ template <limb_t size> struct stackvec {
   FASTFLOAT_CONSTEXPR20
   void resize_unchecked(limb_t new_len, limb value) noexcept {
     if (new_len > len()) {
-      limb_t count = new_len - len();
+      auto count = new_len - len();
       limb *first = data + len();
       limb *last = first + count;
       ::std::fill(first, last, value);
@@ -258,9 +258,8 @@ scalar_mul(limb x, limb y, limb &carry) noexcept {
 // add scalar value to bigint starting from offset.
 // used in grade school multiplication
 template <limb_t size>
-inline FASTFLOAT_CONSTEXPR20 bool small_add_from(stackvec<size> &vec, limb y,
-                                                 limb_t start) noexcept {
-  limb carry = y;
+inline FASTFLOAT_CONSTEXPR20 bool
+small_add_from(stackvec<size> &vec, limb carry, limb_t start) noexcept {
   bool overflow;
   while (carry != 0 && start < vec.len()) {
     vec[start] = scalar_add(vec[start], carry, overflow);
@@ -301,8 +300,9 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
                                           limb_t start) noexcept {
   // the effective x buffer is from `xstart..x.len()`, so exit early
   // if we can't get that current range.
-  if (x.len() < start || y.len() > static_cast<limb_t>(x.len() - start)) {
-    FASTFLOAT_TRY(x.try_resize(static_cast<limb_t>(y.len() + start), 0));
+  if (x.len() < start ||
+      y.len() > static_cast<uint_fast16_t>(x.len() - start)) {
+    FASTFLOAT_TRY(x.try_resize(static_cast<limb_t>(y.len()) + start, 0));
   }
 
   bool carry = false;
@@ -321,7 +321,7 @@ FASTFLOAT_CONSTEXPR20 bool large_add_from(stackvec<size> &x, limb_span y,
 
   // handle overflow
   if (carry) {
-    FASTFLOAT_TRY(small_add_from(x, 1, static_cast<limb_t>(y.len() + start)));
+    FASTFLOAT_TRY(small_add_from(x, 1, static_cast<limb_t>(y.len()) + start));
   }
   return true;
 }
@@ -343,7 +343,7 @@ FASTFLOAT_CONSTEXPR20 bool long_mul(stackvec<size> &x, limb_span y) noexcept {
   if (y.len() != 0) {
     limb y0 = y[0];
     FASTFLOAT_TRY(small_mul(x, y0));
-    for (limb_t index = 1; index != y.len(); ++index) {
+    for (limb_t index = 1; index < y.len(); ++index) {
       limb yi = y[index];
       stackvec<size> zi;
       if (yi != 0) {
@@ -584,8 +584,8 @@ struct bigint : pow5_tables<> {
 
   // get the number of bits in the bigint.
   FASTFLOAT_CONSTEXPR20 bigint_bits_t bit_length() const noexcept {
-    bigint_bits_t lz = ctlz();
-    return static_cast<fast_float::bigint_bits_t>(limb_bits * vec.len() - lz);
+    auto lz = ctlz();
+    return limb_bits * vec.len() - lz;
   }
 
   FASTFLOAT_CONSTEXPR20 bool mul(limb y) noexcept { return small_mul(vec, y); }
