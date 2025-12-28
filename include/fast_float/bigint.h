@@ -567,7 +567,7 @@ struct bigint : pow5_tables<> {
   }
 
   // get the number of leading zeros in the bigint.
-  FASTFLOAT_CONSTEXPR20 limb_t ctlz() const noexcept {
+  FASTFLOAT_CONSTEXPR20 bigint_bits_t ctlz() const noexcept {
     if (vec.is_empty()) {
       // empty vector, no bits, no zeros.
       return 0;
@@ -584,7 +584,7 @@ struct bigint : pow5_tables<> {
 
   // get the number of bits in the bigint.
   FASTFLOAT_CONSTEXPR20 bigint_bits_t bit_length() const noexcept {
-    limb_t lz = ctlz();
+    bigint_bits_t lz = ctlz();
     return static_cast<fast_float::bigint_bits_t>(limb_bits * vec.len() - lz);
   }
 

@@ -353,7 +353,7 @@ struct alignas(16) value128 {
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_digits
 leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0xffffffff00000000)) {
     input_num >>= 32;
@@ -378,11 +378,11 @@ leading_zeroes_generic(uint64_t input_num, uint32_t last_bit = 0) noexcept {
   if (input_num & uint64_t(0x2)) { /* input_num >>=  1; */
     last_bit |= 1;
   }
-  return 63 - static_cast<limb_t>(last_bit);
+  return 63 - static_cast<am_digits>(last_bit);
 }
 
 /* result might be undefined when input_num is zero */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 am_digits
 leading_zeroes(uint64_t input_num) noexcept {
   assert(input_num > 0);
   FASTFLOAT_ASSUME(input_num > 0);
@@ -395,17 +395,17 @@ leading_zeroes(uint64_t input_num) noexcept {
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
   _BitScanReverse64(&leading_zero, input_num);
-  return static_cast<limb_t>(63 - leading_zero);
+  return static_cast<am_digits>(63 - leading_zero);
 #else
-  return static_cast<limb_t>(leading_zeroes_generic(input_num));
+  return static_cast<am_digits>(leading_zeroes_generic(input_num));
 #endif
 #else
-  return static_cast<limb_t>(__builtin_clzll(input_num));
+  return static_cast<am_digits>(__builtin_clzll(input_num));
 #endif
 }
 
 /* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 am_digits
 countr_zero_generic_32(uint32_t input_num) {
   if (input_num == 0) {
     return 32;
@@ -430,11 +430,11 @@ countr_zero_generic_32(uint32_t input_num) {
   if (!(input_num & 0x1)) {
     last_bit |= 1;
   }
-  return static_cast<limb_t>(last_bit);
+  return static_cast<am_digits>(last_bit);
 }
 
 /* count trailing zeroes for 32-bit integers */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 am_digits
 countr_zero_32(uint32_t input_num) {
   if (cpp20_and_in_constexpr()) {
     return countr_zero_generic_32(input_num);
@@ -442,11 +442,11 @@ countr_zero_32(uint32_t input_num) {
 #ifdef FASTFLOAT_VISUAL_STUDIO
   unsigned long trailing_zero = 0;
   if (_BitScanForward(&trailing_zero, input_num)) {
-    return static_cast<limb_t>(trailing_zero);
+    return static_cast<am_digits>(trailing_zero);
   }
   return 32;
 #else
-  return input_num == 0 ? 32 : static_cast<limb_t>(__builtin_ctz(input_num));
+  return input_num == 0 ? 32 : static_cast<am_digits>(__builtin_ctz(input_num));
 #endif
 }
 

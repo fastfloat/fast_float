@@ -71,8 +71,8 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
 // for significant digits already multiplied by 10 ** q.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
-compute_error_scaled(int64_t q, uint64_t w, limb_t lz) noexcept {
-  auto const hilz = static_cast<limb_t>((w >> 63) ^ 1);
+compute_error_scaled(int64_t q, uint64_t w, am_digits lz) noexcept {
+  auto const hilz = static_cast<am_digits>((w >> 63) ^ 1);
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
   constexpr am_pow_t bias =
@@ -87,7 +87,7 @@ compute_error_scaled(int64_t q, uint64_t w, limb_t lz) noexcept {
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_error(int64_t q, uint64_t w) noexcept {
-  limb_t const lz = leading_zeroes(w);
+  am_digits const lz = leading_zeroes(w);
   w <<= lz;
   value128 product =
       compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
@@ -119,7 +119,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   // powers::largest_power_of_five].
 
   // We want the most significant bit of i to be 1. Shift if needed.
-  limb_t const lz = leading_zeroes(w);
+  am_digits const lz = leading_zeroes(w);
   w <<= lz;
 
   // The required precision is binary::mantissa_explicit_bits() + 3 because
