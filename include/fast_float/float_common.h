@@ -39,8 +39,10 @@ typedef uint_fast16_t am_digits;
 // The number of bits in the limb.
 typedef uint_fast8_t limb_t;
 
+// Type for enum chars_format.
 typedef uint_fast8_t chars_format_t;
 
+// Type for base.
 typedef uint_fast8_t base_t;
 
 enum class chars_format : chars_format_t;
@@ -105,7 +107,7 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 template <typename To, typename From>
-FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) {
+FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) noexcept {
 #if FASTFLOAT_HAS_BIT_CAST
   return std::bit_cast<To>(from);
 #else
