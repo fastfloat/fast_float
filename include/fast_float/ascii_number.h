@@ -574,33 +574,36 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       return answer;
     }
 
-    union {
-      uint8_t as_str[4];
-      uint32_t as_int;
-    } digits;
+    uint32_t digits;
 
-    if (cpp20_and_in_constexpr()) {
-      digits.as_int = 0;
+#if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST
+    if (std::is_constant_evaluated()) {
+      uint8_t str[4];
       for (uint_fast8_t j = 0; j < 4 && j < len; ++j) {
-        digits.as_str[j] = static_cast<uint8_t>(p[j]);
+        str[j] = static_cast<uint8_t>(p[j]);
       }
-    } else if (len >= 4) {
-      memcpy(&digits.as_int, p, 4);
+      digits = bit_cast<uint32_t>(str);
+    }
+#else
+    if (false) {
+    }
+#endif
+    else if (len >= 4) {
+      std::memcpy(&digits, p, 4);
     } else {
       uint32_t b0 = static_cast<uint8_t>(p[0]);
       uint32_t b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0xFFu;
       uint32_t b2 = (len > 2) ? static_cast<uint8_t>(p[2]) : 0xFFu;
       uint32_t b3 = 0xFFu;
 #if FASTFLOAT_IS_BIG_ENDIAN
-      digits.as_int = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
+      digits = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
 #else
-      digits.as_int = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+      digits = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
 #endif
     }
 
     const uint32_t magic =
-        ((digits.as_int + 0x46464646u) | (digits.as_int - 0x30303030u)) &
-        0x80808080u;
+        ((digits + 0x46464646u) | (digits - 0x30303030u)) & 0x80808080u;
     const auto tz =
         static_cast<limb_t>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
     limb_t nd = (tz == 32) ? 4 : (tz >> 3);
@@ -630,18 +633,17 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       return answer;
     }
 
-    digits.as_int ^= 0x30303030u;
-    digits.as_int <<= ((4 - nd) * 8);
+    digits ^= 0x30303030u;
+    digits <<= ((4 - nd) * 8);
 
-    const uint32_t check = ((digits.as_int >> 24) & 0xff) |
-                           ((digits.as_int >> 8) & 0xff00) |
-                           ((digits.as_int << 8) & 0xff0000);
+    const uint32_t check = ((digits >> 24) & 0xff) | ((digits >> 8) & 0xff00) |
+                           ((digits << 8) & 0xff0000);
     if (check > 0x00020505) {
       answer.ec = std::errc::result_out_of_range;
       answer.ptr = p + nd;
       return answer;
     }
-    value = static_cast<uint8_t>((0x640a01 * digits.as_int) >> 24);
+    value = static_cast<uint8_t>((0x640a01 * digits) >> 24);
     answer.ec = std::errc();
     answer.ptr = p + nd;
     return answer;
