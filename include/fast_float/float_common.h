@@ -410,7 +410,7 @@ countr_zero_generic_32(uint32_t input_num) {
   if (input_num == 0) {
     return 32;
   }
-  uint32_t last_bit = 0;
+  uint_fast16_t last_bit = 0;
   if (!(input_num & 0x0000FFFF)) {
     input_num >>= 16;
     last_bit |= 16;

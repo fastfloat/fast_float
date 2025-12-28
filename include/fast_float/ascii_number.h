@@ -561,7 +561,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   auto const *const start_digits = p;
 
   FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint8_t>::value)) {
-    const auto len = static_cast<limb_t>(pend - p);
+    const auto len = static_cast<am_digits>(pend - p);
     if (len == 0) {
       if (has_leading_zeros) {
         value = 0;
@@ -605,7 +605,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     const uint32_t magic =
         ((digits + 0x46464646u) | (digits - 0x30303030u)) & 0x80808080u;
     const auto tz =
-        static_cast<limb_t>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
+        static_cast<am_digits>(countr_zero_32(magic)); // 7, 15, 23, 31, or 32
     limb_t nd = (tz == 32) ? 4 : (tz >> 3);
     nd = std::min(nd, len);
     if (nd == 0) {
@@ -621,7 +621,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
     if (nd > 3) {
       const UC *q = p + nd;
-      limb_t rem = len - nd;
+      am_digits rem = len - nd;
       while (rem) {
         if (*q < UC('0') || *q > UC('9'))
           break;
