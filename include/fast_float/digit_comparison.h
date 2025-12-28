@@ -76,8 +76,8 @@ to_extended(T const value) noexcept {
     am.mantissa = bits & mantissa_mask;
   } else {
     // normal
-    am.power2 = am_pow_t((bits & exponent_mask) >>
-                         binary_format<T>::mantissa_explicit_bits());
+    am.power2 = static_cast<am_pow_t>(bits & exponent_mask) >>
+                binary_format<T>::mantissa_explicit_bits();
     am.power2 -= bias;
     am.mantissa = (bits & mantissa_mask) | hidden_bit_mask;
   }

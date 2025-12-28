@@ -19,7 +19,7 @@ namespace fast_float {
 //
 template <limb_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
-compute_product_approximation(int64_t q, uint64_t w) noexcept {
+compute_product_approximation(am_pow_t q, am_mant_t w) noexcept {
   am_pow_t const index = 2 * am_pow_t(q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact
   // because The line value128 firstproduct = full_multiplication(w,
@@ -71,14 +71,13 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
 // for significant digits already multiplied by 10 ** q.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
-compute_error_scaled(int64_t q, uint64_t w, am_digits lz) noexcept {
-  auto const hilz = static_cast<am_digits>((w >> 63) ^ 1);
+compute_error_scaled(am_pow_t q, am_mant_t w, am_digits lz) noexcept {
+  auto const hilz = static_cast<am_pow_t>((w >> 63) ^ 1);
   adjusted_mantissa answer;
   answer.mantissa = w << hilz;
   constexpr am_pow_t bias =
       binary::mantissa_explicit_bits() - binary::minimum_exponent();
-  answer.power2 = am_pow_t(detail::power(am_pow_t(q)) + bias - hilz - lz - 62 +
-                           invalid_am_bias);
+  answer.power2 = detail::power(q) + bias - hilz - lz - 62 + invalid_am_bias;
   return answer;
 }
 
@@ -86,7 +85,7 @@ compute_error_scaled(int64_t q, uint64_t w, am_digits lz) noexcept {
 // the power2 in the exponent will be adjusted by invalid_am_bias.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-compute_error(int64_t q, uint64_t w) noexcept {
+compute_error(am_pow_t q, am_mant_t w) noexcept {
   am_digits const lz = leading_zeroes(w);
   w <<= lz;
   value128 product =
@@ -101,7 +100,7 @@ compute_error(int64_t q, uint64_t w) noexcept {
 // should recompute in such cases.
 template <typename binary>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
-compute_float(int64_t q, uint64_t w) noexcept {
+compute_float(am_pow_t q, am_mant_t w) noexcept {
   adjusted_mantissa answer;
   if ((w == 0) || (q < binary::smallest_power_of_ten())) {
     answer.power2 = 0;
@@ -144,8 +143,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
 
   answer.mantissa = product.high >> shift;
 
-  answer.power2 = am_pow_t(detail::power(am_pow_t(q)) + upperbit - lz -
-                           binary::minimum_exponent());
+  answer.power2 = detail::power(q) + upperbit - lz - binary::minimum_exponent();
   if (answer.power2 <= 0) { // we have a subnormal or very small value.
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
     if (-answer.power2 + 1 >=
