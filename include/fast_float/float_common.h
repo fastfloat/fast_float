@@ -34,8 +34,6 @@
 namespace fast_float {
 
 // 64 bit integer is used because mantissa can be up to 53 bits for double.
-// Value of the int mantissa in the API.
-typedef int_fast64_t am_sign_mant_t;
 // An unsigned int avoids signed overflows (which are bad)
 typedef uint_fast64_t am_mant_t;
 
