@@ -582,7 +582,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST
     if (std::is_constant_evaluated()) {
       uint8_t str[4];
-      for (uint_fast8_t j = 0; j < 4 && j < len; ++j) {
+      for (uint_fast8_t j = 0; j != 4 && j != len; ++j) {
         str[j] = static_cast<uint8_t>(p[j]);
       }
       digits = bit_cast<uint32_t>(str);

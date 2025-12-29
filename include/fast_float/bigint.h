@@ -518,7 +518,7 @@ struct bigint : pow5_tables<> {
     limb_t const shl = n;
     limb_t const shr = limb_bits - shl;
     limb prev = 0;
-    for (limb_t index = 0; index < vec.len(); ++index) {
+    for (limb_t index = 0; index != vec.len(); ++index) {
       limb xi = vec[index];
       vec[index] = (xi << shl) | (prev >> shr);
       prev = xi;
