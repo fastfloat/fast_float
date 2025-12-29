@@ -417,7 +417,7 @@ FASTFLOAT_CONSTEXPR20
     integer_times_pow10(am_sign_mant_t const mantissa,
                         am_pow_t const decimal_exponent) noexcept {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  const bool is_negative = mantissa < 0;
+  const auto is_negative = mantissa < 0;
   const auto m = static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
 #else
   FASTFLOAT_ASSUME(mantissa >= 0);
@@ -431,8 +431,9 @@ FASTFLOAT_CONSTEXPR20
                              value))
     return value;
 
-  adjusted_mantissa am =
+  adjusted_mantissa const am =
       compute_float<binary_format<double>>(decimal_exponent, m);
+
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       is_negative,

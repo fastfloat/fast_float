@@ -259,17 +259,20 @@ enum class parse_error : uint_fast8_t {
 
 template <typename UC> struct parsed_number_string_t {
   am_mant_t mantissa{0};
-  am_pow_t exponent{0};
-  // contains the range of the significant digits
-  span<UC const> integer{};  // non-nullable
-  span<UC const> fraction{}; // nullable
-  UC const *lastmatch{nullptr};
+
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   bool negative{false};
 #endif
   bool invalid{false};                      // be optimistic
   bool too_many_digits{false};              // be optimistic
   parse_error error{parse_error::no_error}; // be optimistic
+
+  am_pow_t exponent{0};
+
+  // contains the range of the significant digits
+  span<UC const> integer;  // non-nullable
+  span<UC const> fraction; // nullable
+  UC const *lastmatch;
 };
 
 using byte_span = span<char const>;

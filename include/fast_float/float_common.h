@@ -110,10 +110,10 @@ template <typename UC> struct parse_options_t {
 
   /** Which number formats are accepted */
   chars_format format;
-  /** The character used as decimal point for floats */
-  UC decimal_point;
   /** The base used for integers */
   base_t base;
+  /** The character used as decimal point for floats */
+  UC decimal_point;
 };
 
 using parse_options = parse_options_t<char>;
@@ -370,7 +370,7 @@ struct alignas(16) value128 {
   constexpr value128(uint64_t _low, uint64_t _high) noexcept
       : low(_low), high(_high) {}
 
-  constexpr value128() noexcept : low(0), high(0) {}
+  constexpr value128() noexcept {}
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
@@ -415,7 +415,7 @@ leading_zeroes(uint64_t input_num) noexcept {
   }
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #if defined(_M_X64) || defined(_M_ARM64)
-  unsigned long leading_zero = 0;
+  unsigned long leading_zero;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
   _BitScanReverse64(&leading_zero, input_num);
@@ -533,7 +533,7 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
 struct alignas(16) adjusted_mantissa {
   am_mant_t mantissa;
   am_pow_t power2;
-  adjusted_mantissa() noexcept = default;
+  adjusted_mantissa() noexcept {};
 
   constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;

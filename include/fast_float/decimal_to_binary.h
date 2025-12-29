@@ -31,14 +31,16 @@ compute_product_approximation(am_pow_t q, am_mant_t w) noexcept {
   constexpr uint64_t precision_mask =
       (bit_precision < 64) ? (uint64_t(0xFFFFFFFFFFFFFFFF) >> bit_precision)
                            : uint64_t(0xFFFFFFFFFFFFFFFF);
+
   if ((firstproduct.high & precision_mask) ==
       precision_mask) { // could further guard with  (lower + w < lower)
     // regarding the second product, we only need secondproduct.high, but our
     // expectation is that the compiler will optimize this extra work away if
     // needed.
-    value128 secondproduct =
+    value128 const secondproduct =
         full_multiplication(w, powers::power_of_five_128[index + 1]);
     firstproduct.low += secondproduct.high;
+
     if (secondproduct.high > firstproduct.low) {
       ++firstproduct.high;
     }
@@ -62,7 +64,7 @@ namespace detail {
  * where
  *   p = log(5**-q)/log(2) = -q * log(5)/log(2)
  */
-constexpr fastfloat_really_inline am_pow_t power(am_pow_t q) noexcept {
+constexpr fastfloat_really_inline am_pow_t power(am_pow_t const q) noexcept {
   return (((152170 + 65536) * q) >> 16) + 63;
 }
 } // namespace detail
@@ -103,9 +105,9 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_float(am_pow_t q, am_mant_t w) noexcept {
   adjusted_mantissa answer;
   if ((w == 0) || (q < binary::smallest_power_of_ten())) {
+    // we want to get zero:
     answer.power2 = 0;
     answer.mantissa = 0;
-    // result should be zero
     return answer;
   }
   if (q > binary::largest_power_of_ten()) {
@@ -114,6 +116,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
     answer.mantissa = 0;
     return answer;
   }
+
   // At this point in time q is in [powers::smallest_power_of_five,
   // powers::largest_power_of_five].
 
@@ -127,7 +130,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   // 3. We might lose a bit due to the "upperbit" routine (result too small,
   // requiring a shift)
 
-  value128 product =
+  value128 const product =
       compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
   // The computed 'product' is always sufficient.
   // Mathematical proof:
@@ -141,6 +144,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   auto const upperbit = static_cast<am_bits_t>(product.high >> 63);
   am_bits_t const shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
 
+  // Shift right the mantissa to the correct position
   answer.mantissa = product.high >> shift;
 
   answer.power2 = detail::power(q) + upperbit - lz - binary::minimum_exponent();
@@ -192,6 +196,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
     }
   }
 
+  // Normal rounding
   answer.mantissa += (answer.mantissa & 1); // round up
   answer.mantissa >>= 1;
   if (answer.mantissa >= (am_mant_t(2) << binary::mantissa_explicit_bits())) {
@@ -199,6 +204,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
     ++answer.power2; // undo previous addition
   }
 
+  // Check if we have infinity after computation
   answer.mantissa &= ~(am_mant_t(1) << binary::mantissa_explicit_bits());
   if (answer.power2 >= binary::infinite_power()) { // infinity
     answer.power2 = binary::infinite_power();
