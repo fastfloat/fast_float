@@ -76,8 +76,8 @@ to_extended(T const value) noexcept {
     am.mantissa = bits & mantissa_mask;
   } else {
     // normal
-    am.power2 = static_cast<am_pow_t>(bits & exponent_mask) >>
-                binary_format<T>::mantissa_explicit_bits();
+    am.power2 = static_cast<am_pow_t>(
+        (bits & exponent_mask) >> binary_format<T>::mantissa_explicit_bits());
     am.power2 -= bias;
     am.mantissa = (bits & mantissa_mask) | hidden_bit_mask;
   }
@@ -276,10 +276,10 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
   while (p != pend) {
     while ((std::distance(p, pend) >= 8) && (step - counter >= 8) &&
            (max_digits - digits >= 8)) {
-      parse_eight_digits<UC>(p, value, counter, digits);
+      parse_eight_digits(p, value, counter, digits);
     }
     while (counter < step && p != pend && digits < max_digits) {
-      parse_one_digit<UC>(p, value, counter, digits);
+      parse_one_digit(p, value, counter, digits);
     }
     if (digits == max_digits) {
       // add the temporary value, then check if we've truncated any digits
@@ -310,10 +310,10 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
     while (p != pend) {
       while ((std::distance(p, pend) >= 8) && (step - counter >= 8) &&
              (max_digits - digits >= 8)) {
-        parse_eight_digits<UC>(p, value, counter, digits);
+        parse_eight_digits(p, value, counter, digits);
       }
       while (counter < step && p != pend && digits < max_digits) {
-        parse_one_digit<UC>(p, value, counter, digits);
+        parse_one_digit(p, value, counter, digits);
       }
       if (digits == max_digits) {
         // add the temporary value, then check if we've truncated any digits
@@ -398,7 +398,7 @@ negative_digit_comp(bigint &real_digits, adjusted_mantissa am,
   }
 
   // compare digits, and use it to direct rounding
-  int const ord = real_digits.compare(theor_digits);
+  auto const ord = real_digits.compare(theor_digits);
   round<T>(am, [ord](adjusted_mantissa &a, am_pow_t shift) {
     round_nearest_tie_even(
         a, shift, [ord](bool is_odd, bool _, bool __) -> bool {
@@ -440,8 +440,7 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   bigint bigmant;
   am_digits const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
-  am_pow_t const exponent =
-      static_cast<am_pow_t>(sci_exp + 1 - static_cast<am_pow_t>(digits));
+  am_pow_t const exponent = sci_exp + 1 - static_cast<am_pow_t>(digits);
   if (exponent >= 0) {
     return positive_digit_comp<T>(bigmant, am, exponent);
   } else {
