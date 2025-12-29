@@ -68,7 +68,7 @@ to_extended(T const value) noexcept {
   constexpr am_pow_t bias = binary_format<T>::mantissa_explicit_bits() -
                             binary_format<T>::minimum_exponent();
 
-  auto const bits = bit_cast<equiv_uint, T>(value);
+  auto const bits = bit_cast<equiv_uint>(value);
 
   if ((bits & exponent_mask) == 0) {
     // denormal

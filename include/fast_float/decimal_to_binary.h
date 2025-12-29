@@ -17,7 +17,7 @@ namespace fast_float {
 // most significant bits and the low part corresponding to the least significant
 // bits.
 //
-template <limb_t bit_precision>
+template <am_bits_t bit_precision>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(am_pow_t q, am_mant_t w) noexcept {
   am_pow_t const index = 2 * (q - powers::smallest_power_of_five);
@@ -90,7 +90,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_error(am_pow_t q, am_mant_t w) noexcept {
   auto const lz = leading_zeroes(w);
   w <<= lz;
-  value128 product =
+  value128 const product =
       compute_product_approximation<binary::mantissa_explicit_bits() + 3>(q, w);
   return compute_error_scaled<binary>(q, product.high, lz);
 }
@@ -201,7 +201,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   answer.mantissa >>= 1;
   if (answer.mantissa >= (am_mant_t(2) << binary::mantissa_explicit_bits())) {
     answer.mantissa = (am_mant_t(1) << binary::mantissa_explicit_bits());
-    ++answer.power2; // undo previous addition
+    ++answer.power2; // undo previous line addition
   }
 
   // Check if we have infinity after computation
@@ -210,6 +210,7 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
   }
+
   return answer;
 }
 

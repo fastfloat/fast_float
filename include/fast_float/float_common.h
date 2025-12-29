@@ -120,27 +120,6 @@ using parse_options = parse_options_t<char>;
 
 } // namespace fast_float
 
-#if FASTFLOAT_HAS_BIT_CAST
-#include <bit>
-#endif
-
-namespace fast_float {
-template <typename To, typename From>
-FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) noexcept {
-#if FASTFLOAT_HAS_BIT_CAST
-  return std::bit_cast<To>(from);
-#else
-  // Implementation of std::bit_cast for pre-C++20.
-  static_assert(sizeof(To) == sizeof(From),
-                "bit_cast requires source and destination to be the same size");
-  auto to = To();
-  // The cast suppresses a bogus -Wclass-memaccess on GCC.
-  std::memcpy(static_cast<void *>(&to), &from, sizeof(to));
-  return to;
-#endif
-}
-} // namespace fast_float
-
 #if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64) ||            \
      defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) ||          \
      defined(__MINGW64__) || defined(__s390x__) ||                             \
@@ -269,7 +248,25 @@ FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) noexcept {
 #define FASTFLOAT_ENABLE_IF(...)                                               \
   typename std::enable_if<(__VA_ARGS__), int>::type
 
+#if FASTFLOAT_HAS_BIT_CAST
+#include <bit>
+#endif
+
 namespace fast_float {
+template <typename To, typename From>
+constexpr fastfloat_really_inline To bit_cast(const From &from) noexcept {
+#if FASTFLOAT_HAS_BIT_CAST
+  return std::bit_cast<To>(from);
+#else
+  // Implementation of std::bit_cast for pre-C++20.
+  static_assert(sizeof(To) == sizeof(From),
+                "bit_cast requires source and destination to be the same size");
+  auto to = To();
+  // The cast suppresses a bogus -Wclass-memaccess on GCC.
+  std::memcpy(static_cast<void *>(&to), &from, sizeof(to));
+  return to;
+#endif
+}
 
 fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
@@ -1124,7 +1121,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
   word =
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
 #endif
-  value = bit_cast<T, equiv_uint>(word);
+  value = bit_cast<T>(word);
 }
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
