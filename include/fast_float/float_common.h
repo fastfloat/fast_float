@@ -251,11 +251,14 @@ using parse_options = parse_options_t<char>;
 #endif
 
 namespace fast_float {
+#if FASTFLOAT_HAS_BIT_CAST
 template <typename To, typename From>
 fastfloat_really_inline constexpr To bit_cast(const From &from) noexcept {
-#if FASTFLOAT_HAS_BIT_CAST
   return std::bit_cast<To>(from);
+}
 #else
+template <typename To, typename From>
+fastfloat_really_inline To bit_cast(const From &from) noexcept {
   // Implementation of std::bit_cast for pre-C++20.
   static_assert(sizeof(To) == sizeof(From),
                 "bit_cast requires source and destination to be the same size");
@@ -263,8 +266,8 @@ fastfloat_really_inline constexpr To bit_cast(const From &from) noexcept {
   // The cast suppresses a bogus -Wclass-memaccess on GCC.
   std::memcpy(static_cast<void *>(&to), &from, sizeof(to));
   return to;
-#endif
 }
+#endif
 
 fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() noexcept {
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
