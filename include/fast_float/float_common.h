@@ -369,7 +369,7 @@ struct alignas(16) value128 {
   constexpr value128(uint64_t _low, uint64_t _high) noexcept
       : low(_low), high(_high) {}
 
-  constexpr value128() noexcept = default;
+  constexpr value128() noexcept : low(0), high(0) {}
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
@@ -429,7 +429,7 @@ leading_zeroes(uint64_t input_num) noexcept {
 
 /* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
-countr_zero_generic_32(uint32_t input_num) {
+countr_zero_generic_32(uint32_t input_num) noexcept {
   assert(input_num > 0);
   FASTFLOAT_ASSUME(input_num > 0);
   uint_fast16_t last_bit = 0;
@@ -457,7 +457,7 @@ countr_zero_generic_32(uint32_t input_num) {
 
 /* count trailing zeroes for 32-bit integers */
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
-countr_zero_32(uint32_t input_num) {
+countr_zero_32(uint32_t input_num) noexcept {
   if (cpp20_and_in_constexpr()) {
     return countr_zero_generic_32(input_num);
   }
@@ -505,34 +505,35 @@ _umul128(uint64_t ab, uint64_t cd, uint64_t *hi) noexcept {
 // compute 64-bit a*b
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
 full_multiplication(uint64_t a, uint64_t b) noexcept {
-  if (cpp20_and_in_constexpr()) {
-    value128 answer;
-    answer.low = umul128_generic(a, b, &answer.high);
-    return answer;
-  }
   value128 answer;
+  if (cpp20_and_in_constexpr()) {
+    answer.low = umul128_generic(a, b, &answer.high);
+  } else {
 #if defined(_M_ARM64) && !defined(__MINGW32__)
-  // ARM64 has native support for 64-bit multiplications, no need to emulate
-  // But MinGW on ARM64 doesn't have native support for 64-bit multiplications
-  answer.high = __umulh(a, b);
-  answer.low = a * b;
+    // ARM64 has native support for 64-bit multiplications, no need to emulate
+    // But MinGW on ARM64 doesn't have native support for 64-bit multiplications
+    answer.high = __umulh(a, b);
+    answer.low = a * b;
 #elif defined(FASTFLOAT_32BIT) || (defined(_WIN64) && !defined(__clang__) &&   \
                                    !defined(_M_ARM64) && !defined(__GNUC__))
-  answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
+    answer.low =
+        _umul128(a, b, &answer.high); // _umul128 not available on ARM64
 #elif defined(FASTFLOAT_64BIT) && defined(__SIZEOF_INT128__)
-  __uint128_t r = ((__uint128_t)a) * b;
-  answer.low = uint64_t(r);
-  answer.high = uint64_t(r >> 64);
+    __uint128_t r = (static_cast<__uint128_t>(a)) * b;
+    answer.low = static_cast<uint64_t>(r);
+    answer.high = static_cast<uint64_t>(r >> 64);
 #else
-  answer.low = umul128_generic(a, b, &answer.high);
+    answer.low = umul128_generic(a, b, &answer.high);
 #endif
+  }
   return answer;
 }
 
 struct alignas(16) adjusted_mantissa {
   am_mant_t mantissa;
   am_pow_t power2;
-  adjusted_mantissa() noexcept {};
+
+  constexpr adjusted_mantissa() noexcept : mantissa(0), power2(0) {}
 
   constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;
