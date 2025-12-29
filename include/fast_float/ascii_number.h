@@ -258,16 +258,16 @@ enum class parse_error : uint_fast8_t {
 };
 
 template <typename UC> struct parsed_number_string_t {
-  am_mant_t mantissa{0};
+  am_mant_t mantissa;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  bool negative{false};
+  bool negative;
 #endif
-  bool invalid{false};                      // be optimistic
-  bool too_many_digits{false};              // be optimistic
-  parse_error error{parse_error::no_error}; // be optimistic
+  bool invalid;
+  bool too_many_digits;
+  parse_error error;
 
-  am_pow_t exponent{0};
+  am_pow_t exponent;
 
   // contains the range of the significant digits
   span<UC const> integer;  // non-nullable
@@ -294,7 +294,7 @@ template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend,
                     parse_options_t<UC> const options) noexcept {
-  parsed_number_string_t<UC> answer;
+  parsed_number_string_t<UC> answer{};
   // so dereference without checks
   FASTFLOAT_ASSUME(p < pend);
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -514,8 +514,8 @@ parse_number_string(UC const *p, UC const *pend,
         }
         answer.exponent = am_pow_t(answer.fraction.ptr - p) + exp_number;
       }
+      // We now corrected both exponent and mantissa, to a truncated value
     }
-    // We have now corrected both exponent and mantissa, to a truncated value
   }
 
   return answer;

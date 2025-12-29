@@ -347,17 +347,16 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 // a pointer and a length to a contiguous block of memory
 template <typename T> struct span {
   T const *ptr;
-  uint_fast16_t length;
+  am_digits length;
 
-  constexpr span(T const *_ptr, uint_fast16_t _length) noexcept
+  constexpr span(T const *_ptr, am_digits _length) noexcept
       : ptr(_ptr), length(_length) {}
 
-  constexpr span() noexcept : ptr(nullptr), length(0) {}
+  constexpr span() noexcept = default;
 
-  constexpr uint_fast16_t len() const noexcept { return length; }
+  constexpr am_digits len() const noexcept { return length; }
 
-  FASTFLOAT_CONSTEXPR14 const T &
-  operator[](uint_fast16_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const T &operator[](am_digits index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -370,7 +369,7 @@ struct alignas(16) value128 {
   constexpr value128(uint64_t _low, uint64_t _high) noexcept
       : low(_low), high(_high) {}
 
-  constexpr value128() noexcept {}
+  constexpr value128() noexcept = default;
 };
 
 /* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
