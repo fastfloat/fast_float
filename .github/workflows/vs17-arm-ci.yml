@@ -14,7 +14,7 @@ jobs:
           - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Debug}
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: configure
         run: |
           cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DCMAKE_CROSSCOMPILING=1 -DFASTFLOAT_TEST=ON
