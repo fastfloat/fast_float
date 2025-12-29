@@ -386,8 +386,8 @@ negative_digit_comp(bigint &real_digits, adjusted_mantissa am,
   am_pow_t const theor_exp = theor.power2;
 
   // scale real digits and theor digits to be same power.
-  am_pow_t const pow2_exp = theor_exp - real_exp;
-  am_pow_t pow5_exp = -real_exp;
+  auto const pow2_exp = theor_exp - real_exp;
+  auto const pow5_exp = -real_exp;
   if (pow5_exp != 0) {
     FASTFLOAT_ASSERT(theor_digits.pow5(pow5_exp));
   }

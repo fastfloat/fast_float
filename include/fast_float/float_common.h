@@ -254,7 +254,7 @@ using parse_options = parse_options_t<char>;
 
 namespace fast_float {
 template <typename To, typename From>
-constexpr fastfloat_really_inline To bit_cast(const From &from) noexcept {
+fastfloat_really_inline constexpr To bit_cast(const From &from) noexcept {
 #if FASTFLOAT_HAS_BIT_CAST
   return std::bit_cast<To>(from);
 #else
