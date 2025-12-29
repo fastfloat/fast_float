@@ -2,6 +2,7 @@
 #define FASTFLOAT_FLOAT_COMMON_H
 
 #include <cfloat>
+#include <cstddef>
 #include <cstdint>
 #include <cassert>
 #include <cstring>
@@ -272,9 +273,27 @@ template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
                       size_t length) {
-  for (size_t i = 0; i < length; ++i) {
-    UC const actual = actual_mixedcase[i];
-    if ((actual < 256 ? actual | 32 : actual) != expected_lowercase[i]) {
+  uint64_t mask{0};
+  FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
+  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
+    mask = 0x0020002000200020;
+  }
+  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
+    mask = 0x0000002000000020;
+  }
+  else {
+    return false;
+  }
+  uint64_t val1{0}, val2{0};
+  size_t sz{8 / (sizeof(UC))};
+  for (size_t i = 0; i < length; i += sz) {
+    val1 = val2 = 0;
+    sz = std::min(sz, length - i);
+    ::memcpy(&val1, actual_mixedcase + i, sz * sizeof(UC));
+    ::memcpy(&val2, expected_lowercase + i, sz * sizeof(UC));
+    val1 |= mask;
+    val2 |= mask;
+    if (val1 != val2) {
       return false;
     }
   }
