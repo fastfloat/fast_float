@@ -317,8 +317,8 @@ struct is_supported_char_type
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
-// TODO use SSE4.2 there when SSE2 compiler switch in MSVC
-// or in other compiler SSE4.2 available.
+// TODO? use SSE4.2 there when SSE2 compiler switch in MSVC
+// or in other compiler SSE4.2 available?
 
 // Compares two ASCII strings in a case insensitive manner.
 template <typename UC>
@@ -556,8 +556,8 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr am_bits_t max_exponent_fast_path();
   static constexpr am_pow_t max_exponent_round_to_even();
   static constexpr am_pow_t min_exponent_round_to_even();
-  static constexpr equiv_uint max_mantissa_fast_path(am_pow_t const power);
-  static constexpr equiv_uint
+  static constexpr am_mant_t max_mantissa_fast_path(am_pow_t const power);
+  static constexpr am_mant_t
   max_mantissa_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr am_pow_t largest_power_of_ten();
   static constexpr am_pow_t smallest_power_of_ten();
@@ -738,10 +738,14 @@ inline constexpr am_bits_t binary_format<float>::max_exponent_fast_path() {
   return 10;
 }
 
-template <typename T>
-inline constexpr typename binary_format<T>::equiv_uint
-binary_format<T>::max_mantissa_fast_path() {
-  return binary_format<T>::equiv_uint(2) << mantissa_explicit_bits();
+template <>
+inline constexpr am_mant_t binary_format<double>::max_mantissa_fast_path() {
+  return am_mant_t(2) << mantissa_explicit_bits();
+}
+
+template <>
+inline constexpr am_mant_t binary_format<float>::max_mantissa_fast_path() {
+  return am_mant_t(2) << mantissa_explicit_bits();
 }
 
 // credit: Jakub Jelínek
@@ -810,7 +814,13 @@ binary_format<std::float16_t>::mantissa_explicit_bits() {
 }
 
 template <>
-inline constexpr binary_format<std::float16_t>::equiv_uint
+inline constexpr am_mant_t
+binary_format<std::float16_t>::max_mantissa_fast_path() {
+  return am_mant_t(2) << mantissa_explicit_bits();
+}
+
+template <>
+inline constexpr am_mant_t
 binary_format<std::float16_t>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 4);
@@ -894,7 +904,7 @@ constexpr std::bfloat16_t
     binary_format_lookup_tables<std::bfloat16_t, U>::powers_of_ten[];
 
 template <typename U>
-constexpr uint64_t
+constexpr uint16_t
     binary_format_lookup_tables<std::bfloat16_t, U>::max_mantissa[];
 
 #endif
@@ -937,7 +947,13 @@ binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
 }
 
 template <>
-inline constexpr binary_format<std::bfloat16_t>::equiv_uint
+inline constexpr am_mant_t
+binary_format<std::bfloat16_t>::max_mantissa_fast_path() {
+  return am_mant_t(2) << mantissa_explicit_bits();
+}
+
+template <>
+inline constexpr am_mant_t
 binary_format<std::bfloat16_t>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 3);
@@ -1002,7 +1018,7 @@ inline constexpr am_digits binary_format<std::bfloat16_t>::max_digits() {
 #endif // __STDCPP_BFLOAT16_T__
 
 template <>
-inline constexpr binary_format<double>::equiv_uint
+inline constexpr am_mant_t
 binary_format<double>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 22);
@@ -1012,7 +1028,7 @@ binary_format<double>::max_mantissa_fast_path(am_pow_t power) {
 }
 
 template <>
-inline constexpr binary_format<float>::equiv_uint
+inline constexpr am_mant_t
 binary_format<float>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 10);
