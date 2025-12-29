@@ -629,7 +629,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
     if (nd > 3) {
       const UC *q = p + nd;
-      am_bits_t rem = len - nd;
+      am_digits rem = len - nd;
       while (rem) {
         if (*q < UC('0') || *q > UC('9'))
           break;
