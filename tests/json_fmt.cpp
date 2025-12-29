@@ -10,7 +10,7 @@ int main_readme() {
   fast_float::parse_options options{
       fast_float::chars_format::json |
       fast_float::chars_format::allow_leading_plus}; // should be ignored
-  auto const answer = fast_float::from_chars_advanced(
+  auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if (answer.ec == std::errc()) {
     std::cerr << "should have failed\n";
@@ -25,7 +25,7 @@ int main_readme2() {
   fast_float::parse_options options{
       fast_float::chars_format::json |
       fast_float::chars_format::allow_leading_plus}; // should be ignored
-  auto const answer = fast_float::from_chars_advanced(
+  auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if (answer.ec == std::errc()) {
     std::cerr << "should have failed\n";
@@ -41,7 +41,7 @@ int main_readme3() {
   fast_float::parse_options options{
       fast_float::chars_format::json_or_infnan |
       fast_float::chars_format::allow_leading_plus}; // should be ignored
-  auto const answer = fast_float::from_chars_advanced(
+  auto answer = fast_float::from_chars_advanced(
       input.data(), input.data() + input.size(), result, options);
   if (answer.ec != std::errc() || (!std::isinf(result))) {
     std::cerr << "should have parsed infinity\n";
@@ -97,7 +97,7 @@ int main() {
     auto const &s = accept[i].input;
     auto const &expected = accept[i].expected;
     double result;
-    auto const answer =
+    auto answer =
         fast_float::from_chars(s.data(), s.data() + s.size(), result,
                                fast_float::chars_format::json_or_infnan);
     if (answer.ec != std::errc()) {
@@ -120,8 +120,8 @@ int main() {
   for (std::size_t i = 0; i < reject.size(); ++i) {
     auto const &s = reject[i].input;
     double result;
-    auto const answer = fast_float::from_chars(
-        s.data(), s.data() + s.size(), result, fast_float::chars_format::json);
+    auto answer = fast_float::from_chars(s.data(), s.data() + s.size(), result,
+                                         fast_float::chars_format::json);
     if (answer.ec == std::errc()) {
       std::cerr << "json fmt accepted invalid json " << s << std::endl;
       return EXIT_FAILURE;
@@ -131,12 +131,11 @@ int main() {
   for (std::size_t i = 0; i < reject.size(); ++i) {
     auto const &f = reject[i].input;
     auto const &expected_reason = reject[i].reason;
-    auto const answer = fast_float::parse_number_string<true>(
+    auto answer = fast_float::parse_number_string<true>(
         f.data(), f.data() + f.size(),
         fast_float::parse_options(
             fast_float::chars_format::json |
-            fast_float::chars_format::allow_leading_plus)); // should be
-                                                            // ignored
+            fast_float::chars_format::allow_leading_plus)); // should be ignored
     if (!answer.invalid) {
       std::cerr << "json parse accepted invalid json " << f << std::endl;
       return EXIT_FAILURE;

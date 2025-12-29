@@ -661,7 +661,7 @@ int main() {
     auto const &f = invalid_base_test_1[i];
     int result;
     auto answer =
-        fast_float::from_chars(f.data(), f.data() + f.size(), result, 1);
+        fast_float::from_chars(f.data(), f.data() + f.size(), result, -1);
     if (answer.ec != std::errc::invalid_argument) {
       std::cerr << "expected error should be 'invalid_argument' for: \"" << f
                 << "\"" << std::endl;
@@ -762,7 +762,7 @@ int main() {
     auto const &f = int_out_of_range_base_test[i];
     int64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
-                                         uint_fast8_t(2 + (i / 2)));
+                                         int(2 + (i / 2)));
     if (answer.ec != std::errc::result_out_of_range) {
       std::cerr << "expected error for should be 'result_out_of_range': \"" << f
                 << "\"" << std::endl;
@@ -807,7 +807,7 @@ int main() {
       "7ORP63SH4DPHI",
       "5G24A25TWKWFG",
       "3W5E11264SGSG"};
-  uint_fast8_t base_unsigned = 2;
+  int base_unsigned = 2;
   for (std::size_t i = 0; i < unsigned_out_of_range_base_test.size(); ++i) {
     auto const &f = unsigned_out_of_range_base_test[i];
     uint64_t result;
@@ -898,7 +898,7 @@ int main() {
     auto const &f = int_within_range_base_test[i];
     int64_t result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
-                                         uint_fast8_t(2 + (i / 2)));
+                                         int(2 + (i / 2)));
     if (answer.ec != std::errc()) {
       std::cerr << "converting " << f
                 << " to int failed (most likely out of range)" << std::endl;
@@ -943,7 +943,7 @@ int main() {
       "7ORP63SH4DPHH",
       "5G24A25TWKWFF",
       "3W5E11264SGSF"};
-  uint_fast8_t base_unsigned2 = 2;
+  int base_unsigned2 = 2;
   for (std::size_t i = 0; i < unsigned_within_range_base_test.size(); ++i) {
     auto const &f = unsigned_within_range_base_test[i];
     uint64_t result;
@@ -1001,7 +1001,7 @@ int main() {
     auto const &f = int_leading_zeros_test[i];
     int result;
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
-                                         uint_fast8_t(i + 2));
+                                         int(i + 2));
     if (answer.ec != std::errc()) {
       std::cerr << "could not convert to int for input: \"" << f << "\""
                 << std::endl;

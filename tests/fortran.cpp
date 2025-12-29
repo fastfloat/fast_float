@@ -31,7 +31,6 @@ int main() {
                                       "1d-1", "1d-2", "1d-3", "1d-4"};
   std::vector<std::string> const fmt3{"+1+4", "+1+3", "+1+2", "+1+1", "+1+0",
                                       "+1-1", "+1-2", "+1-3", "+1-4"};
-
   fast_float::parse_options const options{
       fast_float::chars_format::fortran |
       fast_float::chars_format::allow_leading_plus};
