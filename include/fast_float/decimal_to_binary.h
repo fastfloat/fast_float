@@ -141,13 +141,15 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   // branchless approach: value128 product = compute_product(q, w); but in
   // practice, we can win big with the compute_product_approximation if its
   // additional branch is easily predicted. Which is best is data specific.
-  am_pow_t const upperbit = product.high >> 63;
-  am_pow_t const shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
+  auto const upperbit = product.high >> 63;
+  auto const shift = upperbit + 64 - binary::mantissa_explicit_bits() - 3;
 
   // Shift right the mantissa to the correct position
   answer.mantissa = product.high >> shift;
 
-  answer.power2 = detail::power(q) + upperbit - lz - binary::minimum_exponent();
+  answer.power2 =
+      detail::power(q) +
+      static_cast<am_pow_t>(upperbit - lz - binary::minimum_exponent());
 
   // Now, we need to round the mantissa correctly.
 
