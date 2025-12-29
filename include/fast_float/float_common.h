@@ -106,7 +106,7 @@ template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(
       chars_format const fmt = chars_format::general, UC const dot = UC('.'),
       base_t const b = 10) noexcept
-      : format(fmt), decimal_point(dot), base(b) {}
+      : format(fmt), base(b), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
@@ -154,7 +154,7 @@ FASTFLOAT_CONSTEXPR20 To bit_cast(const From &from) noexcept {
        (defined(__riscv) && __riscv_xlen == 32))
 #define FASTFLOAT_32BIT 1
 #else
-  // Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
+// Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
 // We can never tell the register width, but the SIZE_MAX is a good
 // approximation. UINTPTR_MAX and INTPTR_MAX are optional, so avoid them for max
 // portability.
