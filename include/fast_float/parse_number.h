@@ -376,15 +376,15 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
-from_chars(UC const *first, UC const *last, T &value,
-           base_t const base) noexcept {
+from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
 
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
-  parse_options_t<UC> const options(chars_format::general, UC('.'), base);
+  parse_options_t<UC> const options(chars_format::general, UC('.'),
+                                    static_cast<base_t>(base));
   return from_chars_advanced(first, last, value, options);
 }
 
@@ -392,17 +392,17 @@ template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(uint64_t const mantissa,
-                        am_pow_t const decimal_exponent) noexcept {
+                        int const decimal_exponent) noexcept {
   T value;
-  if (clinger_fast_path_impl(mantissa, decimal_exponent,
+  const auto exponent = static_cast<am_pow_t>(decimal_exponent);
+  if (clinger_fast_path_impl(mantissa, exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                              false,
 #endif
                              value))
     return value;
 
-  adjusted_mantissa am =
-      compute_float<binary_format<T>>(decimal_exponent, mantissa);
+  adjusted_mantissa am = compute_float<binary_format<T>>(exponent, mantissa);
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       false,
@@ -415,7 +415,7 @@ template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(int64_t const mantissa,
-                        am_pow_t const decimal_exponent) noexcept {
+                        int const decimal_exponent) noexcept {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   const auto is_negative = mantissa < 0;
   const auto m = static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
@@ -423,8 +423,9 @@ FASTFLOAT_CONSTEXPR20
   FASTFLOAT_ASSUME(mantissa >= 0);
   const auto m = static_cast<am_mant_t>(mantissa);
 #endif
+  const auto exponent = static_cast<am_pow_t>(decimal_exponent);
   T value;
-  if (clinger_fast_path_impl(m, decimal_exponent,
+  if (clinger_fast_path_impl(m, exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                              is_negative,
 #endif
@@ -432,7 +433,7 @@ FASTFLOAT_CONSTEXPR20
     return value;
 
   adjusted_mantissa const am =
-      compute_float<binary_format<double>>(decimal_exponent, m);
+      compute_float<binary_format<double>>(exponent, m);
 
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -444,13 +445,13 @@ FASTFLOAT_CONSTEXPR20
 
 FASTFLOAT_CONSTEXPR20 inline double
 integer_times_pow10(uint64_t const mantissa,
-                    am_pow_t const decimal_exponent) noexcept {
+                    int const decimal_exponent) noexcept {
   return integer_times_pow10<double>(mantissa, decimal_exponent);
 }
 
 FASTFLOAT_CONSTEXPR20 inline double
 integer_times_pow10(int64_t const mantissa,
-                    am_pow_t const decimal_exponent) noexcept {
+                    int const decimal_exponent) noexcept {
   return integer_times_pow10<double>(mantissa, decimal_exponent);
 }
 
@@ -463,7 +464,7 @@ FASTFLOAT_CONSTEXPR20
                                 !std::is_signed<Int>::value,
                             T>::type
     integer_times_pow10(Int const mantissa,
-                        am_pow_t const decimal_exponent) noexcept {
+                        int const decimal_exponent) noexcept {
   return integer_times_pow10<T>(static_cast<uint64_t>(mantissa),
                                 decimal_exponent);
 }
@@ -475,7 +476,7 @@ FASTFLOAT_CONSTEXPR20
                                 std::is_signed<Int>::value,
                             T>::type
     integer_times_pow10(Int const mantissa,
-                        am_pow_t const decimal_exponent) noexcept {
+                        int const decimal_exponent) noexcept {
   return integer_times_pow10<T>(static_cast<int64_t>(mantissa),
                                 decimal_exponent);
 }
@@ -483,16 +484,14 @@ FASTFLOAT_CONSTEXPR20
 template <typename Int>
 FASTFLOAT_CONSTEXPR20 typename std::enable_if<
     std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int const mantissa,
-                    am_pow_t const decimal_exponent) noexcept {
+integer_times_pow10(Int const mantissa, int const decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
 }
 
 template <typename Int>
 FASTFLOAT_CONSTEXPR20 typename std::enable_if<
     std::is_integral<Int>::value && std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int const mantissa,
-                    am_pow_t const decimal_exponent) noexcept {
+integer_times_pow10(Int const mantissa, int const decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
 }
 
