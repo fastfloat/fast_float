@@ -49,10 +49,10 @@ counters::event_collector collector{};
 template <class T, class CharT>
 std::vector<counters::event_count>
 time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
-           size_t repeat) {
+           uint32_t repeat) {
   std::vector<counters::event_count> aggregate;
   bool printed_bug = false;
-  for (size_t i = 0; i != repeat; ++i) {
+  for (uint32_t i = 0; i != repeat; ++i) {
 
     collector.start();
     auto const ts = function(lines);
@@ -66,7 +66,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   return aggregate;
 }
 
-void pretty_print(size_t volume, size_t number_of_floats, std::string name,
+void pretty_print(uint64_t volume, size_t number_of_floats, std::string name,
                   std::vector<counters::event_count> events) {
   double volumeMB = volume / (1024. * 1024.);
   double average_ns{0};
@@ -154,7 +154,7 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   return std::make_pair(min_value, average);
 }
 
-void pretty_print(size_t volume, size_t number_of_floats,
+void pretty_print(uint64_t volume, size_t number_of_floats,
                   std::string const &name, std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
@@ -169,7 +169,7 @@ void pretty_print(size_t volume, size_t number_of_floats,
 inline std::u16string widen(std::string const &line) {
   std::u16string u16line;
   u16line.resize(line.size());
-  for (size_t i = 0; i != line.size(); ++i) {
+  for (uint32_t i = 0; i != line.size(); ++i) {
     u16line[i] = char16_t(line[i]);
   }
   return u16line;
@@ -263,6 +263,7 @@ int main(int argc, char **argv) {
   }
 
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
+  fileload(std::string(BENCHMARK_DATA_DIR) + "/canada_short.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
   return EXIT_SUCCESS;
 }
