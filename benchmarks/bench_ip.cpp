@@ -1,3 +1,9 @@
+
+// #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+// #define FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
+// #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+// #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
+
 #include "counters/bench.h"
 #include "fast_float/fast_float.h"
 #include <charconv>
