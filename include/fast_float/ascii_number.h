@@ -34,16 +34,19 @@ fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
   return !(c > UC('9') || c < UC('0'));
 }
 
-#if FASTFLOAT_HAS_BYTESWAP == 0
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
+#if FASTFLOAT_HAS_BYTESWAP == 1
+  return std::byteswap(val);
+#elif defined(__has_builtin) && __has_builtin(__builtin_bswap64)
+  return __builtin_bswap64(val);
+#elif defined(_MSC_VER)
+  return _byteswap_uint64(val);
+#else
   return (val & 0xFF00000000000000) >> 56 | (val & 0x00FF000000000000) >> 40 |
          (val & 0x0000FF0000000000) >> 24 | (val & 0x000000FF00000000) >> 8 |
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
-}
-#elif FASTFLOAT_HAS_BYTESWAP == 1
-fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
-  return std::byteswap(val);
+#endif
 }
 #endif
 

@@ -411,7 +411,11 @@ leading_zeroes(uint64_t input_num) noexcept {
     return leading_zeroes_generic(input_num);
   }
 #ifdef FASTFLOAT_VISUAL_STUDIO
-#if defined(_M_X64) || defined(_M_ARM64)
+#if defined(__AVX2__)
+  // use lzcnt on MSVC only on AVX2 capable CPU's that all have this BMI
+  // instruction
+  return __lzcnt64(x);
+#elif defined(_M_X64) || defined(_M_ARM64)
   unsigned long leading_zero;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
@@ -420,8 +424,16 @@ leading_zeroes(uint64_t input_num) noexcept {
 #else
   return static_cast<limb_t>(leading_zeroes_generic(input_num));
 #endif
+#elif __has_builtin(__builtin_clzll)
+  return static_cast<limb_t>(__builtin_clzll(x));
 #else
-  return static_cast<limb_t>(__builtin_clzll(input_num));
+  // Unlike MSVC, clang and gcc recognize this implementation and replace
+  // it with the assembly instructions which are appropriate for the
+  // target (lzcnt or bsr + zero handling).
+  int n = 64;
+  for (; leading_zero > 0; leading_zero >>= 1)
+    --n;
+  return static_cast<limb_t>(n);
 #endif
 }
 
