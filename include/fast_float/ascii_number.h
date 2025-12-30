@@ -35,25 +35,16 @@ fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
-#if FASTFLOAT_HAS_BYTESWAP == 1
-  return std::byteswap(val);
-#elif defined(__has_builtin) && __has_builtin(__builtin_bswap64)
-  return __builtin_bswap64(val);
-#elif defined(_MSC_VER)
-  return _byteswap_uint64(val);
-#else
   return (val & 0xFF00000000000000) >> 56 | (val & 0x00FF000000000000) >> 40 |
          (val & 0x0000FF0000000000) >> 24 | (val & 0x000000FF00000000) >> 8 |
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
-#endif
 }
-#endif
 
 // Read 8 UC into a u64. Truncates UC if not char.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
-read8_to_u64(UC const *chars) {
+read8_to_u64(UC const *chars) noexcept {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
     uint64_t val = 0;
     for (uint_fast8_t i = 0; i != 8; ++i) {
