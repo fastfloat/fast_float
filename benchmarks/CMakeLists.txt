@@ -11,7 +11,9 @@ FetchContent_MakeAvailable(counters)
 add_executable(realbenchmark benchmark.cpp)
 target_link_libraries(realbenchmark PRIVATE counters::counters)
 add_executable(bench_ip bench_ip.cpp)
+add_executable(bench_uint16 bench_uint16.cpp)
 target_link_libraries(bench_ip PRIVATE counters::counters)
+target_link_libraries(bench_uint16 PRIVATE counters::counters)
 
 set_property(
     TARGET realbenchmark
@@ -19,8 +21,12 @@ set_property(
 set_property(
     TARGET bench_ip
     PROPERTY CXX_STANDARD 17)
+set_property(
+    TARGET bench_uint16
+    PROPERTY CXX_STANDARD 17)
 target_link_libraries(realbenchmark PUBLIC fast_float)
 target_link_libraries(bench_ip PUBLIC fast_float)
+target_link_libraries(bench_uint16 PUBLIC fast_float)
 
 include(ExternalProject)
 
