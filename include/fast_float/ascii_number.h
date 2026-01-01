@@ -679,7 +679,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         uint32_t mask = 0xFFFFFFFFu >> ((4u - nd) * 8u);
         uint32_t padded = (digits & mask) | (~mask & 0x30303030u);
         uint32_t v = parse_four_digits_unrolled(padded);
-        static constexpr uint32_t divs[] = {0, 1000, 100, 10};
+        constexpr uint32_t divs[] = {0, 1000, 100, 10};
         value = (uint16_t)(v / divs[nd]);
         answer.ec = std::errc();
         answer.ptr = p + nd;
