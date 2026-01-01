@@ -68,6 +68,26 @@ read8_to_u64(UC const *chars) {
   return val;
 }
 
+// Read 4 UC into a u32. Truncates UC if not char.
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
+read4_to_u32(UC const *chars) {
+  if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
+    uint32_t val = 0;
+    for (int i = 0; i < 4; ++i) {
+      val |= uint32_t(uint8_t(*chars)) << (i * 8);
+      ++chars;
+    }
+    return val;
+  }
+  uint32_t val;
+  ::memcpy(&val, chars, sizeof(uint32_t));
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+  val = byteswap(val);
+#endif
+  return val;
+}
+
 #ifdef FASTFLOAT_SSE2
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const data) {
@@ -147,6 +167,13 @@ fastfloat_really_inline constexpr bool
 is_made_of_eight_digits_fast(uint64_t val) noexcept {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
             0x8080808080808080));
+}
+
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+parse_four_digits_unrolled(uint32_t val) noexcept {
+  val -= 0x30303030;
+  val = (val * 10) + (val >> 8);
+  return (((val & 0x00FF00FF) * 0x00640001) >> 16) & 0xFFFF;
 }
 
 #ifdef FASTFLOAT_HAS_SIMD
@@ -602,6 +629,95 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       value = (uint8_t)((0x640a01 * digits) >> 24);
       answer.ec = std::errc();
       answer.ptr = p + nd;
+      return answer;
+    }
+  }
+
+  FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint16_t>::value)) {
+    if (base == 10) {
+      const size_t len = size_t(pend - p);
+      if (len == 0) {
+        if (has_leading_zeros) {
+          value = 0;
+          answer.ec = std::errc();
+          answer.ptr = p;
+        } else {
+          answer.ec = std::errc::invalid_argument;
+          answer.ptr = first;
+        }
+        return answer;
+      }
+
+      uint32_t digits;
+      if (len >= 4) {
+        digits = read4_to_u32(p);
+      } else {
+        uint32_t b0 = uint32_t(uint8_t(p[0]));
+        uint32_t b1 = (len > 1) ? uint32_t(uint8_t(p[1])) : 0xFFu;
+        uint32_t b2 = (len > 2) ? uint32_t(uint8_t(p[2])) : 0xFFu;
+        digits = b0 | (b1 << 8) | (b2 << 16) | (0xFFu << 24);
+      }
+
+      uint32_t magic =
+          ((digits + 0x46464646u) | (digits - 0x30303030u)) & 0x80808080u;
+      uint32_t nd = (magic == 0) ? 4u : (uint32_t(countr_zero_32(magic)) >> 3);
+
+      if (nd == 0) {
+        if (has_leading_zeros) {
+          value = 0;
+          answer.ec = std::errc();
+          answer.ptr = p;
+          return answer;
+        }
+        answer.ec = std::errc::invalid_argument;
+        answer.ptr = first;
+        return answer;
+      }
+
+      if (nd < 4) {
+        // mask out non-digit bytes and replace with '0' (0x30)
+        uint32_t mask = 0xFFFFFFFFu >> ((4u - nd) * 8u);
+        uint32_t padded = (digits & mask) | (~mask & 0x30303030u);
+        uint32_t v = parse_four_digits_unrolled(padded);
+        static constexpr uint32_t divs[] = {0, 1000, 100, 10};
+        value = (uint16_t)(v / divs[nd]);
+        answer.ec = std::errc();
+        answer.ptr = p + nd;
+        return answer;
+      }
+
+      uint32_t v = parse_four_digits_unrolled(digits);
+
+      uint32_t d4 = (len > 4) ? uint32_t(p[4] - '0') : 10u;
+      if (d4 > 9u) {
+        value = (uint16_t)v;
+        answer.ec = std::errc();
+        answer.ptr = p + 4;
+        return answer;
+      }
+
+      if (len > 5) {
+        uint32_t d5 = uint32_t(p[5]) - uint32_t('0');
+        if (d5 <= 9u) {
+          const UC *q = p + 6;
+          while (q < pend && uint32_t(*q) - uint32_t('0') <= 9u)
+            ++q;
+          answer.ec = std::errc::result_out_of_range;
+          answer.ptr = q;
+          return answer;
+        }
+      }
+
+      // overflow check
+      if (v > 6553u || (v == 6553u && d4 > 5u)) {
+        answer.ec = std::errc::result_out_of_range;
+        answer.ptr = p + 5;
+        return answer;
+      }
+
+      value = (uint16_t)(v * 10u + d4);
+      answer.ec = std::errc();
+      answer.ptr = p + 5;
       return answer;
     }
   }
