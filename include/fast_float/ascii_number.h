@@ -41,25 +41,25 @@ fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
 }
 
-fastfloat_really_inline constexpr uint32_t byteswap_32(uint32_t val) {
+fastfloat_really_inline constexpr uint32_t byteswap(uint32_t val) noexcept {
   return (val >> 24) | ((val >> 8) & 0x0000FF00u) | ((val << 8) & 0x00FF0000u) |
          (val << 24);
 }
 
-// Read 8 UC into a u64. Truncates UC if not char.
-template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
-read8_to_u64(UC const *chars) noexcept {
+// Read UCs into an unsigned integer. Truncates UC if not char.
+template <typename T, typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 T
+read_chars_to_unsigned(UC const *chars) noexcept {
   if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
-    uint64_t val = 0;
-    for (uint_fast8_t i = 0; i != 8; ++i) {
-      val |= uint64_t(uint8_t(*chars)) << (i * 8);
+    T val = 0;
+    for (uint_fast8_t i = 0; i != sizeof(T); ++i) {
+      val |= T(uint8_t(*chars)) << (i * 8);
       ++chars;
     }
     return val;
   }
-  uint64_t val;
-  ::memcpy(&val, chars, sizeof(uint64_t));
+  T val;
+  ::memcpy(&val, chars, sizeof(T));
 #if FASTFLOAT_IS_BIG_ENDIAN == 1
   // Need to read as-if the number was in little-endian order.
   val = byteswap(val);
@@ -67,25 +67,6 @@ read8_to_u64(UC const *chars) noexcept {
   return val;
 }
 
-// Read 4 UC into a u32. Truncates UC if not char.
-template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
-read4_to_u32(UC const *chars) {
-  if (cpp20_and_in_constexpr() || !std::is_same<UC, char>::value) {
-    uint32_t val = 0;
-    for (int i = 0; i < 4; ++i) {
-      val |= uint32_t(uint8_t(*chars)) << (i * 8);
-      ++chars;
-    }
-    return val;
-  }
-  uint32_t val;
-  ::memcpy(&val, chars, sizeof(uint32_t));
-#if FASTFLOAT_IS_BIG_ENDIAN == 1
-  val = byteswap_32(val);
-#endif
-  return val;
-}
 #ifdef FASTFLOAT_SSE2
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
@@ -122,7 +103,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
-#endif
+#endif // FASTFLOAT_SSE2
 
 // MSVC SFINAE is broken pre-VS2017
 #if defined(_MSC_VER) && _MSC_VER <= 1900
@@ -152,7 +133,8 @@ template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
 parse_eight_digits_unrolled(UC const *chars) noexcept {
   if (cpp20_and_in_constexpr() || !has_simd_opt<UC>()) {
-    return parse_eight_digits_unrolled(read8_to_u64(chars)); // truncation okay
+    return parse_eight_digits_unrolled(
+        read_chars_to_unsigned<uint64_t>(chars)); // truncation okay
   }
   return parse_eight_digits_unrolled(simd_read8_to_u64(chars));
 }
@@ -223,11 +205,11 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
 #else
   (void)chars;
   (void)i;
-#endif
+#endif // FASTFLOAT_SSE2
   return false;
 }
 
-#endif
+#endif // FASTFLOAT_HAS_SIMD
 
 // MSVC SFINAE is broken pre-VS2017
 #if defined(_MSC_VER) && _MSC_VER <= 1900
@@ -258,9 +240,9 @@ loop_parse_if_eight_digits(char const *&p, char const *const pend,
                            uint64_t &i) {
   // optimizes better than parse_if_eight_digits_unrolled() for UC = char.
   while ((std::distance(p, pend) >= 8) &&
-         is_made_of_eight_digits_fast(read8_to_u64(p))) {
+         is_made_of_eight_digits_fast(read_chars_to_unsigned<uint64_t>(p))) {
     i = i * 100000000 +
-        parse_eight_digits_unrolled(read8_to_u64(
+        parse_eight_digits_unrolled(read_chars_to_unsigned<uint64_t>(
             p)); // in rare cases, this will overflow, but that's ok
     p += 8;
   }
@@ -612,13 +594,13 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
 #if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST
       if (std::is_constant_evaluated()) {
-        uint8_t str[4];
-        for (uint_fast8_t j = 0; j != 4 && j != len; ++j) {
+        uint8_t str[sizeof(uint32_t)];
+        for (uint_fast8_t j = 0; j != sizeof(uint32_t) && j != len; ++j) {
           str[j] = static_cast<uint8_t>(p[j]);
         }
         digits = bit_cast<uint32_t>(str);
 #if FASTFLOAT_IS_BIG_ENDIAN
-        digits = byteswap_32(digits);
+        digits = byteswap(digits);
 #endif
       }
 #else
@@ -628,7 +610,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       else if (len >= 4) {
         ::memcpy(&digits, p, 4);
 #if FASTFLOAT_IS_BIG_ENDIAN
-        digits = byteswap_32(digits);
+        digits = byteswap(digits);
 #endif
       } else {
         uint32_t b0 = static_cast<uint8_t>(p[0]);
@@ -642,7 +624,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
           ((digits + 0x46464646u) | (digits - 0x30303030u)) & 0x80808080u;
       uint32_t tz = (uint32_t)countr_zero_32(magic); // 7, 15, 23, 31, or 32
       uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
-      nd = (uint32_t)std::min((size_t)nd, len);
+      nd = std::min(nd, len);
       if (nd == 0) {
         if (has_leading_zeros) {
           value = 0;
@@ -687,7 +669,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint16_t>::value)) {
     if (options.base == 10) {
-      const size_t len = size_t(pend - p);
+      const auto len = static_cast<am_digits>(pend - p);
       if (len == 0) {
         if (has_leading_zeros) {
           value = 0;
@@ -700,22 +682,22 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         return answer;
       }
 
-      if (len >= 4) {
-        uint32_t digits = read4_to_u32(p);
+      if (len >= sizeof(uint32_t)) {
+        auto digits = read_chars_to_unsigned<uint32_t>(p);
         if (is_made_of_four_digits_fast(digits)) {
-          uint32_t v = parse_four_digits_unrolled(digits);
+          auto v = parse_four_digits_unrolled(digits);
           if (len >= 5 && is_integer(p[4])) {
-            v = v * 10 + uint32_t(p[4] - '0');
+            v = v * 10 + static_cast<uint32_t>(p[4] - '0');
             if (len >= 6 && is_integer(p[5])) {
               answer.ec = std::errc::result_out_of_range;
-              const UC *q = p + 5;
+              const auto *q = p + 5;
               while (q != pend && is_integer(*q)) {
                 q++;
               }
               answer.ptr = q;
               return answer;
             }
-            if (v > 65535) {
+            if (v > std::numeric_limits<uint16_t>::max()) {
               answer.ec = std::errc::result_out_of_range;
               answer.ptr = p + 5;
               return answer;
