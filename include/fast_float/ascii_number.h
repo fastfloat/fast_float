@@ -544,7 +544,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   // Read sign
-  bool const negative = (*p == UC('-'));
+  auto const negative = (*p == UC('-'));
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
 #pragma warning(disable : 4127)
@@ -557,7 +557,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     answer.ptr = first;
     return answer;
   }
-  if ((*p == UC('-')) ||
+  if (negative ||
       ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
        (*p == UC('+')))) {
     ++p;
@@ -571,7 +571,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     ++p;
   }
 
-  bool const has_leading_zeros = p > start_num;
+  auto const has_leading_zeros = p > start_num;
 
   auto const *const start_digits = p;
 
@@ -592,26 +592,12 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
       uint32_t digits;
 
-#if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED && FASTFLOAT_HAS_BIT_CAST
-      if (std::is_constant_evaluated()) {
+      if (cpp20_and_in_constexpr()) {
         uint8_t str[sizeof(uint32_t)];
         for (uint_fast8_t j = 0; j != sizeof(uint32_t) && j != len; ++j) {
           str[j] = static_cast<uint8_t>(p[j]);
         }
         digits = bit_cast<uint32_t>(str);
-#if FASTFLOAT_IS_BIG_ENDIAN
-        digits = byteswap(digits);
-#endif
-      }
-#else
-      if (false) {
-      }
-#endif
-      else if (len >= 4) {
-        ::memcpy(&digits, p, 4);
-#if FASTFLOAT_IS_BIG_ENDIAN
-        digits = byteswap(digits);
-#endif
       } else {
         uint32_t b0 = static_cast<uint8_t>(p[0]);
         uint32_t b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0xFFu;
@@ -619,11 +605,14 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         uint32_t b3 = 0xFFu;
         digits = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
       }
+#if FASTFLOAT_IS_BIG_ENDIAN
+      digits = byteswap(digits);
+#endif
 
-      uint32_t magic =
+      uint32_t const magic =
           ((digits + 0x46464646u) | (digits - 0x30303030u)) & 0x80808080u;
-      uint32_t tz = (uint32_t)countr_zero_32(magic); // 7, 15, 23, 31, or 32
-      uint32_t nd = (tz == 32) ? 4 : (tz >> 3);
+      auto const tz = countr_zero_32(magic); // 7, 15, 23, 31, or 32
+      auto nd = am_digits(tz >> 3);
       nd = std::min(nd, len);
       if (nd == 0) {
         if (has_leading_zeros) {
@@ -631,14 +620,15 @@ parse_int_string(UC const *p, UC const *pend, T &value,
           answer.ec = std::errc();
           answer.ptr = p;
           return answer;
+        } else {
+          answer.ec = std::errc::invalid_argument;
+          answer.ptr = first;
         }
-        answer.ec = std::errc::invalid_argument;
-        answer.ptr = first;
         return answer;
       }
       if (nd > 3) {
         const UC *q = p + nd;
-        size_t rem = len - nd;
+        auto rem = len - nd;
         while (rem) {
           if (*q < UC('0') || *q > UC('9'))
             break;
@@ -653,14 +643,15 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       digits ^= 0x30303030u;
       digits <<= ((4 - nd) * 8);
 
-      uint32_t check = ((digits >> 24) & 0xff) | ((digits >> 8) & 0xff00) |
-                       ((digits << 8) & 0xff0000);
+      uint32_t const check = ((digits >> 24) & 0xff) |
+                             ((digits >> 8) & 0xff00) |
+                             ((digits << 8) & 0xff0000);
       if (check > 0x00020505) {
         answer.ec = std::errc::result_out_of_range;
         answer.ptr = p + nd;
         return answer;
       }
-      value = (uint8_t)((0x640a01 * digits) >> 24);
+      value = static_cast<uint8_t>((0x640a01 * digits) >> 24);
       answer.ec = std::errc();
       answer.ptr = p + nd;
       return answer;
@@ -682,7 +673,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         return answer;
       }
 
-      if (len >= sizeof(uint32_t)) {
+      if (len >= std::numeric_limits<uint16_t>::digits10) {
         auto digits = read_chars_to_unsigned<uint32_t>(p);
         if (is_made_of_four_digits_fast(digits)) {
           auto v = parse_four_digits_unrolled(digits);
@@ -692,7 +683,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
               answer.ec = std::errc::result_out_of_range;
               const auto *q = p + 5;
               while (q != pend && is_integer(*q)) {
-                q++;
+                ++q;
               }
               answer.ptr = q;
               return answer;
@@ -779,6 +770,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #pragma warning(push)
 #pragma warning(disable : 4146)
+#pragma warning(disable : 4804)
 #endif
     // this weird workaround is required because:
     // - converting unsigned to signed when its value is greater than signed max
