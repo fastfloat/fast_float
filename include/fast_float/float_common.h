@@ -1037,7 +1037,9 @@ inline constexpr am_mant_t
 binary_format<double>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 22);
-  return max_mantissa[power];
+  //
+  // Work around clang and gcc bug https://godbolt.org/z/zedh7rrhc
+  return (void)max_mantissa[0], max_mantissa[power];
 }
 
 template <>
@@ -1045,7 +1047,9 @@ inline constexpr am_mant_t
 binary_format<float>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 10);
-  return max_mantissa[power];
+  //
+  // Work around clang and gcc bug https://godbolt.org/z/zedh7rrhc
+  return (void)max_mantissa[0], max_mantissa[power];
 }
 
 template <>
@@ -1053,7 +1057,9 @@ inline constexpr double
 binary_format<double>::exact_power_of_ten(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 22);
-  return powers_of_ten[power];
+  //
+  // Work around clang and gcc bug https://godbolt.org/z/zedh7rrhc
+  return (void)powers_of_ten[0], powers_of_ten[power];
 }
 
 template <>
@@ -1061,7 +1067,9 @@ inline constexpr float
 binary_format<float>::exact_power_of_ten(am_pow_t power) {
   // caller is responsible to ensure that
   FASTFLOAT_ASSUME(power >= 0 && power <= 10);
-  return powers_of_ten[power];
+  //
+  // Work around clang and gcc bug https://godbolt.org/z/zedh7rrhc
+  return (void)powers_of_ten[0], powers_of_ten[power];
 }
 
 template <>
