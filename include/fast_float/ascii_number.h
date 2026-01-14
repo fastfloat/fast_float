@@ -608,7 +608,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
       uint32_t const magic =
           ((digits + 0x46464646u) | (digits - 0x30303030u)) & 0x80808080u;
       auto const tz = countr_zero_32(magic); // 7, 15, 23, 31, or 32
-      auto const nd = static_cast<am_digits>(tz >> 3);
+      auto nd = static_cast<am_digits>(tz >> 3);
       nd = std::min(nd, len);
       if (nd == 0) {
         if (has_leading_zeros) {
