@@ -432,8 +432,7 @@ FASTFLOAT_CONSTEXPR20
                              value))
     return value;
 
-  adjusted_mantissa const am =
-      compute_float<binary_format<double>>(exponent, m);
+  adjusted_mantissa const am = compute_float<binary_format<T>>(exponent, m);
 
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
