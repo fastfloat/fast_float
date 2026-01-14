@@ -577,7 +577,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint8_t>::value)) {
     if (options.base == 10) {
-      const auto len = static_cast<am_digits>(pend - p);
+      auto const len = static_cast<am_digits>(pend - p);
       if (len == 0) {
         if (has_leading_zeros) {
           value = 0;
@@ -592,17 +592,13 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
       uint32_t digits;
 
-      if (cpp20_and_in_constexpr()) {
-        uint8_t str[sizeof(uint32_t)];
-        for (uint_fast8_t j = 0; j != sizeof(uint32_t) && j != len; ++j) {
-          str[j] = static_cast<uint8_t>(p[j]);
-        }
-        digits = bit_cast<uint32_t>(str);
+      if (len >= sizeof(uint32_t)) {
+        digits = read_chars_to_unsigned<uint32_t>(p);
       } else {
-        uint32_t b0 = static_cast<uint8_t>(p[0]);
-        uint32_t b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0xFFu;
-        uint32_t b2 = (len > 2) ? static_cast<uint8_t>(p[2]) : 0xFFu;
-        uint32_t b3 = 0xFFu;
+        uint32_t const b0 = static_cast<uint8_t>(p[0]);
+        uint32_t const b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0x00u;
+        uint32_t const b2 = (len > 2) ? static_cast<uint8_t>(p[2]) : 0x00u;
+        uint32_t const b3 = 0x00u;
         digits = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
       }
 #if FASTFLOAT_IS_BIG_ENDIAN
@@ -673,8 +669,8 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         return answer;
       }
 
-      if (len >= std::numeric_limits<uint16_t>::digits10) {
-        auto digits = read_chars_to_unsigned<uint32_t>(p);
+      if (len >= sizeof(uint32_t)) {
+        auto const digits = read_chars_to_unsigned<uint32_t>(p);
         if (is_made_of_four_digits_fast(digits)) {
           auto v = parse_four_digits_unrolled(digits);
           if (len >= 5 && is_integer(p[4])) {
