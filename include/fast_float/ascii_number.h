@@ -596,9 +596,9 @@ parse_int_string(UC const *p, UC const *pend, T &value,
         digits = read_chars_to_unsigned<uint32_t>(p);
       } else {
         uint32_t const b0 = static_cast<uint8_t>(p[0]);
-        uint32_t const b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0xFFu;
-        uint32_t const b2 = (len > 2) ? static_cast<uint8_t>(p[2]) : 0xFFu;
-        uint32_t const b3 = 0xFFu;
+        uint32_t const b1 = (len > 1) ? static_cast<uint8_t>(p[1]) : 0x00u;
+        uint32_t const b2 = (len > 2) ? static_cast<uint8_t>(p[2]) : 0x00u;
+        uint32_t const b3 = 0x00u;
         digits = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
       }
 #if FASTFLOAT_IS_BIG_ENDIAN
