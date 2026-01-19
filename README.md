@@ -69,7 +69,7 @@ int main() {
 }
 ```
 
-Though the C++17 standard has you do a comparison with `std::errc()` to check whether the conversion worked, you can avoid it by casting the result to a `bool` like so:
+Prior to C++26, checking for a successful `std::from_chars` conversion requires comparing the `from_chars_result::ec` member to `std::errc()`. As an extension `fast_float::from_chars` supports the improved C++26 API that allows checking the result by converting it to `bool`, like so:
 
 ```cpp
 #include "fast_float/fast_float.h"
