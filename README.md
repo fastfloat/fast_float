@@ -83,7 +83,7 @@ int main() {
     std::cout << "parsed the number " << result << std::endl;
     return EXIT_SUCCESS;
   }
-  std::cerr << "failed to parse " << result << std::endl;
+  std::cerr << "failed to parse " << input << std::endl;
   return EXIT_FAILURE;
 }
 ```
