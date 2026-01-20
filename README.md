@@ -1,7 +1,7 @@
 
 ## fast_float number parsing library: 4x faster than strtod
-
-[![Ubuntu 22.04 CI (GCC 11)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml)
+[![Ubuntu 22.04](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml)
+[![Ubuntu 24.04](https://github.com/irainman/fast_float/actions/workflows/ubuntu24.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu24.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
 
 The fast_float library provides fast header-only implementations for the C++
