@@ -335,7 +335,7 @@ fastfloat_strncasecmp3(UC const *actual_mixedcase,
     }
   } else {
     uint64_t val1{0}, val2{0};
-    uint64_t mask;
+    uint64_t mask{0};
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
     else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
       mask = 0x0020002000200020;
@@ -431,7 +431,7 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
     }
   } else {
     uint64_t val1{0}, val2{0};
-    uint64_t mask;
+    uint64_t mask{0};
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
     else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
       mask = 0x0020002000200020;
