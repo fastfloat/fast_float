@@ -328,11 +328,10 @@ inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp3(UC const *actual_mixedcase,
                        UC const *expected_lowercase) {
   if (cpp20_and_in_constexpr()) {
-    for (uint_fast8_t i = 0; i < 3; i++) {
+    for (uint_fast8_t i = 0; i != 3; ++i) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
-      return true;
     }
   } else {
     uint64_t val1, val2;
@@ -373,7 +372,7 @@ inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp5(UC const *actual_mixedcase,
                        UC const *expected_lowercase) {
   if (cpp20_and_in_constexpr()) {
-    for (uint_fast8_t i = 0; i < 5; i++) {
+    for (uint_fast8_t i = 0; i != 5; ++i) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
@@ -428,7 +427,7 @@ inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
                       uint_fast8_t const length) noexcept {
   if (cpp20_and_in_constexpr()) {
-    for (uint_fast8_t i = 0; i < length; i++) {
+    for (uint_fast8_t i = 0; i != length; ++i) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
