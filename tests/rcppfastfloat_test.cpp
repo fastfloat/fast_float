@@ -4,7 +4,7 @@
 
 #include "fast_float/fast_float.h"
 #include <iostream>
-#include <string>
+#include <string_view>
 #include <vector>
 
 struct test_data {
