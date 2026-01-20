@@ -16,7 +16,7 @@ namespace fast_float {
 namespace detail {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 /**
- * Special case +inf, -inf, nan, infinity, -infinity.
+ * Special case inf, +inf, -inf, nan, infinity, -infinity.
  * The case comparisons could be made much faster given that we know that the
  * strings a null-free and fixed.
  **/
@@ -46,7 +46,7 @@ from_chars_result_t<UC>
       // Check for possible nan(n-char-seq-opt), C++17 20.19.3.7,
       // C11 7.20.1.3.3. At least MSVC produces nan(ind) and nan(snan).
       if (first != last && *first == UC('(')) {
-        for (UC const *ptr = first + 1; ptr != last; ++ptr) {
+        for (auto const *ptr = first + 1; ptr != last; ++ptr) {
           if (*ptr == UC(')')) {
             answer.ptr = ptr + 1; // valid nan(n-char-seq-opt)
             break;
