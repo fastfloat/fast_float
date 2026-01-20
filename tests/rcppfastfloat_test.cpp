@@ -8,9 +8,9 @@
 #include <vector>
 
 struct test_data {
-  std::string input;
-  bool expected_success;
-  double expected_result;
+  const std::string_view input;
+  const bool expected_success;
+  const double expected_result;
 };
 
 bool eddelbuettel() {
@@ -51,10 +51,10 @@ bool eddelbuettel() {
       {"-+inf", false, 0.0},
       {"-+nan", false, 0.0},
   };
-  for (size_t i = 0; i < test_datas.size(); i++) {
-    auto const &input = test_datas[i].input;
-    auto const expected_success = test_datas[i].expected_success;
-    auto const expected_result = test_datas[i].expected_result;
+  for (const auto &i : test_datas) {
+    auto const &input = i.input;
+    auto const expected_success = i.expected_success;
+    auto const expected_result = i.expected_result;
     double result;
     // answer contains a error code and a pointer to the end of the
     // parsed region (on success).
