@@ -4,11 +4,11 @@
 
 #include "fast_float/fast_float.h"
 #include <iostream>
-#include <string_view>
+#include <string>
 #include <vector>
 
 struct test_data {
-  const std::string_view input;
+  const std::string input;
   const bool expected_success;
   const double expected_result;
 };
