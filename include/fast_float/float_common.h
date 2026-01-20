@@ -328,7 +328,7 @@ inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp3(UC const *actual_mixedcase,
                        UC const *expected_lowercase) {
   if (cpp20_and_in_constexpr()) {
-    for (uint_fast8_t i = 0; i != 3; ++i) {
+    for (uint_fast8_t i = 0; i < 3; i++) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
@@ -343,9 +343,6 @@ fastfloat_strncasecmp3(UC const *actual_mixedcase,
     }
     else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
       mask = 0x0000002000000020;
-    }
-    else {
-      return false;
     }
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1 || sizeof(UC) == 2) {
       std::memcpy(&val1, actual_mixedcase, 3 * sizeof(UC));
@@ -376,17 +373,15 @@ inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp5(UC const *actual_mixedcase,
                        UC const *expected_lowercase) {
   if (cpp20_and_in_constexpr()) {
-    for (uint_fast8_t i = 0; i != 5; ++i) {
+    for (uint_fast8_t i = 0; i < 5; i++) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
-      return true;
     }
   } else {
-    uint64_t mask;
     uint64_t val1, val2;
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) {
-      mask = 0x2020202020202020;
+      constexpr uint64_t mask = 0x2020202020202020;
       std::memcpy(&val1, actual_mixedcase, 5 * sizeof(UC));
       std::memcpy(&val2, expected_lowercase, 5 * sizeof(UC));
       val1 |= mask;
@@ -394,7 +389,7 @@ fastfloat_strncasecmp5(UC const *actual_mixedcase,
       return val1 == val2;
     }
     else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
-      mask = 0x0020002000200020;
+      constexpr uint64_t mask = 0x0020002000200020;
       std::memcpy(&val1, actual_mixedcase, 4 * sizeof(UC));
       std::memcpy(&val2, expected_lowercase, 4 * sizeof(UC));
       val1 |= mask;
@@ -404,7 +399,7 @@ fastfloat_strncasecmp5(UC const *actual_mixedcase,
       return (actual_mixedcase[4] | 32) == (expected_lowercase[4]);
     }
     else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
-      mask = 0x0000002000000020;
+      constexpr uint64_t mask = 0x0000002000000020;
       std::memcpy(&val1, actual_mixedcase, 2 * sizeof(UC));
       std::memcpy(&val2, expected_lowercase, 2 * sizeof(UC));
       val1 |= mask;
@@ -432,29 +427,28 @@ template <typename UC>
 inline FASTFLOAT_CONSTEXPR14 bool
 fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
                       uint_fast8_t const length) noexcept {
-  uint64_t mask;
-  FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
-  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
-    mask = 0x0020002000200020;
-  }
-  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
-    mask = 0x0000002000000020;
-  }
-  else {
-    return false;
-  }
-
   if (cpp20_and_in_constexpr()) {
-    for (uint_fast8_t i = 0; i != length; ++i) {
+    for (uint_fast8_t i = 0; i < length; i++) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
-      return true;
     }
   } else {
-    uint64_t val1, val2;
+    uint64_t mask;
+    FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
+    else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
+      mask = 0x0020002000200020;
+    }
+    else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
+      mask = 0x0000002000000020;
+    }
+    else {
+      return false;
+    }
     constexpr uint_fast8_t sz{8 / (sizeof(UC))};
     for (uint_fast8_t i = 0; i != length; i += sz) {
+      uint64_t val1{0};
+      uint64_t val2{0};
       sz = std::min(sz, length - i);
       ::memcpy(&val1, actual_mixedcase + i, sz * sizeof(UC));
       ::memcpy(&val2, expected_lowercase + i, sz * sizeof(UC));
@@ -464,8 +458,8 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
         return false;
       }
     }
-    return true;
   }
+  return true;
 }
 #endif
 
