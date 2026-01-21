@@ -53,7 +53,6 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   std::vector<counters::event_count> aggregate;
   bool printed_bug = false;
   for (uint32_t i = 0; i != repeat; ++i) {
-
     collector.start();
     auto const ts = function(lines);
     aggregate.push_back(collector.end());
@@ -135,7 +134,6 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   double min_value = DBL_MAX;
   bool printed_bug = false;
   for (size_t i = 0; i != repeat; ++i) {
-
     t1 = std::chrono::high_resolution_clock::now();
     auto const ts = function(lines);
     t2 = std::chrono::high_resolution_clock::now();

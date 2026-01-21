@@ -537,7 +537,6 @@ template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
                  parse_options_t<UC> const options) noexcept {
-
   from_chars_result_t<UC> answer;
 
   auto const *const first = p;

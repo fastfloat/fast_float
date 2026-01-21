@@ -28,7 +28,6 @@ namespace fast_float {
  * of 5 greater than 308.
  */
 template <class unused = void> struct powers_template {
-
   constexpr static am_pow_t smallest_power_of_five =
       binary_format<double>::smallest_power_of_ten();
   constexpr static am_pow_t largest_power_of_five =

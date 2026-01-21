@@ -202,7 +202,6 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
                        bool const is_negative,
 #endif
                        T &value) noexcept {
-
   // The implementation of the Clinger's fast path is convoluted because
   // we want round-to-nearest in all cases, irrespective of the rounding mode
   // selected on the thread.
@@ -323,7 +322,6 @@ template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
                           parse_options_t<UC> const options) noexcept {
-
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
   static_assert(is_supported_char_type<UC>::value,
@@ -377,7 +375,6 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value, int const base) noexcept {
-
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
   static_assert(is_supported_char_type<UC>::value,
@@ -498,7 +495,6 @@ template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_int_advanced(UC const *first, UC const *last, T &value,
                         parse_options_t<UC> const options) noexcept {
-
   static_assert(is_supported_integer_type<T>::value,
                 "only integer types are supported");
   static_assert(is_supported_char_type<UC>::value,
