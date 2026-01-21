@@ -290,8 +290,8 @@ fastfloat_strncasecmp3(UC const *actual_mixedcase,
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
-      return true;
     }
+    return true;
   } else {
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1 || sizeof(UC) == 2) {
       ::memcpy(&val1, actual_mixedcase, 3 * sizeof(UC));
@@ -328,8 +328,8 @@ fastfloat_strncasecmp5(UC const *actual_mixedcase,
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
-      return true;
     }
+    return true;
   } else {
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) {
       mask = 0x2020202020202020;
@@ -395,8 +395,8 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
-      return true;
     }
+    return true;
   } else {
     uint64_t val1{0}, val2{0};
     size_t sz{8 / (sizeof(UC))};
