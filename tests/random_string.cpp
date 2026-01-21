@@ -54,7 +54,7 @@ float cygwin_strtof_l(char const *start, char **end) {
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed){};
+  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed) {};
 
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
@@ -258,9 +258,9 @@ bool tester(uint64_t seed, size_t volume) {
 int main() {
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
     defined(sun) || defined(__sun)
-  std::cout << "Warning: msys/cygwin or solaris detected. This particular test is likely "
-               "to generate false failures due to our reliance on the "
-               "underlying runtime library."
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test "
+               "is likely to generate false failures due to our reliance on "
+               "the underlying runtime library."
             << std::endl;
   return EXIT_SUCCESS;
 #else
