@@ -333,6 +333,7 @@ fastfloat_strncasecmp3(UC const *actual_mixedcase,
         return false;
       }
     }
+    return true;
   } else {
     uint64_t val1{0}, val2{0};
     uint64_t mask{0};
@@ -377,6 +378,7 @@ fastfloat_strncasecmp5(UC const *actual_mixedcase,
         return false;
       }
     }
+    return true;
   } else {
     uint64_t val1{0}, val2{0};
     FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) {
@@ -429,6 +431,7 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
         return false;
       }
     }
+    return true;
   } else {
     uint64_t val1{0}, val2{0};
     uint64_t mask{0};
