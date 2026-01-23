@@ -353,50 +353,78 @@ parse_number_string(UC const *p, UC const *pend,
   UC const *const start_digits = p;
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
+  int64_t digit_count = 0;
 
-  while ((p != pend) && is_integer(*p)) {
+  while (p != pend) {
+    if (options.digit_separator != UC('\0') && *p == options.digit_separator) {
+      ++p;
+      continue;
+    }
+    if (!is_integer(*p)) {
+      break;
+    }
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
     i = 10 * i +
         uint64_t(*p -
                  UC('0')); // might overflow, we will handle the overflow later
     ++p;
+    ++digit_count;
   }
   UC const *const end_of_integer_part = p;
-  int64_t digit_count = int64_t(end_of_integer_part - start_digits);
-  answer.integer = span<UC const>(start_digits, size_t(digit_count));
+  answer.integer =
+      span<UC const>(start_digits, size_t(end_of_integer_part - start_digits));
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in integer part, without leading zeros
     if (digit_count == 0) {
       return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
     }
-    if ((start_digits[0] == UC('0') && digit_count > 1)) {
+    UC const *first_digit = start_digits;
+    while (first_digit != end_of_integer_part &&
+           options.digit_separator != UC('\0') &&
+           *first_digit == options.digit_separator) {
+      ++first_digit;
+    }
+    if (first_digit != end_of_integer_part && *first_digit == UC('0') &&
+        digit_count > 1) {
       return report_parse_error<UC>(start_digits,
                                     parse_error::leading_zeros_in_integer_part);
     }
   }
 
   int64_t exponent = 0;
+  int64_t fractional_digit_count = 0;
   bool const has_decimal_point = (p != pend) && (*p == decimal_point);
   if (has_decimal_point) {
     ++p;
     UC const *before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    loop_parse_if_eight_digits(p, pend, i);
+    if (options.digit_separator == UC('\0')) {
+      loop_parse_if_eight_digits(p, pend, i);
+    }
 
-    while ((p != pend) && is_integer(*p)) {
+    while (p != pend) {
+      if (options.digit_separator != UC('\0') &&
+          *p == options.digit_separator) {
+        ++p;
+        continue;
+      }
+      if (!is_integer(*p)) {
+        break;
+      }
       uint8_t digit = uint8_t(*p - UC('0'));
       ++p;
       i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+      ++fractional_digit_count;
     }
-    exponent = before - p;
+    exponent = -fractional_digit_count;
     answer.fraction = span<UC const>(before, size_t(p - before));
-    digit_count -= exponent;
+    digit_count += fractional_digit_count;
   }
   FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
     // at least 1 digit in fractional part
-    if (has_decimal_point && exponent == 0) {
+    if (has_decimal_point && fractional_digit_count == 0) {
       return report_parse_error<UC>(p,
                                     parse_error::no_digits_in_fractional_part);
     }
@@ -467,7 +495,9 @@ parse_number_string(UC const *p, UC const *pend,
     // We need to be mindful of the case where we only have zeroes...
     // E.g., 0.000000000...000.
     UC const *start = start_digits;
-    while ((start != pend) && (*start == UC('0') || *start == decimal_point)) {
+    while ((start != pend) && (*start == UC('0') || *start == decimal_point ||
+                               (options.digit_separator != UC('\0') &&
+                                *start == options.digit_separator))) {
       if (*start == UC('0')) {
         digit_count--;
       }
@@ -484,6 +514,11 @@ parse_number_string(UC const *p, UC const *pend,
       UC const *int_end = p + answer.integer.len();
       uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
       while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+        if (options.digit_separator != UC('\0') &&
+            *p == options.digit_separator) {
+          ++p;
+          continue;
+        }
         i = i * 10 + uint64_t(*p - UC('0'));
         ++p;
       }
@@ -493,6 +528,11 @@ parse_number_string(UC const *p, UC const *pend,
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
         while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
+          if (options.digit_separator != UC('\0') &&
+              *p == options.digit_separator) {
+            ++p;
+            continue;
+          }
           i = i * 10 + uint64_t(*p - UC('0'));
           ++p;
         }
