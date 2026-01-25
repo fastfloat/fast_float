@@ -476,6 +476,14 @@ template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
                     parse_options_t<UC> options) noexcept {
+  if ((options.format_options & parse_options_t<UC>::skip_prefix) != 0) {
+    if ((last - first) >= 2 && *first == UC('0')) {
+      if ((first[1] == UC('x') || first[1] == UC('X')) ||
+          (first[1] == UC('b') || first[1] == UC('B'))) {
+        first += 2;
+      }
+    }
+  }
   return from_chars_advanced_caller<
       size_t(is_supported_float_type<T>::value) +
       2 * size_t(is_supported_integer_type<T>::value)>::call(first, last, value,
