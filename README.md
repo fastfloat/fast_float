@@ -141,9 +141,12 @@ Furthermore, we have the following restrictions:
   fixed-width floating-point types such as `std::float64_t`, `std::float32_t`,
   `std::float16_t`, and `std::bfloat16_t`.
 * We only support the decimal format: we do not support hexadecimal strings.
-* For values that are either very large or very small (e.g., `1e9999`), we
-  represent it using the infinity or negative infinity value and the returned
+* For values that are very large positives or negatives (e.g., `1e9999`), we
+  represent them using a positive or negative infinity and the returned
   `ec` is set to `std::errc::result_out_of_range`.
+* For values that are very close to zero (e.g., `1e-9999`), we represent them
+  using a positive or negative zero and the returned `ec` is set to
+  `std::errc::result_out_of_range`.
 
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little
 endian. We support 32-bit and 64-bit systems.
