@@ -57,13 +57,7 @@ if(FASTFLOAT_SANITIZE)
   endif()
 endif()
 
-include(CheckCXXCompilerFlag)
-unset(FASTFLOAT_COMPILER_SUPPORTS_PERMISSIVE)
-CHECK_CXX_COMPILER_FLAG(/permissive- FASTFLOAT_COMPILER_SUPPORTS_PERMISSIVE)
-
-if(FASTFLOAT_COMPILER_SUPPORTS_PERMISSIVE)
-  target_compile_options(fast_float INTERFACE /permissive-)
-endif()
+target_compile_options(fast_float INTERFACE $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,19.10>>:/permissive->)
 
 if(FASTFLOAT_INSTALL)
   include(CMakePackageConfigHelpers)
