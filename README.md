@@ -1,7 +1,14 @@
 
 ## fast_float number parsing library: 4x faster than strtod
-
-[![Ubuntu 22.04 CI (GCC 11)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml)
+[![Ubuntu 22.04](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml)
+[![Ubuntu 22.04 clang](https://github.com/irainman/fast_float/actions/workflows/ubuntu22-clang.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22-clang.yml)
+[![Ubuntu 24.04](https://github.com/irainman/fast_float/actions/workflows/ubuntu24.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu24.yml)
+[![Ubuntu 24.04 C++20](https://github.com/irainman/fast_float/actions/workflows/ubuntu24-cxx20.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu24-cxx20.yml)
+[![Alpine](https://github.com/irainman/fast_float/actions/workflows/alpine.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/alpine.yml)
+[![vs17](https://github.com/irainman/fast_float/actions/workflows/vs17-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-ci.yml)
+[![vs17 C++20](https://github.com/irainman/fast_float/actions/workflows/vs17-cxx20.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-cxx20.yml)
+[![vs17 clang](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
 
 The fast_float library provides fast header-only implementations for the C++
 from_chars functions for `float` and `double` types as well as integer types.
@@ -35,7 +42,7 @@ struct from_chars_result {
 };
 ```
 
-It parses the character sequence `[first, last)` for a number. It parses
+It parses the character sequence `[first, last]` for a number. It parses
 floating-point numbers expecting a locale-independent format equivalent to the
 C++17 from_chars function. The resulting floating-point value is the closest
 floating-point values (using either `float` or `double`), using the "round to
@@ -48,7 +55,8 @@ parsed value. In case of error, the returned `ec` contains a representative
 error, otherwise the default (`std::errc()`) value is stored.
 
 The implementation does not throw and does not allocate memory (e.g., with `new`
-or `malloc`).
+or `malloc`) and can be usable in the kernel, embeded and other scenarious that
+relays on such behavior.
 
 It will parse infinity and nan values.
 
@@ -291,7 +299,7 @@ int main() {
 }
 ```
 
-## Advanced options: using commas as decimal separator, JSON and Fortran
+## Advanced options: using commas as decimal separator, parse JSON, Fortran and more
 
 The C++ standard stipulate that `from_chars` has to be locale-independent. In
 particular, the decimal separator has to be the period (`.`). However, some
@@ -380,6 +388,42 @@ int main() {
 }
 ```
 
+## You also can use some additional options to maximize performance and reduce size (made by HedgehogInTheCPP):
+
+There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
+the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
+in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
+and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
+it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
+macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
+also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
+supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
+since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization:
+```
+-O3 -DNDEBUG + LTO
+```
+```C++
+#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_ISNOT_CHECKED_BOUNDS
+#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+#include "fast_float/fast_float.h"
+#include "fmt/base.h"
+#include <string_view>
+
+int main() {
+  std::string_view input = "23.14069263277926900572";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
+  if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
+  {
+    fmt::print(stderr, "parsing failure!\n    the number {}.", result);
+    return 1;
+  }
+  fmt::print("parsed the number {}.", result);
+  return 0;
+}
+```
+
 ## Multiplication of an integer by a power of 10
 An integer `W` can be multiplied by a power of ten `10^Q` and
 converted to `double` with correctly rounded value
@@ -423,7 +467,6 @@ float: 12345678 * 10^23 = 1.23456782e+30 (==expected)
 
 Overloads of `fast_float::integer_times_pow10()` are provided for
 signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
-
 
 ## Users and Related Work
 
