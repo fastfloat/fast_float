@@ -1167,6 +1167,9 @@ TEST_CASE("double.general") {
   // DBL_TRUE_MIN / 2 + 0.0000000000000001e-324
   verify("2.4703282292062328e-324", 0x0.0000000000001p-1022);
 
+  verify("0.2470328229206232720e-323", 0.0, std::errc::result_out_of_range);
+  verify("0.2470328229206232721e-323", 0x0.0000000000001p-1022);
+
   verify("-2.2222222222223e-322", -0x1.68p-1069);
   verify("9007199254740993.0", 0x1p+53);
   verify("860228122.6654514319E+90", 0x1.92bb20990715fp+328);
@@ -1262,8 +1265,14 @@ TEST_CASE("double.general") {
   verify("4.9406564584124654e-324", 0x0.0000000000001p-1022);
   verify("2.2250738585072009e-308", 0x0.fffffffffffffp-1022);
   verify("2.2250738585072014e-308", 0x1p-1022);
+  verify("0.2225073858507201136e-307", 0x0.fffffffffffffp-1022);
+  verify("0.2225073858507201137e-307", 0x1p-1022);
   verify("1.7976931348623157e308", 0x1.fffffffffffffp+1023);
   verify("1.7976931348623158e308", 0x1.fffffffffffffp+1023);
+  verify("1.7976931348623158079e308", std::numeric_limits<double>::max());
+  verify("1.7976931348623158080e308",
+    std::numeric_limits<double>::infinity(),
+    std::errc::result_out_of_range);
   verify("4503599627370496.5", 4503599627370496.5);
   verify("4503599627475352.5", 4503599627475352.5);
   verify("4503599627475353.5", 4503599627475353.5);
@@ -1543,6 +1552,8 @@ TEST_CASE("float.general") {
   verify("0.7006492e-45", 0.f, std::errc::result_out_of_range);
   // FLT_TRUE_MIN / 2 + 0.0000001e-45
   verify("0.7006493e-45", 0x1p-149f);
+  verify("0.7006492321624085354e-45", 0.f, std::errc::result_out_of_range);
+  verify("0.7006492321624085355e-45", 0x1p-149f);
 
   // max
   verify("340282346638528859811704183484516925440", 0x1.fffffep+127f);
@@ -1553,6 +1564,10 @@ TEST_CASE("float.general") {
   // that rounds to FLT_MAX
   verify("340282356779733661637539395458142568447",
          std::numeric_limits<float>::max());
+  verify("0.3402823567797336616e39", std::numeric_limits<float>::max());
+  verify("0.3402823567797336617e39",
+    std::numeric_limits<float>::infinity(),
+    std::errc::result_out_of_range);
 
   verify("-1e-999", -0.0f, std::errc::result_out_of_range);
   verify("1."
@@ -1563,6 +1578,8 @@ TEST_CASE("float.general") {
          "175494140627517859246175898662808184331245864732796240031385942718174"
          "6759860647699724722770042717456817626953125e-38",
          0x1.fffff8p-127f);
+  verify("1.1754942807573642917e-38", 0x1.fffff8p-127f);
+  verify("1.1754942807573642918e-38", std::numeric_limits<float>::min());
   verify_runtime(
       append_zeros("1."
                    "17549414062751785924617589866280818433124586473279624003138"
