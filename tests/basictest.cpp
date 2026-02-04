@@ -1270,9 +1270,8 @@ TEST_CASE("double.general") {
   verify("1.7976931348623157e308", 0x1.fffffffffffffp+1023);
   verify("1.7976931348623158e308", 0x1.fffffffffffffp+1023);
   verify("1.7976931348623158079e308", std::numeric_limits<double>::max());
-  verify("1.7976931348623158080e308",
-    std::numeric_limits<double>::infinity(),
-    std::errc::result_out_of_range);
+  verify("1.7976931348623158080e308", std::numeric_limits<double>::infinity(),
+         std::errc::result_out_of_range);
   verify("4503599627370496.5", 4503599627370496.5);
   verify("4503599627475352.5", 4503599627475352.5);
   verify("4503599627475353.5", 4503599627475353.5);
@@ -1565,9 +1564,8 @@ TEST_CASE("float.general") {
   verify("340282356779733661637539395458142568447",
          std::numeric_limits<float>::max());
   verify("0.3402823567797336616e39", std::numeric_limits<float>::max());
-  verify("0.3402823567797336617e39",
-    std::numeric_limits<float>::infinity(),
-    std::errc::result_out_of_range);
+  verify("0.3402823567797336617e39", std::numeric_limits<float>::infinity(),
+         std::errc::result_out_of_range);
 
   verify("-1e-999", -0.0f, std::errc::result_out_of_range);
   verify("1."
@@ -1578,7 +1576,7 @@ TEST_CASE("float.general") {
          "175494140627517859246175898662808184331245864732796240031385942718174"
          "6759860647699724722770042717456817626953125e-38",
          0x1.fffff8p-127f);
-  verify("1.1754942807573642917e-38", 0x1.fffff8p-127f);
+  verify("1.1754942807573642917e-38", 0x1.fffffcp-127f);
   verify("1.1754942807573642918e-38", std::numeric_limits<float>::min());
   verify_runtime(
       append_zeros("1."
