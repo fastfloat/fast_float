@@ -313,8 +313,6 @@ fastfloat_strncasecmp3(UC const *actual_mixedcase,
       return false;
     }
   }
-
-  return true;
 }
 
 template <typename UC>
@@ -369,8 +367,6 @@ fastfloat_strncasecmp5(UC const *actual_mixedcase,
       return false;
     }
   }
-
-  return true;
 }
 
 // Compares two ASCII strings in a case insensitive manner.
