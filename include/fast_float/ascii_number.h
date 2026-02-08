@@ -351,12 +351,14 @@ parse_number_string(UC const *p, UC const *pend,
     }
   }
   UC const *const start_digits = p;
+  const UC separator = options.digit_separator;
+  const bool has_separator = (separator != UC('\0'));
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
   int64_t digit_count = 0;
 
   while (p != pend) {
-    if (options.digit_separator != UC('\0') && *p == options.digit_separator) {
+    if (has_separator && *p == separator) {
       ++p;
       continue;
     }
@@ -380,9 +382,8 @@ parse_number_string(UC const *p, UC const *pend,
       return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
     }
     UC const *first_digit = start_digits;
-    while (first_digit != end_of_integer_part &&
-           options.digit_separator != UC('\0') &&
-           *first_digit == options.digit_separator) {
+    while (first_digit != end_of_integer_part && has_separator &&
+           *first_digit == separator) {
       ++first_digit;
     }
     if (first_digit != end_of_integer_part && *first_digit == UC('0') &&
@@ -400,7 +401,7 @@ parse_number_string(UC const *p, UC const *pend,
     UC const *before = p;
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
-    if (options.digit_separator == UC('\0')) {
+    if (!has_separator) {
       UC const *const before_simd = p;
       loop_parse_if_eight_digits(p, pend, i);
       size_t const exploded = size_t(p - before_simd);
@@ -408,8 +409,7 @@ parse_number_string(UC const *p, UC const *pend,
     }
 
     while (p != pend) {
-      if (options.digit_separator != UC('\0') &&
-          *p == options.digit_separator) {
+      if (has_separator && *p == separator) {
         ++p;
         continue;
       }
@@ -499,8 +499,7 @@ parse_number_string(UC const *p, UC const *pend,
     // E.g., 0.000000000...000.
     UC const *start = start_digits;
     while ((start != pend) && (*start == UC('0') || *start == decimal_point ||
-                               (options.digit_separator != UC('\0') &&
-                                *start == options.digit_separator))) {
+                               (has_separator && *start == separator))) {
       if (*start == UC('0')) {
         digit_count--;
       }
@@ -517,8 +516,7 @@ parse_number_string(UC const *p, UC const *pend,
       UC const *int_end = p + answer.integer.len();
       uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
       while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-        if (options.digit_separator != UC('\0') &&
-            *p == options.digit_separator) {
+        if (has_separator && *p == separator) {
           ++p;
           continue;
         }
@@ -528,8 +526,7 @@ parse_number_string(UC const *p, UC const *pend,
       if (i >= minimal_nineteen_digit_integer) { // We have a big integer
         int64_t remaining_integer_digits = 0;
         while (p != int_end) {
-          if (options.digit_separator != UC('\0') &&
-              *p == options.digit_separator) {
+          if (has_separator && *p == separator) {
             ++p;
             continue;
           }
@@ -542,8 +539,7 @@ parse_number_string(UC const *p, UC const *pend,
         UC const *frac_end = p + answer.fraction.len();
         int64_t fraction_digits_consumed = 0;
         while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-          if (options.digit_separator != UC('\0') &&
-              *p == options.digit_separator) {
+          if (has_separator && *p == separator) {
             ++p;
             continue;
           }
