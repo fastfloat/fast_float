@@ -401,7 +401,10 @@ parse_number_string(UC const *p, UC const *pend,
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     if (options.digit_separator == UC('\0')) {
+      UC const *const before_simd = p;
       loop_parse_if_eight_digits(p, pend, i);
+      size_t const exploded = size_t(p - before_simd);
+      fractional_digit_count += int64_t(exploded);
     }
 
     while (p != pend) {
@@ -523,10 +526,21 @@ parse_number_string(UC const *p, UC const *pend,
         ++p;
       }
       if (i >= minimal_nineteen_digit_integer) { // We have a big integer
-        exponent = end_of_integer_part - p + exp_number;
+        int64_t remaining_integer_digits = 0;
+        while (p != int_end) {
+          if (options.digit_separator != UC('\0') &&
+              *p == options.digit_separator) {
+            ++p;
+            continue;
+          }
+          ++p;
+          ++remaining_integer_digits;
+        }
+        exponent = remaining_integer_digits + exp_number;
       } else { // We have a value with a fractional component.
         p = answer.fraction.ptr;
         UC const *frac_end = p + answer.fraction.len();
+        int64_t fraction_digits_consumed = 0;
         while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
           if (options.digit_separator != UC('\0') &&
               *p == options.digit_separator) {
@@ -535,8 +549,9 @@ parse_number_string(UC const *p, UC const *pend,
           }
           i = i * 10 + uint64_t(*p - UC('0'));
           ++p;
+          ++fraction_digits_consumed;
         }
-        exponent = answer.fraction.ptr - p + exp_number;
+        exponent = exp_number - fraction_digits_consumed;
       }
       // We have now corrected both exponent and i, to a truncated value
     }
