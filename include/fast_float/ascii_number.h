@@ -356,6 +356,7 @@ parse_number_string(UC const *p, UC const *pend,
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
   int64_t digit_count = 0;
+  UC const *first_digit_ptr = nullptr;
 
   while (p != pend) {
     if (has_separator && *p == separator) {
@@ -364,6 +365,9 @@ parse_number_string(UC const *p, UC const *pend,
     }
     if (!is_integer(*p)) {
       break;
+    }
+    if (digit_count == 0) {
+      first_digit_ptr = p;
     }
     // a multiplication by 10 is cheaper than an arbitrary integer
     // multiplication
@@ -381,13 +385,7 @@ parse_number_string(UC const *p, UC const *pend,
     if (digit_count == 0) {
       return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
     }
-    UC const *first_digit = start_digits;
-    while (first_digit != end_of_integer_part && has_separator &&
-           *first_digit == separator) {
-      ++first_digit;
-    }
-    if (first_digit != end_of_integer_part && *first_digit == UC('0') &&
-        digit_count > 1) {
+    if (digit_count > 1 && *first_digit_ptr == UC('0')) {
       return report_parse_error<UC>(start_digits,
                                     parse_error::leading_zeros_in_integer_part);
     }
