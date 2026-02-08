@@ -476,12 +476,11 @@ template <typename T, typename UC>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
                     parse_options_t<UC> options) noexcept {
-  if ((options.format_options & parse_options_t<UC>::skip_prefix) != 0) {
-    if ((last - first) >= 2 && *first == UC('0')) {
-      if ((first[1] == UC('x') || first[1] == UC('X')) ||
-          (first[1] == UC('b') || first[1] == UC('B'))) {
-        first += 2;
-      }
+  if (((options.format_options & parse_options_t<UC>::skip_prefix) != 0) &&
+      (last - first >= 2) && (*first == UC('0'))) {
+    const UC c_low = UC(first[1] | UC(0x20));
+    if (c_low == UC('x') || c_low == UC('b')) {
+      first += 2;
     }
   }
   return from_chars_advanced_caller<
