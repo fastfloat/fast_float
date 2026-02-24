@@ -463,7 +463,14 @@ parse_number_string(UC const *p, UC const *pend,
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
     } else {
-      while ((p != pend) && is_integer(*p)) {
+      while (p != pend) {
+        if (has_separator && *p == separator) {
+          ++p;
+          continue;
+        }
+        if (!is_integer(*p)) {
+          break;
+        }
         uint8_t digit = uint8_t(*p - UC('0'));
         if (exp_number < 0x10000000) {
           exp_number = 10 * exp_number + digit;
