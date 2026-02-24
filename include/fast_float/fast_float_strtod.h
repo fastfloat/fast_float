@@ -2,13 +2,12 @@
 #define __FAST_FLOAT_STRTOD_H__
 
 #if defined(__cplusplus)
-extern "C"
-{
+extern "C" {
 #endif
 /**
  * @brief Convert a string to a double using the fast_float library. This is
- * a C-compatible wrapper around the fast_float parsing functionality, designed to
- * mimic the behavior of the standard strtod function.
+ * a C-compatible wrapper around the fast_float parsing functionality, designed
+ * to mimic the behavior of the standard strtod function.
  *
  * This function parses the initial portion of the null-terminated string `nptr`
  * and converts it to a `double`, similar to the standard `strtod` function but
@@ -23,7 +22,7 @@ extern "C"
  *               to the beginning of the string.
  * @return       The converted double value on success, or 0.0 on failure.
  */
- double fast_float_strtod(const char *in, char **out);
+double fast_float_strtod(const char *in, char **out);
 
 #if defined(__cplusplus)
 }
