@@ -108,3 +108,10 @@ endif(FASTFLOAT_EXHAUSTIVE)
 
 add_subdirectory(build_tests)
 add_subdirectory(bloat_analysis)
+
+add_executable(strtod_test strtod_test.c)
+if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT WIN32) OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13" AND NOT WIN32))
+    target_link_options(strtod_test PUBLIC -nostdlib++)
+endif()
+target_link_libraries(strtod_test PUBLIC fast_float_strtod)
+add_test(NAME strtod_test COMMAND strtod_test)
