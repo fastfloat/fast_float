@@ -1,5 +1,5 @@
-#ifndef __FAST_FLOAT_STRTOD_H__
-#define __FAST_FLOAT_STRTOD_H__
+#ifndef FAST_FLOAT_STRTOD_H__
+#define FAST_FLOAT_STRTOD_H__
 
 #if defined(__cplusplus)
 extern "C" {
@@ -28,4 +28,4 @@ double fast_float_strtod(const char *in, char **out);
 }
 #endif
 
-#endif /* __FAST_FLOAT_STRTOD_H__ */
+#endif /* FAST_FLOAT_STRTOD_H__ */
