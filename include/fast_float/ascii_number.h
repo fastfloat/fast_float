@@ -400,10 +400,8 @@ parse_number_string(UC const *p, UC const *pend,
     // can occur at most twice without overflowing, but let it occur more, since
     // for integers with many digits, digit parsing is the primary bottleneck.
     if (!has_separator) {
-      UC const *const before_simd = p;
       loop_parse_if_eight_digits(p, pend, i);
-      size_t const exploded = size_t(p - before_simd);
-      fractional_digit_count += int64_t(exploded);
+      fractional_digit_count += int64_t(p - before);
     }
 
     while (p != pend) {
