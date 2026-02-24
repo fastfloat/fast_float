@@ -1,7 +1,7 @@
 add_library(fast_float_strtod STATIC fast_float_strtod.cpp)
 target_link_libraries(fast_float_strtod PRIVATE fast_float)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
+if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT WIN32) OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13" AND NOT WIN32))
     target_link_options(fast_float_strtod PRIVATE -nostdlib++)
 endif()
 
