@@ -136,7 +136,7 @@ int main() {
         fast_float::parse_options(
             fast_float::chars_format::json |
             fast_float::chars_format::allow_leading_plus)); // should be ignored
-    if (answer.valid) {
+    if (!answer.invalid) {
       std::cerr << "json parse accepted invalid json " << f << std::endl;
       return EXIT_FAILURE;
     }

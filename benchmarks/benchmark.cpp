@@ -1,10 +1,13 @@
+
+// #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+// #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+// #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
+
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
 #define USING_COUNTERS
 #endif
 #include "counters/event_counter.h"
 #include <algorithm>
-#include "fast_float/fast_float.h"
-#include <chrono>
 #include <climits>
 #include <cmath>
 #include <cstdint>
@@ -19,15 +22,17 @@
 #include <sstream>
 #include <stdio.h>
 #include <string>
-#include <vector>
 #include <locale.h>
 
-template <typename CharT>
-double findmax_fastfloat64(std::vector<std::basic_string<CharT>> &s) {
-  double answer = 0;
-  double x = 0;
+#include "fast_float/fast_float.h"
+
+template <typename CharT, typename Value>
+Value findmax_fastfloat(std::vector<std::basic_string<CharT>> &s) {
+  Value answer = 0;
+  Value x = 0;
   for (auto &st : s) {
     auto [p, ec] = fast_float::from_chars(st.data(), st.data() + st.size(), x);
+
     if (p == st.data()) {
       throw std::runtime_error("bug in findmax_fastfloat");
     }
@@ -36,42 +41,30 @@ double findmax_fastfloat64(std::vector<std::basic_string<CharT>> &s) {
   return answer;
 }
 
-template <typename CharT>
-double findmax_fastfloat32(std::vector<std::basic_string<CharT>> &s) {
-  float answer = 0;
-  float x = 0;
-  for (auto &st : s) {
-    auto [p, ec] = fast_float::from_chars(st.data(), st.data() + st.size(), x);
-    if (p == st.data()) {
-      throw std::runtime_error("bug in findmax_fastfloat");
-    }
-    answer = answer > x ? answer : x;
-  }
-  return answer;
-}
+#ifdef USING_COUNTERS
 
 counters::event_collector collector{};
 
-#ifdef USING_COUNTERS
 template <class T, class CharT>
 std::vector<counters::event_count>
 time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
-           size_t repeat) {
+           uint32_t repeat) {
   std::vector<counters::event_count> aggregate;
   bool printed_bug = false;
-  for (size_t i = 0; i < repeat; i++) {
+  for (uint32_t i = 0; i != repeat; ++i) {
     collector.start();
-    double ts = function(lines);
+    auto const ts = function(lines);
+    aggregate.push_back(collector.end());
+
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
     }
-    aggregate.push_back(collector.end());
   }
   return aggregate;
 }
 
-void pretty_print(double volume, size_t number_of_floats, std::string name,
+void pretty_print(uint64_t volume, size_t number_of_floats, std::string name,
                   std::vector<counters::event_count> events) {
   double volumeMB = volume / (1024. * 1024.);
   double average_ns{0};
@@ -139,25 +132,27 @@ time_it_ns(std::vector<std::basic_string<CharT>> &lines, T const &function,
   double average = 0;
   double min_value = DBL_MAX;
   bool printed_bug = false;
-  for (size_t i = 0; i < repeat; i++) {
+  for (size_t i = 0; i != repeat; ++i) {
     t1 = std::chrono::high_resolution_clock::now();
-    double ts = function(lines);
+    auto const ts = function(lines);
+    t2 = std::chrono::high_resolution_clock::now();
+
+    double const dif = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count());
+    average += dif;
+    min_value = min_value < dif ? min_value : dif;
+
     if (ts == 0 && !printed_bug) {
       printf("bug\n");
       printed_bug = true;
     }
-    t2 = std::chrono::high_resolution_clock::now();
-    double dif =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
-    average += dif;
-    min_value = min_value < dif ? min_value : dif;
   }
   average /= repeat;
   return std::make_pair(min_value, average);
 }
 
-void pretty_print(double volume, size_t number_of_floats, std::string name,
-                  std::pair<double, double> result) {
+void pretty_print(uint64_t volume, size_t number_of_floats,
+                  std::string const &name, std::pair<double, double> result) {
   double volumeMB = volume / (1024. * 1024.);
   printf("%-40s: %8.2f MB/s (+/- %.1f %%) ", name.data(),
          volumeMB * 1000000000 / result.first,
@@ -168,10 +163,10 @@ void pretty_print(double volume, size_t number_of_floats, std::string name,
 #endif
 
 // this is okay, all chars are ASCII
-inline std::u16string widen(std::string line) {
+inline std::u16string widen(std::string const &line) {
   std::u16string u16line;
   u16line.resize(line.size());
-  for (size_t i = 0; i < line.size(); ++i) {
+  for (uint32_t i = 0; i != line.size(); ++i) {
     u16line[i] = char16_t(line[i]);
   }
   return u16line;
@@ -181,28 +176,29 @@ std::vector<std::u16string> widen(const std::vector<std::string> &lines) {
   std::vector<std::u16string> u16lines;
   u16lines.reserve(lines.size());
   for (auto const &line : lines) {
-    u16lines.push_back(widen(line));
+    u16lines.emplace_back(widen(line));
   }
   return u16lines;
 }
 
 void process(std::vector<std::string> &lines, size_t volume) {
-  size_t repeat = 1000;
+  size_t constexpr repeat = 1000;
   double volumeMB = volume / (1024. * 1024.);
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
-               time_it_ns(lines, findmax_fastfloat64<char>, repeat));
+               time_it_ns(lines, findmax_fastfloat<char, double>, repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
-               time_it_ns(lines, findmax_fastfloat32<char>, repeat));
+               time_it_ns(lines, findmax_fastfloat<char, float>, repeat));
 
   std::vector<std::u16string> lines16 = widen(lines);
   volume = 2 * volume;
   volumeMB = volume / (1024. * 1024.);
   std::cout << "UTF-16 volume = " << volumeMB << " MB " << std::endl;
-  pretty_print(volume, lines.size(), "fastfloat (64)",
-               time_it_ns(lines16, findmax_fastfloat64<char16_t>, repeat));
+  pretty_print(
+      volume, lines.size(), "fastfloat (64)",
+      time_it_ns(lines16, findmax_fastfloat<char16_t, double>, repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
-               time_it_ns(lines16, findmax_fastfloat32<char16_t>, repeat));
+               time_it_ns(lines16, findmax_fastfloat<char16_t, float>, repeat));
 }
 
 void fileload(std::string filename) {
@@ -216,17 +212,38 @@ void fileload(std::string filename) {
   std::cout << "#### " << std::endl;
   std::string line;
   std::vector<std::string> lines;
-  lines.reserve(10000); // let us reserve plenty of memory.
+  lines.reserve(120000); // let us reserve plenty of memory.
   size_t volume = 0;
   while (getline(inputfile, line)) {
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    if (line[0] == '-') {
+      line.erase(0, 1);
+    }
+#endif
     volume += line.size();
-    lines.push_back(line);
+    lines.emplace_back(line);
   }
   std::cout << "# read " << lines.size() << " lines " << std::endl;
   process(lines, volume);
 }
 
 int main(int argc, char **argv) {
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  std::cout << "# FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN is enabled"
+            << std::endl;
+#endif
+#ifdef FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED
+  std::cout << "# FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED is enabled"
+            << std::endl;
+#endif
+#ifdef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+  std::cout << "# FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED is enabled"
+            << std::endl;
+#endif
+#ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
+  std::cout << "# FASTFLOAT_ISNOT_CHECKED_BOUNDS is enabled" << std::endl;
+#endif
+#ifdef USING_COUNTERS
   if (collector.has_events()) {
     std::cout << "# Using hardware counters" << std::endl;
   } else {
@@ -236,11 +253,14 @@ int main(int argc, char **argv) {
               << std::endl;
 #endif
   }
+#endif
   if (argc > 1) {
     fileload(argv[1]);
     return EXIT_SUCCESS;
   }
+
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
+  fileload(std::string(BENCHMARK_DATA_DIR) + "/canada_short.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
   return EXIT_SUCCESS;
 }
