@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 
-project(fast_float VERSION 8.2.3 LANGUAGES CXX)
+project(fast_float VERSION 8.2.3 LANGUAGES CXX C)
 set(FASTFLOAT_CXX_STANDARD 11 CACHE STRING "the C++ standard to use for fastfloat")
 set(CMAKE_CXX_STANDARD ${FASTFLOAT_CXX_STANDARD})
 option(FASTFLOAT_TEST "Enable tests" OFF)
@@ -31,6 +31,8 @@ if(FASTFLOAT_INSTALL)
 endif()
 
 add_library(fast_float INTERFACE)
+
+add_subdirectory(src)
 
 
 option(FASTFLOAT_BENCHMARKS "Enable benchmarks" OFF)
