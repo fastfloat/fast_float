@@ -3,12 +3,16 @@
 
 [![Ubuntu 22.04 CI (GCC 11)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml)
 
+*Note: This library is for C++ users. C programmers should consider [ffc.h](https://github.com/kolemannix/ffc.h). It is a high-performance port of fast_float to C.*
+
+
 The fast_float library provides fast header-only implementations for the C++
 from_chars functions for `float` and `double` types as well as integer types.
 These functions convert ASCII strings representing decimal values (e.g.,
 `1.3e10`) into binary types. We provide exact rounding (including round to
 even). In our experience, these `fast_float` functions many times faster than
 comparable number-parsing functions from existing C++ standard libraries.
+
 
 Specifically, `fast_float` provides the following two functions to parse
 floating-point numbers with a C++17-like syntax (the library itself only
