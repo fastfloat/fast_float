@@ -492,6 +492,8 @@ Packages
   [Jackson](https://github.com/FasterXML/jackson-core).
 * [There is a C# port of the fast_float
   library](https://github.com/CarlVerret/csFastFloat) called `csFastFloat`.
+* There is a [plain C port](https://github.com/kolemannix/ffc.h) (c99) of the fast_float library
+called ffc.h
 
 ## How fast is it?
 
