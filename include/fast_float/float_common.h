@@ -70,8 +70,10 @@ using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
   constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'), int b = 10)
-      : format(fmt), decimal_point(dot), base(b) {}
+                                     UC dot = UC('.'), int b = 10,
+                                     UC sep = UC('\0'), uint8_t opts = 0)
+      : format(fmt), decimal_point(dot), base(b), digit_separator(sep),
+        format_options(opts) {}
 
   /** Which number formats are accepted */
   chars_format format;
@@ -79,6 +81,14 @@ template <typename UC> struct parse_options_t {
   UC decimal_point;
   /** The base used for integers */
   int base;
+  /** The character used as digit separator. Use '\0' to
+   * disable */
+  UC digit_separator;
+  /** Additional format options (bitmask) */
+  uint8_t format_options;
+
+  /** Option to skip prefixes like 0x, 0b */
+  static constexpr uint8_t skip_prefix = 1;
 };
 
 using parse_options = parse_options_t<char>;
