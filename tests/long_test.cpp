@@ -22,7 +22,7 @@ template <typename T> bool test() {
   char const *begin = input.data();
   char const *end = input.data() + input.size();
   for (size_t i = 0; i < answers.size(); i++) {
-    T result_value;
+    T result_value = 0;
     while ((begin < end) && (std::isspace(*begin))) {
       begin++;
     }
