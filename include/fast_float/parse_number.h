@@ -162,7 +162,7 @@ template <> struct from_chars_caller<std::float32_t> {
     // if std::float32_t is defined, and we are in C++23 mode; macro set for
     // float32; set value to float due to equivalence between float and
     // float32_t
-    float val;
+    float val = 0;
     auto ret = from_chars_advanced(first, last, val, options);
     value = val;
     return ret;
@@ -179,7 +179,7 @@ template <> struct from_chars_caller<std::float64_t> {
     // if std::float64_t is defined, and we are in C++23 mode; macro set for
     // float64; set value as double due to equivalence between double and
     // float64_t
-    double val;
+    double val = 0;
     auto ret = from_chars_advanced(first, last, val, options);
     value = val;
     return ret;

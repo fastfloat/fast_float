@@ -84,6 +84,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
+  // unaligned SIMD instruction -> all fine.
   return simd_read8_to_u64(
       _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)));
   FASTFLOAT_SIMD_RESTORE_WARNINGS
@@ -172,6 +173,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
 #ifdef FASTFLOAT_SSE2
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   // Load 8 UTF-16 characters (16 bytes)
+  // unaligned SIMD instruction -> all fine.
   __m128i const data =
       _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
   FASTFLOAT_SIMD_RESTORE_WARNINGS
