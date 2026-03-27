@@ -2,8 +2,10 @@
 
 module(
     name = "fast_float",
-    version = "6.1.6",
-    compatibility_level = 6,
+    version = "8.2.4",
+    compatibility_level = 8,
 )
 
 bazel_dep(name = "doctest", version = "2.4.11", dev_dependency = True)
+
+bazel_dep(name = "rules_cc", version = "0.2.17")
