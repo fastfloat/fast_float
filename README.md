@@ -10,8 +10,42 @@
 [![vs17 clang](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
 
-*Note: This library is for C++ users. C programmers should consider [ffc.h](https://github.com/kolemannix/ffc.h). It is a high-performance port of fast_float to C.*
+*Note: This library is for C++ users. C programmers should consider [ffc.h](https://github.com/kolemannix/ffc.h).
+## Also you can use C++ with some additional options to maximize performance and reduce size (made by HedgehogInTheCPP, please give a star to this repo):
 
+There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
+the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
+in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
+and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
+it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
+macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
+also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
+supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
+since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization:
+```
+-O3 -DNDEBUG + LTO
+```
+```C++
+#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_ISNOT_CHECKED_BOUNDS
+#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+#include "fast_float/fast_float.h"
+#include "fmt/base.h"
+#include <string_view>
+
+int main() {
+  std::string_view input = "23.14069263277926900572";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
+  if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
+  {
+    fmt::print(stderr, "parsing failure!\n    the number {}.", result);
+    return 1;
+  }
+  fmt::print("parsed the number {}.", result);
+  return 0;
+}
+```
 
 The fast_float library provides fast header-only implementations for the C++
 from_chars functions for `float` and `double` types as well as integer types.
@@ -389,42 +423,6 @@ int main() {
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
   if (answer.ec != std::errc() || (!std::isinf(result))) { std::cerr << "should have parsed infinity\n"; return EXIT_FAILURE; }
   return EXIT_SUCCESS;
-}
-```
-
-## You also can use some additional options to maximize performance and reduce size (made by HedgehogInTheCPP):
-
-There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
-the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
-in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
-and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
-it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
-macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
-also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
-supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
-since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization:
-```
--O3 -DNDEBUG + LTO
-```
-```C++
-#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-#define FASTFLOAT_ISNOT_CHECKED_BOUNDS
-#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
-#include "fast_float/fast_float.h"
-#include "fmt/base.h"
-#include <string_view>
-
-int main() {
-  std::string_view input = "23.14069263277926900572";
-  double result;
-  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
-  if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
-  {
-    fmt::print(stderr, "parsing failure!\n    the number {}.", result);
-    return 1;
-  }
-  fmt::print("parsed the number {}.", result);
-  return 0;
 }
 ```
 
