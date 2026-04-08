@@ -11,7 +11,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
 
 *Note: This library is for C++ users. C programmers should consider [ffc.h](https://github.com/kolemannix/ffc.h).
-## Also you can use C++ with some additional options to maximize performance and reduce size (made by HedgehogInTheCPP, please give a star to this repo):
+## This is a fork of fast_float made by HedgehogInTheCPP with some additional options, code refactoring and big cleanup to maximize performance, reduce size and improve mainteinability, please give a star to this repo ^^ :
 
 There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
 the sign and all other symbols before any number by itself. In this case you can use FastFloat to only parse positive numbers
