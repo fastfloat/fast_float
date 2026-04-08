@@ -86,7 +86,7 @@ it's very likely because all parsers need to check the first character by itself
 macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
 also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
 supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
-since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization:
+since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization (I use C++23 and some from C++26):
 ```
 -O3 -DNDEBUG + LTO
 ```
