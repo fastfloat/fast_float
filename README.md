@@ -9,6 +9,7 @@
 [![vs17 C++20](https://github.com/irainman/fast_float/actions/workflows/vs17-cxx20.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-cxx20.yml)
 [![vs17 clang](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
+[![codecov](https://codecov.io/github/IRainman/fast_float/graph/badge.svg?token=U90W4FEIDO)](https://codecov.io/github/IRainman/fast_float)
 
 ## This is a fork of [fast_float](https://github.com/fastfloat/fast_float) made by HedgehogInTheCPP with some additional options, code refactoring and big cleanup to maximize performance, reduce size and improve mainteinability, please give a star to this repo ^^ 
 
