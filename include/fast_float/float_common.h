@@ -1,6 +1,7 @@
 #ifndef FASTFLOAT_FLOAT_COMMON_H
 #define FASTFLOAT_FLOAT_COMMON_H
 
+#include <algorithm>
 #include <cfloat>
 #include <cstddef>
 #include <cstdint>
