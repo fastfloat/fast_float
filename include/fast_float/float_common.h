@@ -655,7 +655,7 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
   return answer;
 }
 
-struct alignas(16) adjusted_mantissa {
+struct /* alignas(16) */ adjusted_mantissa {
   am_mant_t mantissa;
   am_pow_t power2;
 
