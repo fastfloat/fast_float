@@ -730,6 +730,10 @@ long digits.
 The library includes code adapted from Google Wuffs (written by Nigel Tao) which
 was originally published under the Apache 2.0 license.
 
+## SAST Tools
+
+[PVS-Studio](https://pvs-studio.com/en/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.
+
 ## Stars
 
 
