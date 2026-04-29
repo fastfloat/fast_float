@@ -69,7 +69,7 @@ read_chars_to_unsigned(UC const *chars) noexcept {
 
 #ifdef FASTFLOAT_SSE2
 
-fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const &data) {
+fastfloat_really_inline uint64_t simd_read8_to_u64(__m128i const data) {
   // _mm_packus_epi16 is SSE2+, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
 #ifdef FASTFLOAT_64BIT
@@ -86,7 +86,7 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   // unaligned SIMD instruction -> all fine.
   return simd_read8_to_u64(
-      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)));
+      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars))); //-V1032
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
@@ -175,7 +175,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   // Load 8 UTF-16 characters (16 bytes)
   // unaligned SIMD instruction -> all fine.
   __m128i const data =
-      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
+      _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)); //-V1032
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 
   // Branchless "are all digits?" trick from Lemire:
