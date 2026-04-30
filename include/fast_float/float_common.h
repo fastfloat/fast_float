@@ -440,7 +440,7 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
     }
     uint_fast8_t sz = 8 / (sizeof(UC));
     for (uint_fast8_t i = 0; i < length; i += sz) {
-      sz = std::min(sz, static_cast<uint_fast8_t>(length - i));
+      sz = sz < (length - i) ? sz : length - i;
       std::memcpy(&val1, actual_mixedcase + i, sz * sizeof(UC));
       std::memcpy(&val2, expected_lowercase + i, sz * sizeof(UC));
       val1 |= mask;

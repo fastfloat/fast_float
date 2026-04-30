@@ -1,7 +1,6 @@
 #ifndef FASTFLOAT_DIGIT_COMPARISON_H
 #define FASTFLOAT_DIGIT_COMPARISON_H
 
-#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
@@ -107,7 +106,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void round(adjusted_mantissa &am,
   if (-am.power2 >= mantissa_shift) {
     // have a denormal float
     am_pow_t shift = -am.power2 + 1;
-    cb(am, std::min<am_pow_t>(shift, 64));
+    cb(am, (shift < 64 ? shift : 64));
     // check for round-up: if rounding-nearest carried us to the hidden bit.
     am.power2 = (am.mantissa <
                  (am_mant_t(1) << binary_format<T>::mantissa_explicit_bits()))
