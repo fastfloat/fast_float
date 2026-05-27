@@ -1,0 +1,90 @@
+name: Deploy GitHub Pages
+
+# Builds the docs/ site, substitutes the latest release tag into the HTML,
+# then deploys the result to GitHub Pages. Runs on:
+#   - any push to main that touches docs/, this workflow, or CMakeLists.txt
+#   - every published release (so a new tag refreshes the site)
+#   - manual dispatch from the Actions tab
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+      - "CMakeLists.txt"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Required permissions for the deploy-pages action.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Avoid concurrent deploys; let the latest one win.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          # Needed so the git-tag fallback can find release tags.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Resolve latest release version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Prefer the latest published GitHub release.
+          tag="$(gh release view --repo ${{ github.repository }} --json tagName --jq .tagName 2>/dev/null || true)"
+          if [ -z "${tag:-}" ]; then
+            # Fall back to the newest semver-looking git tag.
+            tag="$(git tag --sort=-v:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+          fi
+          if [ -z "${tag:-}" ]; then
+            # Last-resort fallback: read version from CMakeLists.txt.
+            tag="v$(grep -E 'project\(fast_float VERSION' CMakeLists.txt | sed -E 's/.*VERSION ([0-9.]+).*/\1/')"
+          fi
+          # Strip a leading "v" — the template uses bare semver after "v".
+          version="${tag#v}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${version} (tag ${tag})"
+
+      - name: Substitute version into HTML
+        run: |
+          set -euo pipefail
+          version='${{ steps.version.outputs.version }}'
+          # In-place replace every {{VERSION}} occurrence under docs/.
+          find docs -type f \( -name '*.html' -o -name '*.md' -o -name '*.css' -o -name '*.js' \) \
+            -exec sed -i "s/{{VERSION}}/${version}/g" {} +
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

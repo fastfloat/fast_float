@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fast_float — parse floating-point numbers at a gigabyte per second</title>
+  <meta name="description" content="A header-only C++ library for fast and exact parsing of floating-point and integer numbers. Used by GCC, Chromium, WebKit, LLVM, Apache Arrow, DuckDB, Redis, and more." />
+  <meta name="theme-color" content="#0f172a" />
+
+  <meta property="og:title" content="fast_float — parse floats at 1 GB/s" />
+  <meta property="og:description" content="A header-only C++ library for fast and exact floating-point and integer parsing." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fastfloat.github.io/fast_float/" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github-dark.min.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="./">
+        <img src="assets/logo.svg" alt="" width="32" height="32" />
+        <span>fast_float</span>
+      </a>
+      <nav class="primary-nav" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#performance">Performance</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="#users">Users</a>
+        <a href="#install">Install</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="ghost-btn" href="https://github.com/fastfloat/fast_float" aria-label="GitHub repository">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.07.78 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+          <span>GitHub</span>
+        </a>
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme" title="Toggle theme">
+          <svg class="i-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="i-moon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">C++11 · header-only · triple-licensed</span>
+        <h1>Parse floating-point numbers <span class="grad">at a gigabyte per second</span>.</h1>
+        <p class="lede">
+          <strong>fast_float</strong> is a header-only C++ implementation of
+          <code>std::from_chars</code> for <code>float</code>, <code>double</code>, and integer types.
+          Exact IEEE rounding, no allocations, no exceptions — often <strong>many times faster</strong>
+          than your standard library.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="#quickstart">Get started</a>
+          <a class="btn" href="https://github.com/fastfloat/fast_float">View on GitHub</a>
+          <a class="btn ghost" href="https://github.com/fastfloat/fast_float/releases/latest" id="download-latest">
+            Download <code class="version-tag" data-version>v{{VERSION}}</code>
+          </a>
+        </div>
+        <div class="hero-meta">
+          <span class="badge" id="release-badge">
+            <span class="dot"></span> Latest release: <code data-version>v{{VERSION}}</code>
+          </span>
+          <a class="meta-link" href="https://github.com/fastfloat/fast_float/blob/main/LICENSE-APACHE">Apache 2.0</a>
+          <a class="meta-link" href="https://github.com/fastfloat/fast_float/blob/main/LICENSE-MIT">MIT</a>
+          <a class="meta-link" href="https://github.com/fastfloat/fast_float/blob/main/LICENSE-BOOST">Boost</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="container">
+        <h2>Why fast_float?</h2>
+        <p class="section-lede">A drop-in <code>from_chars</code> built for performance-critical code paths.</p>
+        <div class="grid features">
+          <article class="card">
+            <h3>Blazing fast</h3>
+            <p>Often <strong>4× faster</strong> than the best competitor and many times faster than typical standard-library implementations. Sustains <strong>1 GB/s</strong> on commodity hardware.</p>
+          </article>
+          <article class="card">
+            <h3>Exact rounding</h3>
+            <p>Returns the closest IEEE 754 <code>float</code> or <code>double</code> with round-to-nearest, ties-to-even — bit-for-bit correct.</p>
+          </article>
+          <article class="card">
+            <h3>Header-only</h3>
+            <p>Just drop in <code>fast_float.h</code> or use it via CMake, Conan, vcpkg, xmake, or Homebrew. Requires only C++11.</p>
+          </article>
+          <article class="card">
+            <h3>No surprises</h3>
+            <p>Does not allocate, does not throw, locale-independent. The interface mirrors C++17 <code>std::from_chars</code>.</p>
+          </article>
+          <article class="card">
+            <h3>Integers too</h3>
+            <p>Parses every standard integer type in bases 2–36, plus <code>bool</code>. The same fast, allocation-free interface.</p>
+          </article>
+          <article class="card">
+            <h3>Unicode &amp; formats</h3>
+            <p>UTF-8, UTF-16, and UTF-32 inputs. JSON, Fortran, and custom decimal separators via <code>from_chars_advanced</code>.</p>
+          </article>
+          <article class="card">
+            <h3>constexpr-ready</h3>
+            <p>In C++20, parse strings at compile time with <code>consteval</code> — zero runtime cost.</p>
+          </article>
+          <article class="card">
+            <h3>Portable</h3>
+            <p>Visual Studio, GCC, Clang, MSYS2. Linux, macOS, FreeBSD, Windows. x86-64, ARM, RISC-V, s390x. 32-bit and 64-bit.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="performance" class="section alt">
+      <div class="container">
+        <h2>Performance</h2>
+        <p class="section-lede">
+          Parsing random floating-point numbers, measured in megabytes per second
+          (higher is better). Source: project benchmark suite on a typical x86-64 box.
+        </p>
+
+        <div class="bench">
+          <div class="bench-row">
+            <span class="bench-label">fast_float</span>
+            <div class="bench-bar"><span class="bench-fill primary" style="--w: 100%">1042 MB/s</span></div>
+          </div>
+          <div class="bench-row">
+            <span class="bench-label">abseil</span>
+            <div class="bench-bar"><span class="bench-fill" style="--w: 41%">430 MB/s</span></div>
+          </div>
+          <div class="bench-row">
+            <span class="bench-label">netlib</span>
+            <div class="bench-bar"><span class="bench-fill" style="--w: 26%">271 MB/s</span></div>
+          </div>
+          <div class="bench-row">
+            <span class="bench-label">double-conversion</span>
+            <div class="bench-bar"><span class="bench-fill" style="--w: 22%">225 MB/s</span></div>
+          </div>
+          <div class="bench-row">
+            <span class="bench-label">strtod</span>
+            <div class="bench-bar"><span class="bench-fill" style="--w: 18%">191 MB/s</span></div>
+          </div>
+        </div>
+
+        <details class="repro">
+          <summary>Reproduce these numbers</summary>
+<pre data-lang="bash"><code>cmake -B build -D FASTFLOAT_BENCHMARKS=ON
+cmake --build build
+./build/benchmarks/benchmark</code></pre>
+        </details>
+      </div>
+    </section>
+
+    <section id="quickstart" class="section">
+      <div class="container">
+        <h2>Quick start</h2>
+        <p class="section-lede">Parse a <code>double</code> from a string in three lines.</p>
+
+<pre data-lang="cpp"><code>#include "fast_float/fast_float.h"
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+int main() {
+  std::string input = "3.1416 xyz ";
+  double result;
+  auto answer = fast_float::from_chars(input.data(),
+                                       input.data() + input.size(),
+                                       result);
+  if (answer.ec != std::errc()) {
+    std::cerr &lt;&lt; "parsing failure\n";
+    return EXIT_FAILURE;
+  }
+  std::cout &lt;&lt; "parsed the number " &lt;&lt; result &lt;&lt; '\n';
+}</code></pre>
+
+        <h3>Integers in any base (2–36)</h3>
+<pre data-lang="cpp"><code>uint64_t value;
+std::string hex = "4f0cedc95a718c";
+auto r = fast_float::from_chars(hex.data(), hex.data() + hex.size(), value, 16);
+// value == 22250738585072012</code></pre>
+
+        <h3>UTF-16 input</h3>
+<pre data-lang="cpp"><code>std::u16string input = u"3.1416 xyz ";
+double result;
+auto r = fast_float::from_chars(input.data(), input.data() + input.size(), result);</code></pre>
+
+        <h3>Comma as decimal separator, Fortran, or JSON</h3>
+<pre data-lang="cpp"><code>// "3,1416" — French-style
+fast_float::parse_options opts{fast_float::chars_format::general, ','};
+fast_float::from_chars_advanced(s.data(), s.data() + s.size(), result, opts);
+
+// "1d+4" — Fortran exponent
+opts = {fast_float::chars_format::fortran};
+
+// strict JSON per RFC 8259
+opts = {fast_float::chars_format::json};</code></pre>
+
+        <h3>C++20: parse at compile time</h3>
+<pre data-lang="cpp"><code>consteval double parse(std::string_view s) {
+  double v;
+  auto r = fast_float::from_chars(s.data(), s.data() + s.size(), v);
+  return r.ec == std::errc() ? v : -1.0;
+}
+constexpr double pi = parse("3.1415");  // computed at compile time</code></pre>
+      </div>
+    </section>
+
+    <section id="install" class="section alt">
+      <div class="container">
+        <h2>Install</h2>
+        <p class="section-lede">Pick the workflow that matches your project.</p>
+
+        <div class="grid install">
+          <article class="card">
+            <h3>CMake <code>FetchContent</code></h3>
+<pre data-lang="cmake"><code>FetchContent_Declare(
+  fast_float
+  GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
+  GIT_TAG tags/v{{VERSION}}
+  GIT_SHALLOW TRUE)
+FetchContent_MakeAvailable(fast_float)
+target_link_libraries(myprogram PUBLIC fast_float)</code></pre>
+          </article>
+
+          <article class="card">
+            <h3>CPM</h3>
+<pre data-lang="cmake"><code>CPMAddPackage(
+  NAME fast_float
+  GITHUB_REPOSITORY "fastfloat/fast_float"
+  GIT_TAG v{{VERSION}})</code></pre>
+          </article>
+
+          <article class="card">
+            <h3>Single header</h3>
+            <p>Download a pre-amalgamated header — no build system required.</p>
+<pre data-lang="bash"><code>curl -LO https://github.com/fastfloat/fast_float/releases/download/v{{VERSION}}/fast_float.h</code></pre>
+          </article>
+
+          <article class="card">
+            <h3>Package managers</h3>
+            <ul class="bullets">
+              <li><a href="https://conan.io/center/recipes/fast_float">Conan</a></li>
+              <li><a href="https://formulae.brew.sh/formula/fast_float">Homebrew</a> — <code>brew install fast_float</code></li>
+              <li><a href="https://xmake.io">xmake</a></li>
+              <li>Fedora — <code>dnf install fast_float-devel</code></li>
+              <li><a href="https://repology.org/project/fast-float/versions">More distributions</a></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="users" class="section">
+      <div class="container">
+        <h2>Trusted by</h2>
+        <p class="section-lede">fast_float ships inside compilers, browsers, databases, and more.</p>
+        <ul class="users">
+          <li><strong>GCC</strong> — backs <code>std::from_chars</code> since version 12</li>
+          <li><strong>Chromium</strong> — Chrome, Edge, and Opera</li>
+          <li><strong>WebKit</strong> — Safari</li>
+          <li><strong>Ladybird</strong> — independent browser engine</li>
+          <li><strong>DuckDB</strong> — in-process analytical database</li>
+          <li><strong>Apache Arrow</strong> — 2–3× faster number parsing</li>
+          <li><strong>ClickHouse</strong> — OLAP database</li>
+          <li><strong>MySQL</strong></li>
+          <li><strong>Boost.JSON</strong></li>
+          <li><strong>Blender</strong></li>
+          <li><strong>Google Jsonnet</strong></li>
+        </ul>
+        <p class="aside">
+          Ports and bindings exist for
+          <a href="https://github.com/aldanor/fast-float-rust/">Rust</a>,
+          <a href="https://github.com/wrandelshofer/FastDoubleParser">Java</a>,
+          <a href="https://github.com/CarlVerret/csFastFloat">C#</a>,
+          <a href="https://github.com/kolemannix/ffc.h">C</a>, and
+          <a href="https://github.com/eddelbuettel/rcppfastfloat">R</a>.
+        </p>
+      </div>
+    </section>
+
+    <section id="papers" class="section alt">
+      <div class="container">
+        <h2>The research behind it</h2>
+        <ul class="papers">
+          <li>
+            Daniel Lemire,
+            <a href="https://arxiv.org/abs/2101.11408"><strong>Number Parsing at a Gigabyte per Second</strong></a>.
+            <em>Software: Practice and Experience</em> 51(8), 2021.
+          </li>
+          <li>
+            Noble Mushtak, Daniel Lemire,
+            <a href="https://arxiv.org/abs/2212.06644"><strong>Fast Number Parsing Without Fallback</strong></a>.
+            <em>Software: Practice and Experience</em> 53(7), 2023.
+          </li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>fast_float</strong>
+        <p>Triple-licensed under Apache 2.0, MIT, and Boost. Use it however you like.</p>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="https://github.com/fastfloat/fast_float">GitHub repository</a></li>
+          <li><a href="https://github.com/fastfloat/fast_float/releases">Releases</a></li>
+          <li><a href="https://github.com/fastfloat/fast_float/issues">Issue tracker</a></li>
+          <li><a href="https://github.com/fastfloat/fast_float/blob/main/SECURITY.md">Security policy</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Learn more</h4>
+        <ul>
+          <li><a href="https://arxiv.org/abs/2101.11408">Number Parsing at a Gigabyte per Second</a></li>
+          <li><a href="https://www.youtube.com/watch?v=AVXgvlMeIm4">Go Systems 2020 talk</a></li>
+          <li><a href="https://github.com/fastfloat/fast_float/blob/main/README.md">README</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container subfoot">
+      <span>Current release <code data-version>v{{VERSION}}</code></span>
+      <span>Maintained by the <a href="https://github.com/fastfloat">fast_float</a> contributors.</span>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/languages/cmake.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/languages/bash.min.js"></script>
+  <script>
+    // Promote each <pre data-lang="X"> to a Highlight.js language class
+    // on its inner <code>, then highlight everything.
+    document.querySelectorAll("pre[data-lang]").forEach(function (pre) {
+      var code = pre.querySelector("code");
+      if (code && !code.className) code.className = "language-" + pre.dataset.lang;
+    });
+    hljs.highlightAll();
+  </script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
