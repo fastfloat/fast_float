@@ -441,7 +441,6 @@ The fast_float library is part of:
 * [WebKit](https://github.com/WebKit/WebKit), the engine behind Safari (Apple's
   web browser),
 * [DuckDB](https://duckdb.org),
-* [Redis](https://github.com/redis/redis) and [Valkey](https://github.com/valkey-io/valkey),
 * [Apache Arrow](https://github.com/apache/arrow/pull/8494) where it multiplied
   the number parsing speed by two or three times,
 * [Google Jsonnet](https://github.com/google/jsonnet),
@@ -454,15 +453,6 @@ AdaCore](https://github.com/AdaCore/VSS). The [SerenityOS operating
 system](https://github.com/SerenityOS/serenity/commit/53b7f5e6a11e663c83df8030c3171c5945cb75ec)
 has a derived implementation that is inherited by the [Ladybird
 Browser](https://github.com/LadybirdBrowser/ladybird).
-
-The fast_float library provides a performance similar to that of the
-[fast_double_parser](https://github.com/lemire/fast_double_parser) library but
-using an updated algorithm reworked from the ground up, and while offering an
-API more in line with the expectations of C++ programmers. The
-fast_double_parser library is part of the [Microsoft LightGBM machine-learning
-framework](https://github.com/microsoft/LightGBM).
-
-
 
 Packages
 ------
