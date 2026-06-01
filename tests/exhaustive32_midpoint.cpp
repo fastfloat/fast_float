@@ -1,5 +1,6 @@
 #include "fast_float/fast_float.h"
 
+#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -7,6 +8,8 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <thread>
+#include <vector>
 
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)
 // Anything at all that is related to cygwin, msys and so forth will
@@ -74,84 +77,105 @@ void strtof_from_string(char const *st, float &d) {
   }
 }
 
-bool allvalues() {
+// Checks a single 32-bit word (interpreted as a float). Returns true if the
+// parser agrees with the reference, false (after logging) on a mismatch.
+bool check_word(uint32_t word) {
   char buffer[64];
-  for (uint64_t w = 0; w <= 0xFFFFFFFF; w++) {
-    float v;
-    if ((w % 1048576) == 0) {
-      std::cout << ".";
-      std::cout.flush();
-    }
-    uint32_t word = uint32_t(w);
-    memcpy(&v, &word, sizeof(v));
-    if (std::isfinite(v)) {
-      float nextf = std::nextafterf(v, INFINITY);
-      if (copysign(1, v) != copysign(1, nextf)) {
-        continue;
-      }
-      if (!std::isfinite(nextf)) {
-        continue;
-      }
-      double v1{v};
-      assert(float(v1) == v);
-      double v2{nextf};
-      assert(float(v2) == nextf);
-      double midv{v1 + (v2 - v1) / 2};
-      float expected_midv = float(midv);
-
-      char const *string_end = to_string(midv, buffer);
-      float str_answer;
-      strtof_from_string(buffer, str_answer);
-
-      float result_value;
-      auto result = fast_float::from_chars(buffer, string_end, result_value);
-      // Starting with version 4.0 for fast_float, we return result_out_of_range
-      // if the value is either too small (too close to zero) or too large
-      // (effectively infinity). So std::errc::result_out_of_range is normal for
-      // well-formed input strings.
-      if (result.ec != std::errc() &&
-          result.ec != std::errc::result_out_of_range) {
-        std::cerr << "parsing error ? " << buffer << std::endl;
-        return false;
-      }
-      if (std::isnan(v)) {
-        if (!std::isnan(result_value)) {
-          std::cerr << "not nan" << buffer << std::endl;
-          std::cerr << "v " << std::hexfloat << v << std::endl;
-          std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
-          std::cerr << "midv " << std::hexfloat << midv << std::endl;
-          std::cerr << "expected_midv " << std::hexfloat << expected_midv
-                    << std::endl;
-          return false;
-        }
-      } else if (copysign(1, result_value) != copysign(1, v)) {
-        std::cerr << buffer << std::endl;
-        std::cerr << "v " << std::hexfloat << v << std::endl;
-        std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
-        std::cerr << "midv " << std::hexfloat << midv << std::endl;
-        std::cerr << "expected_midv " << std::hexfloat << expected_midv
-                  << std::endl;
-        std::cerr << "I got " << std::hexfloat << result_value
-                  << " but I was expecting " << v << std::endl;
-        return false;
-      } else if (result_value != str_answer) {
-        std::cerr << "no match ? " << buffer << std::endl;
-        std::cerr << "v " << std::hexfloat << v << std::endl;
-        std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
-        std::cerr << "midv " << std::hexfloat << midv << std::endl;
-        std::cerr << "expected_midv " << std::hexfloat << expected_midv
-                  << std::endl;
-        std::cout << "started with " << std::hexfloat << midv << std::endl;
-        std::cout << "round down to " << std::hexfloat << str_answer
-                  << std::endl;
-        std::cout << "got back " << std::hexfloat << result_value << std::endl;
-        std::cout << std::dec;
-        return false;
-      }
-    }
+  float v;
+  memcpy(&v, &word, sizeof(v));
+  if (!std::isfinite(v)) {
+    return true;
   }
-  std::cout << std::endl;
+  float nextf = std::nextafterf(v, INFINITY);
+  if (copysign(1, v) != copysign(1, nextf)) {
+    return true;
+  }
+  if (!std::isfinite(nextf)) {
+    return true;
+  }
+  double v1{v};
+  assert(float(v1) == v);
+  double v2{nextf};
+  assert(float(v2) == nextf);
+  double midv{v1 + (v2 - v1) / 2};
+  float expected_midv = float(midv);
+
+  char const *string_end = to_string(midv, buffer);
+  float str_answer;
+  strtof_from_string(buffer, str_answer);
+
+  float result_value;
+  auto result = fast_float::from_chars(buffer, string_end, result_value);
+  // Starting with version 4.0 for fast_float, we return result_out_of_range
+  // if the value is either too small (too close to zero) or too large
+  // (effectively infinity). So std::errc::result_out_of_range is normal for
+  // well-formed input strings.
+  if (result.ec != std::errc() && result.ec != std::errc::result_out_of_range) {
+    std::cerr << "parsing error ? " << buffer << std::endl;
+    return false;
+  }
+  if (std::isnan(v)) {
+    if (!std::isnan(result_value)) {
+      std::cerr << "not nan" << buffer << std::endl;
+      std::cerr << "v " << std::hexfloat << v << std::endl;
+      std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+      std::cerr << "midv " << std::hexfloat << midv << std::endl;
+      std::cerr << "expected_midv " << std::hexfloat << expected_midv
+                << std::endl;
+      return false;
+    }
+  } else if (copysign(1, result_value) != copysign(1, v)) {
+    std::cerr << buffer << std::endl;
+    std::cerr << "v " << std::hexfloat << v << std::endl;
+    std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+    std::cerr << "midv " << std::hexfloat << midv << std::endl;
+    std::cerr << "expected_midv " << std::hexfloat << expected_midv
+              << std::endl;
+    std::cerr << "I got " << std::hexfloat << result_value
+              << " but I was expecting " << v << std::endl;
+    return false;
+  } else if (result_value != str_answer) {
+    std::cerr << "no match ? " << buffer << std::endl;
+    std::cerr << "v " << std::hexfloat << v << std::endl;
+    std::cerr << "v2 " << std::hexfloat << v2 << std::endl;
+    std::cerr << "midv " << std::hexfloat << midv << std::endl;
+    std::cerr << "expected_midv " << std::hexfloat << expected_midv
+              << std::endl;
+    std::cout << "started with " << std::hexfloat << midv << std::endl;
+    std::cout << "round down to " << std::hexfloat << str_answer << std::endl;
+    std::cout << "got back " << std::hexfloat << result_value << std::endl;
+    std::cout << std::dec;
+    return false;
+  }
   return true;
+}
+
+// Sweeps the whole 2^32 float space, split across hardware threads (the values
+// are independent). Returns false as soon as any word mismatches.
+bool allvalues() {
+  unsigned int nthreads = std::thread::hardware_concurrency();
+  if (nthreads == 0) {
+    nthreads = 1;
+  }
+  std::atomic<bool> ok{true};
+  std::vector<std::thread> workers;
+  workers.reserve(nthreads);
+  for (unsigned int t = 0; t < nthreads; t++) {
+    workers.emplace_back([t, nthreads, &ok]() {
+      for (uint64_t w = t;
+           w <= 0xFFFFFFFF && ok.load(std::memory_order_relaxed);
+           w += nthreads) {
+        if (!check_word(uint32_t(w))) {
+          ok.store(false, std::memory_order_relaxed);
+          return;
+        }
+      }
+    });
+  }
+  for (std::thread &worker : workers) {
+    worker.join();
+  }
+  return ok.load();
 }
 
 inline void Assert(bool Assertion) {

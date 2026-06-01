@@ -4,6 +4,10 @@ cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 
 include(FetchContent)
 
+# Some tests (the exhaustive sweeps) parallelize across std::thread.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 option(SYSTEM_DOCTEST "Use system copy of doctest" OFF)
 option(FASTFLOAT_SUPPLEMENTAL_TESTS "Run supplemental tests" ON)
 
@@ -49,6 +53,7 @@ function(fast_float_add_cpp_test TEST_NAME)
       target_compile_options(${TEST_NAME} PUBLIC -Wsign-compare -Wshadow -Wwrite-strings -Wpointer-arith -Winit-self -Wconversion -Wsign-conversion)
     endif()
     target_link_libraries(${TEST_NAME} PUBLIC fast_float supplemental-data)
+    target_link_libraries(${TEST_NAME} PUBLIC Threads::Threads)
     if (NOT SYSTEM_DOCTEST)
       target_link_libraries(${TEST_NAME} PUBLIC doctest)
     else ()
