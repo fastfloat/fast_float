@@ -354,13 +354,36 @@ parse_number_string(UC const *p, UC const *pend,
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
 
-  while ((p != pend) && is_integer(*p)) {
-    // a multiplication by 10 is cheaper than an arbitrary integer
-    // multiplication
-    i = 10 * i +
-        uint64_t(*p -
-                 UC('0')); // might overflow, we will handle the overflow later
+  // Straight-line unroll of the integer-part scan: most integer parts are
+  // 1-5 digits, so peeling the first iterations eliminates the loop back-edge
+  // for the common case. Semantics are identical to the original `while` loop:
+  // i = 10*i + digit, advancing p.
+  if ((p != pend) && is_integer(*p)) {
+    i = uint64_t(*p - UC('0'));
     ++p;
+    if ((p != pend) && is_integer(*p)) {
+      i = 10 * i + uint64_t(*p - UC('0'));
+      ++p;
+      if ((p != pend) && is_integer(*p)) {
+        i = 10 * i + uint64_t(*p - UC('0'));
+        ++p;
+        if ((p != pend) && is_integer(*p)) {
+          i = 10 * i + uint64_t(*p - UC('0'));
+          ++p;
+          if ((p != pend) && is_integer(*p)) {
+            i = 10 * i + uint64_t(*p - UC('0'));
+            ++p;
+            while ((p != pend) && is_integer(*p)) {
+              // a multiplication by 10 is cheaper than an arbitrary integer
+              // multiplication
+              i = 10 * i +
+                  uint64_t(*p - UC('0')); // might overflow, handled later
+              ++p;
+            }
+          }
+        }
+      }
+    }
   }
   UC const *const end_of_integer_part = p;
   int64_t digit_count = int64_t(end_of_integer_part - start_digits);
