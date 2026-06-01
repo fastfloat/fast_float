@@ -221,7 +221,7 @@ constexpr double pi = parse("3.1415");  // computed at compile time</code></pre>
 <pre data-lang="cmake"><code>FetchContent_Declare(
   fast_float
   GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
-  GIT_TAG tags/v{{VERSION}}
+  GIT_TAG tags/<span data-version>v{{VERSION}}</span>
   GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(fast_float)
 target_link_libraries(myprogram PUBLIC fast_float)</code></pre>
@@ -232,13 +232,13 @@ target_link_libraries(myprogram PUBLIC fast_float)</code></pre>
 <pre data-lang="cmake"><code>CPMAddPackage(
   NAME fast_float
   GITHUB_REPOSITORY "fastfloat/fast_float"
-  GIT_TAG v{{VERSION}})</code></pre>
+  GIT_TAG <span data-version>v{{VERSION}}</span>)</code></pre>
           </article>
 
           <article class="card">
             <h3>Single header</h3>
             <p>Download a pre-amalgamated header — no build system required.</p>
-<pre data-lang="bash"><code>curl -LO https://github.com/fastfloat/fast_float/releases/download/v{{VERSION}}/fast_float.h</code></pre>
+<pre data-lang="bash"><code>curl -LO https://github.com/fastfloat/fast_float/releases/download/<span data-version>v{{VERSION}}</span>/fast_float.h</code></pre>
           </article>
 
           <article class="card">
