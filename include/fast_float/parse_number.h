@@ -294,8 +294,8 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
 // noinline+cold so the force-inlined spans scanner is emitted ONCE off the hot
 // path rather than duplicated into from_chars_float_advanced (which bloated the
 // hot frame). from_chars_advanced already handles both the too_many_digits
-// disambiguation and the am.power2<0 digit_comp recompute, so both slow branches
-// collapse to one helper call.
+// disambiguation and the am.power2<0 digit_comp recompute, so both slow
+// branches collapse to one helper call.
 template <typename T, typename UC>
 fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_number_slow_path(UC const *first, UC const *last, T &value,
@@ -331,8 +331,8 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   }
   bool const bjf = uint64_t(fmt & detail::basic_json_fmt) != 0;
 
-  // Fast path: parse WITHOUT materializing the integer/fraction spans (read only
-  // by the rare slow paths). Skipping their stores keeps the fat
+  // Fast path: parse WITHOUT materializing the integer/fraction spans (read
+  // only by the rare slow paths). Skipping their stores keeps the fat
   // parsed_number_string_t off the hot path. store_spans is a runtime argument,
   // so this reuses the single parse_number_string instantiation.
   parsed_number_string_t<UC> pns =
@@ -366,8 +366,8 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
       compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
   // Slow path B (rare): Eisel-Lemire could not resolve; digit_comp needs the
   // integer/fraction spans. Route to the cold helper (clinger there is a
-  // dead-effect since it already failed here; the cold re-parse + digit_comp via
-  // from_chars_advanced reproduces this branch).
+  // dead-effect since it already failed here; the cold re-parse + digit_comp
+  // via from_chars_advanced reproduces this branch).
   if (am.power2 < 0) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }

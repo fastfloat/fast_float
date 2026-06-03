@@ -334,13 +334,12 @@ report_parse_error(UC const *p, parse_error error) {
 // store_spans is a *runtime* flag (not a template parameter, deliberately: a
 // template would create a second instantiation of this whole function and the
 // extra icache pressure wipes out the gain). When false, the integer/fraction
-// spans (read only by the rare digit_comp slow path) are not materialized, which
-// keeps the fat parsed_number_string_t off the hot path. The caller re-parses
-// with store_spans=true if the slow path is actually reached.
+// spans (read only by the rare digit_comp slow path) are not materialized,
+// which keeps the fat parsed_number_string_t off the hot path. The caller
+// re-parses with store_spans=true if the slow path is actually reached.
 template <bool basic_json_fmt, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
-parse_number_string(UC const *p, UC const *pend,
-                    parse_options_t<UC> options,
+parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
                     bool store_spans = true) noexcept {
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
   UC const decimal_point = options.decimal_point;
