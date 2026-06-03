@@ -197,6 +197,15 @@ using parse_options = parse_options_t<char>;
 #define fastfloat_really_inline inline __attribute__((always_inline))
 #endif
 
+// Force a function OUT of line and onto the cold path. Used for the rare
+// slow-path re-parse so the force-inlined hot scanner is not duplicated into
+// the caller (which bloated the hot frame and hurt ILP on some targets).
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#define fastfloat_noinline __declspec(noinline)
+#else
+#define fastfloat_noinline __attribute__((noinline, cold))
+#endif
+
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
   { ((void)(x)); }
