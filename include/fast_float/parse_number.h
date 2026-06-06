@@ -289,15 +289,15 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
   return answer;
 }
 
-// Cold, out-of-line slow path: re-parse materializing the integer/fraction
-// spans the hot no-span parse skipped, then run the full algorithm. Marked
-// noinline+cold so the force-inlined spans scanner is emitted ONCE off the hot
-// path rather than duplicated into from_chars_float_advanced (which bloated the
-// hot frame). from_chars_advanced already handles both the too_many_digits
-// disambiguation and the am.power2<0 digit_comp recompute, so both slow
-// branches collapse to one helper call.
+// Slow path: re-parse materializing the integer/fraction spans the hot no-span
+// parse skipped, then run the full algorithm. The two callers reach it only
+// through a fastfloat_unlikely branch, so the optimizer keeps this re-parse off
+// the hot path on its own (no function-level noinline needed).
+// from_chars_advanced already handles both the too_many_digits disambiguation
+// and the am.power2<0 digit_comp recompute, so both slow branches collapse to
+// one helper call.
 template <typename T, typename UC>
-fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_number_slow_path(UC const *first, UC const *last, T &value,
                        parse_options_t<UC> options, bool bjf) noexcept {
   parsed_number_string_t<UC> pns =
@@ -351,7 +351,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Slow path A (rare): > 19 significant digits. The no-span parse left the
   // mantissa un-truncated and skipped the span-based recompute; the cold helper
   // re-parses with spans and runs the full algorithm.
-  if (pns.too_many_digits) {
+  if fastfloat_unlikely (pns.too_many_digits) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
 
@@ -368,7 +368,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // integer/fraction spans. Route to the cold helper (clinger there is a
   // dead-effect since it already failed here; the cold re-parse + digit_comp
   // via from_chars_advanced reproduces this branch).
-  if (am.power2 < 0) {
+  if fastfloat_unlikely (am.power2 < 0) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
   to_float(pns.negative, am, value);
