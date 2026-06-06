@@ -203,15 +203,27 @@ using parse_options = parse_options_t<char>;
 // the hot frame and hurt ILP on some targets). Used at the call site as
 //   if fastfloat_unlikely(cond) { ... }
 // (the macro supplies the parentheses). It expands to the standard [[unlikely]]
-// attribute in C++20 or newer, otherwise to __builtin_expect on GCC/Clang, or
+// attribute when supported, otherwise to __builtin_expect on GCC/Clang, or
 // to a no-op elsewhere (e.g. pre-C++20 MSVC, which has no equivalent hint).
-// The [[unlikely]] branch is gated on the language version, not just on
-// __has_cpp_attribute: GCC and Clang report the attribute as available even
-// under -std=c++17, where using it would trip -Wc++20-extensions/-Werror.
-#if (__cplusplus >= 202002L ||                                                 \
-     (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)) &&                        \
-    defined(__has_cpp_attribute) && __has_cpp_attribute(unlikely) >= 201803L
+#ifdef __has_cpp_attribute
+#if __has_cpp_attribute(unlikely) >= 201803L
+#define FASTFLOAT_USE_UNLIKELY_ATTR 1
+#endif
+#endif
+
+#ifdef FASTFLOAT_USE_UNLIKELY_ATTR
+// We have to disable -Wc++20-extensions for the [[unlikely]] attribute
+// See comment for @jwakely at
+// https://github.com/fastfloat/fast_float/pull/387#discussion_r3366943539
+// This is unfortunate.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc++20-extensions"
+#endif
 #define fastfloat_unlikely(x) (x) [[unlikely]]
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #elif defined(__GNUC__) || defined(__clang__)
 #define fastfloat_unlikely(x) (__builtin_expect(!!(x), 0))
 #else

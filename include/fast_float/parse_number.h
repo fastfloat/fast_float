@@ -351,6 +351,10 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Slow path A (rare): > 19 significant digits. The no-span parse left the
   // mantissa un-truncated and skipped the span-based recompute; the cold helper
   // re-parses with spans and runs the full algorithm.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc++20-extensions"
+#endif
   if fastfloat_unlikely (pns.too_many_digits) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
@@ -371,6 +375,9 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   if fastfloat_unlikely (am.power2 < 0) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
   to_float(pns.negative, am, value);
   // Test for over/underflow.
   if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
