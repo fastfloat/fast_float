@@ -681,6 +681,57 @@ TEST_CASE("decimal_point_parsing") {
   }
 }
 
+TEST_CASE("digit_separator") {
+  double result;
+  fast_float::parse_options options{};
+  options.digit_separator = '_';
+  {
+    std::string const input = "1_000";
+    auto answer = fast_float::from_chars_advanced(
+        input.data(), input.data() + input.size(), result, options);
+    CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
+    CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
+                  "Parsing should have stopped at end");
+    CHECK_EQ(result, 1000.0);
+  }
+  {
+    std::string const input = "1.00_5";
+    auto answer = fast_float::from_chars_advanced(
+        input.data(), input.data() + input.size(), result, options);
+    CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
+    CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
+                  "Parsing should have stopped at end");
+    CHECK_EQ(result, 1.005);
+  }
+  {
+    std::string const input = "1e1_0";
+    auto answer = fast_float::from_chars_advanced(
+        input.data(), input.data() + input.size(), result, options);
+    CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
+    CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
+                  "Parsing should have stopped at end");
+    CHECK_EQ(result, 1e10);
+  }
+  {
+    std::string const input = "1_5e1_2";
+    auto answer = fast_float::from_chars_advanced(
+        input.data(), input.data() + input.size(), result, options);
+    CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
+    CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
+                  "Parsing should have stopped at end");
+    CHECK_EQ(result, 15e12);
+  }
+  {
+    std::string const input = "1_5.0_5e1_2";
+    auto answer = fast_float::from_chars_advanced(
+        input.data(), input.data() + input.size(), result, options);
+    CHECK_MESSAGE(answer.ec == std::errc(), "expected parse success");
+    CHECK_MESSAGE(answer.ptr == input.data() + input.size(),
+                  "Parsing should have stopped at end");
+    CHECK_EQ(result, 15.05e12);
+  }
+}
+
 TEST_CASE("issue19") {
   std::string const input = "234532.3426362,7869234.9823,324562.645";
   double result;
