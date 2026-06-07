@@ -212,18 +212,7 @@ using parse_options = parse_options_t<char>;
 #endif
 
 #ifdef FASTFLOAT_USE_UNLIKELY_ATTR
-// We have to disable -Wc++20-extensions for the [[unlikely]] attribute
-// See comment for @jwakely at
-// https://github.com/fastfloat/fast_float/pull/387#discussion_r3366943539
-// This is unfortunate.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wc++20-extensions"
-#endif
 #define fastfloat_unlikely(x) (x) [[unlikely]]
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 #elif defined(__GNUC__) || defined(__clang__)
 #define fastfloat_unlikely(x) (__builtin_expect(!!(x), 0))
 #else

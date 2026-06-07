@@ -351,6 +351,11 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Slow path A (rare): > 19 significant digits. The no-span parse left the
   // mantissa un-truncated and skipped the span-based recompute; the cold helper
   // re-parses with spans and runs the full algorithm.
+  //
+// We have to disable -Wc++20-extensions for the [[unlikely]] attribute
+// See comment for @jwakely at
+// https://github.com/fastfloat/fast_float/pull/387#discussion_r3366943539
+// This is unfortunate.
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc++20-extensions"
@@ -358,7 +363,9 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   if fastfloat_unlikely (pns.too_many_digits) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
-
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
 
