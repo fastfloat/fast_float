@@ -363,9 +363,6 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   if fastfloat_unlikely (pns.too_many_digits) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
 
