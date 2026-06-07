@@ -16,7 +16,7 @@ The displayed release version is kept fresh by two independent mechanisms:
 
 1. **Build-time substitution.** The `Deploy GitHub Pages` workflow
    (`.github/workflows/pages.yml`) replaces every occurrence of the literal
-   `8.2.6` in `index.html` with the latest GitHub release tag before
+   `8.2.7` in `index.html` with the latest GitHub release tag before
    publishing. The workflow runs on every push to `main` that touches
    `docs/**`, on every published release, and can be dispatched manually.
 
