@@ -63,7 +63,7 @@
   }
 
   // ---------- Live version refresh from GitHub Releases ----------
-  // The build-time workflow substitutes 8.2.7 in the HTML; this
+  // The build-time workflow substitutes 8.2.8 in the HTML; this
   // additionally refreshes the displayed version in the browser so the
   // site always reflects the very latest release without redeploying.
   const versionNodes = document.querySelectorAll("[data-version]");
