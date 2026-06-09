@@ -45,11 +45,6 @@ void all_32bit_values() {
         std::cerr << "I got " << std::hexfloat << result_value
                   << " but I was expecting " << v << std::endl;
         abort();
-      } else if (std::isnan(v)) {
-        if (!std::isnan(result_value)) {
-          std::cerr << "not nan" << buffer << std::endl;
-          abort();
-        }
       } else if (result_value != v) {
         std::cerr << "no match ? " << buffer << std::endl;
         std::cout << "started with " << std::hexfloat << v << std::endl;
