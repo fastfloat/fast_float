@@ -65,6 +65,4 @@ int main() {
 #endif
   std::cout << "All tests passed successfully." << std::endl;
   return EXIT_SUCCESS;
-
-  return 0;
 }
