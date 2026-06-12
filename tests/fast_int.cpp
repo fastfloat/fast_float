@@ -1295,6 +1295,63 @@ int main() {
       return EXIT_FAILURE;
     }
   }
+  // The uint8_t and uint16_t base-10 paths use a byte-oriented fast path. A
+  // wider code unit whose low byte is an ASCII digit (e.g. U+2131..U+2139) must
+  // not be mistaken for that digit. The generic path already rejects these for
+  // int; the fixed-width fast paths must agree. Lengths of 1..5 exercise both
+  // the uint8_t path and the 4-digit uint16_t SWAR path.
+  {
+    const std::u16string bad16[] = {
+        u"ℹ",
+        u"ℱℲ",
+        u"ℱℲℳ",
+        u"ℱℲℳℴ",
+        u"ℱℲℳℴℵ",
+    };
+    const std::u32string bad32[] = {
+        U"ℹ",
+        U"ℱℲℳ",
+        U"ℱℲℳℴ",
+        U"ℱℲℳℴℵ",
+    };
+    bool failed = false;
+    for (auto const &s : bad16) {
+      uint8_t r8 = 123;
+      auto a8 = fast_float::from_chars(s.data(), s.data() + s.size(), r8);
+      if (a8.ec == std::errc()) {
+        failed = true;
+        std::cerr << "Incorrectly parsed wide units as uint8_t " << unsigned(r8)
+                  << "." << std::endl;
+      }
+      uint16_t r16 = 123;
+      auto a16 = fast_float::from_chars(s.data(), s.data() + s.size(), r16);
+      if (a16.ec == std::errc()) {
+        failed = true;
+        std::cerr << "Incorrectly parsed wide units as uint16_t " << r16 << "."
+                  << std::endl;
+      }
+    }
+    for (auto const &s : bad32) {
+      uint8_t r8 = 123;
+      auto a8 = fast_float::from_chars(s.data(), s.data() + s.size(), r8);
+      if (a8.ec == std::errc()) {
+        failed = true;
+        std::cerr << "Incorrectly parsed wide units as uint8_t " << unsigned(r8)
+                  << "." << std::endl;
+      }
+      uint16_t r16 = 123;
+      auto a16 = fast_float::from_chars(s.data(), s.data() + s.size(), r16);
+      if (a16.ec == std::errc()) {
+        failed = true;
+        std::cerr << "Incorrectly parsed wide units as uint16_t " << r16 << "."
+                  << std::endl;
+      }
+    }
+
+    if (failed) {
+      return EXIT_FAILURE;
+    }
+  }
 
   return EXIT_SUCCESS;
 }
