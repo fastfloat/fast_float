@@ -600,8 +600,8 @@ parse_int_string(UC const *p, UC const *pend, T &value,
 
   UC const *const start_digits = p;
 
-  FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint8_t>::value &&
-                            sizeof(UC) == 1)) {
+  FASTFLOAT_IF_CONSTEXPR17(
+      (std::is_same<T, std::uint8_t>::value && sizeof(UC) == 1)) {
     if (base == 10) {
       const size_t len = (size_t)(pend - p);
       if (len == 0) {
@@ -693,8 +693,8 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     }
   }
 
-  FASTFLOAT_IF_CONSTEXPR17((std::is_same<T, std::uint16_t>::value &&
-                            sizeof(UC) == 1)) {
+  FASTFLOAT_IF_CONSTEXPR17(
+      (std::is_same<T, std::uint16_t>::value && sizeof(UC) == 1)) {
     if (base == 10) {
       const size_t len = size_t(pend - p);
       if (len == 0) {

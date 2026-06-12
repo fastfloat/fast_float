@@ -1302,11 +1302,7 @@ int main() {
   // the uint8_t path and the 4-digit uint16_t SWAR path.
   {
     const std::u16string bad16[] = {
-        u"ℹ",
-        u"ℱℲ",
-        u"ℱℲℳ",
-        u"ℱℲℳℴ",
-        u"ℱℲℳℴℵ",
+        u"ℹ", u"ℱℲ", u"ℱℲℳ", u"ℱℲℳℴ", u"ℱℲℳℴℵ",
     };
     const std::u32string bad32[] = {
         U"ℹ",
