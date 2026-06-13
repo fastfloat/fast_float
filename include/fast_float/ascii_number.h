@@ -781,9 +781,28 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   }
   // this check can be eliminated for all other types, but they will all require
   // a max_digits(base) equivalent
-  if (digit_count == max_digits && i < min_safe_u64(base)) {
-    answer.ec = std::errc::result_out_of_range;
-    return answer;
+  if (digit_count == max_digits) {
+    // A value that wrapped below the smallest max_digits-length value has
+    // certainly overflowed.
+    if (i < min_safe_u64(base)) {
+      answer.ec = std::errc::result_out_of_range;
+      return answer;
+    }
+    // i >= min_safe_u64(base) is still not proof that it fits: for any base
+    // whose max_digits-length range exceeds 2^64 (base 10 reaches ~5.4 * 2^64
+    // at 20 digits) the accumulator can wrap a whole multiple of 2^64 and land
+    // back above min_safe, so the test above lets that overflow through. Re-run
+    // the parsed digits with a checked multiply-add to decide exactly.
+    uint64_t overflow_check = 0;
+    for (UC const *q = start_digits; q != p; ++q) {
+      uint8_t const digit = ch_to_digit(*q);
+      if (overflow_check >
+          (std::numeric_limits<uint64_t>::max() - digit) / uint64_t(base)) {
+        answer.ec = std::errc::result_out_of_range;
+        return answer;
+      }
+      overflow_check = uint64_t(base) * overflow_check + digit;
+    }
   }
 
   // check other types overflow
