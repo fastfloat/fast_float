@@ -821,6 +821,61 @@ int main() {
     ++base_unsigned;
   }
 
+  // unsigned out of range error base test, multi-wrap (64 bit)
+  // These values overflow uint64_t, but the accumulator wraps a whole multiple
+  // of 2^64 and lands back at or above the smallest max_digits-length value, so
+  // a single comparison against that bound does not catch the overflow. Bases
+  // 2, 4 and 16 are excluded because their max_digits-length range fits within
+  // a single 2^64 span.
+  std::vector<int> const unsigned_multiwrap_base{
+      3,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36};
+  std::vector<std::string_view> const unsigned_multiwrap_base_test{
+      "22222222222222222222222222222222222222222",
+      "4400000000000000000000000000",
+      "5555555555555555555555555",
+      "66666666666666666666666",
+      "7777777777777777777777",
+      "888888888888888888888",
+      "46893488147419103233",
+      "AAAAAAAAAAAAAAAAAAA",
+      "BBBBBBBBBBBBBBBBBB",
+      "427772311192C9BAAB",
+      "DDDDDDDDDDDDDDDDD",
+      "532C82996D3A44919",
+      "GGGGGGGGGGGGGGGG",
+      "HHHHHHHHHHHHHHHH",
+      "3835GEGDF36622EG",
+      "JJJJJJJJJJJJJJJ",
+      "KKKKKKKKKKKKKKK",
+      "LLLLLLLLLLLLLLL",
+      "444BGHB4EG5DA2D",
+      "NNNNNNNNNNNNNN",
+      "JE5H4MNDLJGNLO",
+      "PPPPPPPPPPPPPP",
+      "QQQQQQQQQQQQQQ",
+      "RRRRRRRRRRRRRR",
+      "4H7QS52310IHQK",
+      "TTTTTTTTTTTTTT",
+      "UUUUUUUUUUUUU",
+      "VVVVVVVVVVVVV",
+      "WWWWWWWWWWWWW",
+      "XXXXXXXXXXXXX",
+      "YYYYYYYYYYYYY",
+      "6U831JL976P6O"};
+
+  for (std::size_t i = 0; i < unsigned_multiwrap_base_test.size(); ++i) {
+    auto const &f = unsigned_multiwrap_base_test[i];
+    uint64_t result;
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result,
+                                         unsigned_multiwrap_base[i]);
+    if (answer.ec != std::errc::result_out_of_range) {
+      std::cerr << "expected error for should be 'result_out_of_range': \"" << f
+                << "\"" << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
   // just within range base test (64 bit)
   std::vector<std::string_view> const int_within_range_base_test{
       "111111111111111111111111111111111111111111111111111111111111111",
