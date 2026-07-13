@@ -328,6 +328,233 @@ report_parse_error(UC const *p, parse_error error) {
   return answer;
 }
 
+// Verbatim copy of the original separator-free scanner. parse_number_string
+// delegates here for the default (has_separator == false) instantiation so that
+// path's code generation is identical to the pre-feature parser.
+template <bool basic_json_fmt, typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
+parse_number_string_nosep(UC const *p, UC const *pend, parse_options_t<UC> options,
+                    bool store_spans = true) noexcept {
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
+  UC const decimal_point = options.decimal_point;
+
+  parsed_number_string_t<UC> answer;
+  answer.valid = false;
+  answer.too_many_digits = false;
+  // assume p < pend, so dereference without checks;
+  answer.negative = (*p == UC('-'));
+  // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  if ((*p == UC('-')) || (uint64_t(fmt & chars_format::allow_leading_plus) &&
+                          !basic_json_fmt && *p == UC('+'))) {
+    ++p;
+    if (p == pend) {
+      return report_parse_error<UC>(
+          p, parse_error::missing_integer_or_dot_after_sign);
+    }
+    FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
+      if (!is_integer(*p)) { // a sign must be followed by an integer
+        return report_parse_error<UC>(p,
+                                      parse_error::missing_integer_after_sign);
+      }
+    }
+    else {
+      if (!is_integer(*p) &&
+          (*p !=
+           decimal_point)) { // a sign must be followed by an integer or the dot
+        return report_parse_error<UC>(
+            p, parse_error::missing_integer_or_dot_after_sign);
+      }
+    }
+  }
+  UC const *const start_digits = p;
+
+  uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
+
+  // Straight-line unroll of the integer-part scan: most integer parts are
+  // 1-5 digits, so peeling the first iterations eliminates the loop back-edge
+  // for the common case. Semantics are identical to the original `while` loop:
+  // i = 10*i + digit, advancing p.
+  if ((p != pend) && is_integer(*p)) {
+    i = uint64_t(*p - UC('0'));
+    ++p;
+    if ((p != pend) && is_integer(*p)) {
+      i = 10 * i + uint64_t(*p - UC('0'));
+      ++p;
+      if ((p != pend) && is_integer(*p)) {
+        i = 10 * i + uint64_t(*p - UC('0'));
+        ++p;
+        if ((p != pend) && is_integer(*p)) {
+          i = 10 * i + uint64_t(*p - UC('0'));
+          ++p;
+          if ((p != pend) && is_integer(*p)) {
+            i = 10 * i + uint64_t(*p - UC('0'));
+            ++p;
+            while ((p != pend) && is_integer(*p)) {
+              // a multiplication by 10 is cheaper than an arbitrary integer
+              // multiplication
+              i = 10 * i +
+                  uint64_t(*p - UC('0')); // might overflow, handled later
+              ++p;
+            }
+          }
+        }
+      }
+    }
+  }
+  UC const *const end_of_integer_part = p;
+  int64_t digit_count = int64_t(end_of_integer_part - start_digits);
+  if (store_spans) {
+    answer.integer = span<UC const>(start_digits, size_t(digit_count));
+  }
+  FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
+    // at least 1 digit in integer part, without leading zeros
+    if (digit_count == 0) {
+      return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
+    }
+    if ((start_digits[0] == UC('0') && digit_count > 1)) {
+      return report_parse_error<UC>(start_digits,
+                                    parse_error::leading_zeros_in_integer_part);
+    }
+  }
+
+  int64_t exponent = 0;
+  bool const has_decimal_point = (p != pend) && (*p == decimal_point);
+  if (has_decimal_point) {
+    ++p;
+    UC const *before = p;
+    // can occur at most twice without overflowing, but let it occur more, since
+    // for integers with many digits, digit parsing is the primary bottleneck.
+    loop_parse_if_eight_digits(p, pend, i);
+
+    while ((p != pend) && is_integer(*p)) {
+      uint8_t digit = uint8_t(*p - UC('0'));
+      ++p;
+      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+    }
+    exponent = before - p;
+    if (store_spans) {
+      answer.fraction = span<UC const>(before, size_t(p - before));
+    }
+    digit_count -= exponent;
+  }
+  FASTFLOAT_IF_CONSTEXPR17(basic_json_fmt) {
+    // at least 1 digit in fractional part
+    if (has_decimal_point && exponent == 0) {
+      return report_parse_error<UC>(p,
+                                    parse_error::no_digits_in_fractional_part);
+    }
+  }
+  else if (digit_count == 0) { // we must have encountered at least one integer!
+    return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
+  }
+  int64_t exp_number = 0; // explicit exponential part
+  if ((uint64_t(fmt & chars_format::scientific) && (p != pend) &&
+       ((UC('e') == *p) || (UC('E') == *p))) ||
+      (uint64_t(fmt & detail::basic_fortran_fmt) && (p != pend) &&
+       ((UC('+') == *p) || (UC('-') == *p) || (UC('d') == *p) ||
+        (UC('D') == *p)))) {
+    UC const *location_of_e = p;
+    if ((UC('e') == *p) || (UC('E') == *p) || (UC('d') == *p) ||
+        (UC('D') == *p)) {
+      ++p;
+    }
+    bool neg_exp = false;
+    if ((p != pend) && (UC('-') == *p)) {
+      neg_exp = true;
+      ++p;
+    } else if ((p != pend) &&
+               (UC('+') ==
+                *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+      ++p;
+    }
+    if ((p == pend) || !is_integer(*p)) {
+      if (!uint64_t(fmt & chars_format::fixed)) {
+        // The exponential part is invalid for scientific notation, so it must
+        // be a trailing token for fixed notation. However, fixed notation is
+        // disabled, so report a scientific notation error.
+        return report_parse_error<UC>(p, parse_error::missing_exponential_part);
+      }
+      // Otherwise, we will be ignoring the 'e'.
+      p = location_of_e;
+    } else {
+      while ((p != pend) && is_integer(*p)) {
+        uint8_t digit = uint8_t(*p - UC('0'));
+        if (exp_number < 0x10000000) {
+          exp_number = 10 * exp_number + digit;
+        }
+        ++p;
+      }
+      if (neg_exp) {
+        exp_number = -exp_number;
+      }
+      exponent += exp_number;
+    }
+  } else {
+    // If it scientific and not fixed, we have to bail out.
+    if (uint64_t(fmt & chars_format::scientific) &&
+        !uint64_t(fmt & chars_format::fixed)) {
+      return report_parse_error<UC>(p, parse_error::missing_exponential_part);
+    }
+  }
+  answer.lastmatch = p;
+  answer.valid = true;
+
+  // If we frequently had to deal with long strings of digits,
+  // we could extend our code by using a 128-bit integer instead
+  // of a 64-bit integer. However, this is uncommon.
+  //
+  // We can deal with up to 19 digits.
+  if (digit_count > 19) { // this is uncommon
+    // It is possible that the integer had an overflow.
+    // We have to handle the case where we have 0.0000somenumber.
+    // We need to be mindful of the case where we only have zeroes...
+    // E.g., 0.000000000...000.
+    UC const *start = start_digits;
+    while ((start != pend) && (*start == UC('0') || *start == decimal_point)) {
+      if (*start == UC('0')) {
+        digit_count--;
+      }
+      start++;
+    }
+
+    if (digit_count > 19) {
+      answer.too_many_digits = true;
+      // The truncation recompute below reads the integer/fraction spans. When
+      // store_spans is false we didn't materialize them, so just flag
+      // too_many_digits; the caller re-parses with store_spans=true to obtain
+      // the corrected mantissa/exponent before taking the slow path.
+      if (store_spans) {
+        // Let us start again, this time, avoiding overflows.
+        // We don't need to call if is_integer, since we use the
+        // pre-tokenized spans from above.
+        i = 0;
+        p = answer.integer.ptr;
+        UC const *int_end = p + answer.integer.len();
+        uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
+        while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+          i = i * 10 + uint64_t(*p - UC('0'));
+          ++p;
+        }
+        if (i >= minimal_nineteen_digit_integer) { // We have a big integer
+          exponent = end_of_integer_part - p + exp_number;
+        } else { // We have a value with a fractional component.
+          p = answer.fraction.ptr;
+          UC const *frac_end = p + answer.fraction.len();
+          while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
+            i = i * 10 + uint64_t(*p - UC('0'));
+            ++p;
+          }
+          exponent = answer.fraction.ptr - p + exp_number;
+        }
+        // We have now corrected both exponent and i, to a truncated value
+      }
+    }
+  }
+  answer.exponent = exponent;
+  answer.mantissa = i;
+  return answer;
+}
+
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
 //
@@ -338,23 +565,27 @@ report_parse_error(UC const *p, parse_error error) {
 // which keeps the fat parsed_number_string_t off the hot path. The caller
 // re-parses with store_spans=true if the slow path is actually reached.
 //
-// has_separator is a *compile-time* flag (the opposite choice from store_spans,
-// and deliberately so): the separator-aware code paths are an opt-in feature
-// that the vast majority of callers never enable. Gating them on a template
-// parameter means the has_separator==false instantiation -- the default that
-// everybody uses -- compiles to exactly the same code as if the feature did not
-// exist: no separator comparison ever enters a digit loop, and the SIMD
-// eight-digit fast path stays intact. The has_separator==true instantiation is
-// cold code that default callers never execute. See parse_number_string_options
-// for the runtime->compile-time dispatch.
+// has_separator is a *compile-time* flag: the separator-aware code paths are an
+// opt-in feature that the vast majority of callers never enable. When
+// has_separator == false this function simply delegates to
+// parse_number_string_nosep, a verbatim copy of the original separator-free
+// scanner, so the default instantiation is byte-for-byte the pre-feature parser
+// (the SIMD eight-digit fast path and unrolled integer scan are untouched). The
+// has_separator == true instantiation below is cold code that default callers
+// never execute. See parse_number_string_options for the runtime->compile-time
+// dispatch.
 template <bool basic_json_fmt, bool has_separator, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
                     bool store_spans = true) noexcept {
+  FASTFLOAT_IF_CONSTEXPR17(!has_separator) {
+    return parse_number_string_nosep<basic_json_fmt, UC>(p, pend, options,
+                                                         store_spans);
+  }
+
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
   UC const decimal_point = options.decimal_point;
   UC const separator = options.digit_separator;
-  (void)separator; // unused when has_separator == false
 
   parsed_number_string_t<UC> answer;
   answer.valid = false;
@@ -391,68 +622,30 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
   // Points at the first actual digit (== start_digits when no separator
   // precedes it). Used only by the basic_json leading-zero check.
   UC const *first_digit_ptr = start_digits;
-  (void)first_digit_ptr; // only read in the basic_json_fmt path
 
-  FASTFLOAT_IF_CONSTEXPR17(!has_separator) {
-    // Straight-line unroll of the integer-part scan: most integer parts are
-    // 1-5 digits, so peeling the first iterations eliminates the loop back-edge
-    // for the common case. Semantics are identical to the original `while`
-    // loop: i = 10*i + digit, advancing p.
-    if ((p != pend) && is_integer(*p)) {
-      i = uint64_t(*p - UC('0'));
+  // Separator-aware scan: a configured digit separator (e.g. '\'') may appear
+  // between digits. It is skipped and does not contribute to the value or the
+  // digit count, but it is retained in the integer span below so the overflow
+  // re-scan can re-tokenize correctly.
+  while (p != pend) {
+    if (*p == separator) {
       ++p;
-      if ((p != pend) && is_integer(*p)) {
-        i = 10 * i + uint64_t(*p - UC('0'));
-        ++p;
-        if ((p != pend) && is_integer(*p)) {
-          i = 10 * i + uint64_t(*p - UC('0'));
-          ++p;
-          if ((p != pend) && is_integer(*p)) {
-            i = 10 * i + uint64_t(*p - UC('0'));
-            ++p;
-            if ((p != pend) && is_integer(*p)) {
-              i = 10 * i + uint64_t(*p - UC('0'));
-              ++p;
-              while ((p != pend) && is_integer(*p)) {
-                // a multiplication by 10 is cheaper than an arbitrary integer
-                // multiplication
-                i = 10 * i +
-                    uint64_t(*p - UC('0')); // might overflow, handled later
-                ++p;
-              }
-            }
-          }
-        }
-      }
+      continue;
     }
-    digit_count = int64_t(p - start_digits);
-  }
-  else {
-    // Separator-aware scan: a configured digit separator (e.g. '\'') may appear
-    // between digits. It is skipped and does not contribute to the value or the
-    // digit count, but it is retained in the integer span below so the overflow
-    // re-scan can re-tokenize correctly.
-    while (p != pend) {
-      if (*p == separator) {
-        ++p;
-        continue;
-      }
-      if (!is_integer(*p)) {
-        break;
-      }
-      if (digit_count == 0) {
-        first_digit_ptr = p;
-      }
-      i = 10 * i + uint64_t(*p - UC('0')); // might overflow, handled later
-      ++p;
-      ++digit_count;
+    if (!is_integer(*p)) {
+      break;
     }
+    if (digit_count == 0) {
+      first_digit_ptr = p;
+    }
+    i = 10 * i + uint64_t(*p - UC('0')); // might overflow, handled later
+    ++p;
+    ++digit_count;
   }
   UC const *const end_of_integer_part = p;
   if (store_spans) {
     // The span keeps the raw characters (separators included) so the overflow
-    // re-scan below can re-tokenize correctly; for has_separator == false the
-    // length equals digit_count.
+    // re-scan below can re-tokenize correctly.
     answer.integer = span<UC const>(start_digits,
                                     size_t(end_of_integer_part - start_digits));
   }
@@ -473,33 +666,18 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
     ++p;
     UC const *before = p;
     int64_t fractional_digit_count = 0;
-    FASTFLOAT_IF_CONSTEXPR17(!has_separator) {
-      // can occur at most twice without overflowing, but let it occur more,
-      // since for integers with many digits, digit parsing is the primary
-      // bottleneck.
-      loop_parse_if_eight_digits(p, pend, i);
-
-      while ((p != pend) && is_integer(*p)) {
-        uint8_t digit = uint8_t(*p - UC('0'));
+    while (p != pend) {
+      if (*p == separator) {
         ++p;
-        i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+        continue;
       }
-      fractional_digit_count = int64_t(p - before);
-    }
-    else {
-      while (p != pend) {
-        if (*p == separator) {
-          ++p;
-          continue;
-        }
-        if (!is_integer(*p)) {
-          break;
-        }
-        uint8_t digit = uint8_t(*p - UC('0'));
-        ++p;
-        i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
-        ++fractional_digit_count;
+      if (!is_integer(*p)) {
+        break;
       }
+      uint8_t digit = uint8_t(*p - UC('0'));
+      ++p;
+      i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
+      ++fractional_digit_count;
     }
     exponent = -fractional_digit_count;
     if (store_spans) {
@@ -547,30 +725,19 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
     } else {
-      FASTFLOAT_IF_CONSTEXPR17(!has_separator) {
-        while ((p != pend) && is_integer(*p)) {
-          uint8_t digit = uint8_t(*p - UC('0'));
-          if (exp_number < 0x10000000) {
-            exp_number = 10 * exp_number + digit;
-          }
+      while (p != pend) {
+        if (*p == separator) {
           ++p;
+          continue;
         }
-      }
-      else {
-        while (p != pend) {
-          if (*p == separator) {
-            ++p;
-            continue;
-          }
-          if (!is_integer(*p)) {
-            break;
-          }
-          uint8_t digit = uint8_t(*p - UC('0'));
-          if (exp_number < 0x10000000) {
-            exp_number = 10 * exp_number + digit;
-          }
-          ++p;
+        if (!is_integer(*p)) {
+          break;
         }
+        uint8_t digit = uint8_t(*p - UC('0'));
+        if (exp_number < 0x10000000) {
+          exp_number = 10 * exp_number + digit;
+        }
+        ++p;
       }
       if (neg_exp) {
         exp_number = -exp_number;
@@ -596,12 +763,10 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
-    // E.g., 0.000000000...000. The `has_separator &&` guard below is a
-    // compile-time constant, so this loop is identical to the original when the
-    // feature is disabled.
+    // E.g., 0.000000000...000.
     UC const *start = start_digits;
     while ((start != pend) && (*start == UC('0') || *start == decimal_point ||
-                               (has_separator && *start == separator))) {
+                               *start == separator)) {
       if (*start == UC('0')) {
         digit_count--;
       }
@@ -622,60 +787,41 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
         p = answer.integer.ptr;
         UC const *int_end = p + answer.integer.len();
         uint64_t const minimal_nineteen_digit_integer{1000000000000000000};
-        FASTFLOAT_IF_CONSTEXPR17(!has_separator) {
-          while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
-            i = i * 10 + uint64_t(*p - UC('0'));
+        // Separator-aware re-scan: separators are skipped and excluded from
+        // the digit counts that determine the exponent.
+        while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+          if (*p == separator) {
             ++p;
+            continue;
           }
-          if (i >= minimal_nineteen_digit_integer) { // We have a big integer
-            exponent = end_of_integer_part - p + exp_number;
-          } else { // We have a value with a fractional component.
-            p = answer.fraction.ptr;
-            UC const *frac_end = p + answer.fraction.len();
-            while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-              i = i * 10 + uint64_t(*p - UC('0'));
-              ++p;
-            }
-            exponent = answer.fraction.ptr - p + exp_number;
-          }
+          i = i * 10 + uint64_t(*p - UC('0'));
+          ++p;
         }
-        else {
-          // Separator-aware re-scan: separators are skipped and excluded from
-          // the digit counts that determine the exponent.
-          while ((i < minimal_nineteen_digit_integer) && (p != int_end)) {
+        if (i >= minimal_nineteen_digit_integer) { // We have a big integer
+          int64_t remaining_integer_digits = 0;
+          while (p != int_end) {
+            if (*p == separator) {
+              ++p;
+              continue;
+            }
+            ++p;
+            ++remaining_integer_digits;
+          }
+          exponent = remaining_integer_digits + exp_number;
+        } else { // We have a value with a fractional component.
+          p = answer.fraction.ptr;
+          UC const *frac_end = p + answer.fraction.len();
+          int64_t fraction_digits_consumed = 0;
+          while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
             if (*p == separator) {
               ++p;
               continue;
             }
             i = i * 10 + uint64_t(*p - UC('0'));
             ++p;
+            ++fraction_digits_consumed;
           }
-          if (i >= minimal_nineteen_digit_integer) { // We have a big integer
-            int64_t remaining_integer_digits = 0;
-            while (p != int_end) {
-              if (*p == separator) {
-                ++p;
-                continue;
-              }
-              ++p;
-              ++remaining_integer_digits;
-            }
-            exponent = remaining_integer_digits + exp_number;
-          } else { // We have a value with a fractional component.
-            p = answer.fraction.ptr;
-            UC const *frac_end = p + answer.fraction.len();
-            int64_t fraction_digits_consumed = 0;
-            while ((i < minimal_nineteen_digit_integer) && (p != frac_end)) {
-              if (*p == separator) {
-                ++p;
-                continue;
-              }
-              i = i * 10 + uint64_t(*p - UC('0'));
-              ++p;
-              ++fraction_digits_consumed;
-            }
-            exponent = exp_number - fraction_digits_consumed;
-          }
+          exponent = exp_number - fraction_digits_consumed;
         }
         // We have now corrected both exponent and i, to a truncated value
       }
