@@ -71,6 +71,15 @@ cc_test(
 )
 
 cc_test(
+    name = "trailing_zeros_test",
+    srcs = ["trailing_zeros_test.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
     name = "powersoffive_hardround",
     srcs = ["powersoffive_hardround.cpp"],
     deps = [
