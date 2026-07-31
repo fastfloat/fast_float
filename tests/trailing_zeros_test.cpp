@@ -34,7 +34,14 @@ parse_result parse(std::string const &input) {
   double value = 0;
   fast_float::from_chars_result const result = fast_float::from_chars(
       input.data(), input.data() + input.size(), value);
-  return parse_result{bits(value), size_t(result.ptr - input.data()), result.ec};
+  return parse_result{bits(value), size_t(result.ptr - input.data()),
+                      result.ec};
+}
+
+fast_float::parsed_number_string parse_number(std::string const &input) {
+  fast_float::parse_options options;
+  return fast_float::parse_number_string<false, char>(
+      input.data(), input.data() + input.size(), options, true);
 }
 
 bool takes_digit_comp(std::string const &input) {
@@ -76,7 +83,8 @@ template <typename UC> parse_result parse_wide(std::string const &input) {
   double value = 0;
   fast_float::from_chars_result_t<UC> const result = fast_float::from_chars(
       wide.data(), wide.data() + wide.size(), value);
-  return parse_result{bits(value), size_t(result.ptr - wide.data()), result.ec};
+  return parse_result{bits(value), size_t(result.ptr - wide.data()),
+                      result.ec};
 }
 
 template <typename UC>
@@ -94,7 +102,8 @@ void check_equivalent_wide(std::string const &padded,
 
 } // namespace
 
-TEST_CASE("long trailing zero coefficients preserve public from_chars results") {
+TEST_CASE(
+    "long trailing zero coefficients preserve public from_chars results") {
   // The prefix is an ambiguous 19-digit mantissa at exponent -18. Adding a
   // twentieth digit makes public from_chars use the digit comparison fallback.
   std::string const prefix = "6497987825129815764";
@@ -161,4 +170,41 @@ TEST_CASE("all-zero coefficients retain their public result") {
     CHECK(integer_result.value_bits == 0);
     CHECK(fraction_result.value_bits == 0);
   }
+}
+
+TEST_CASE("logical trimming preserves integer and all-zero spans") {
+  std::string const zeroes16(16, '0');
+  std::string const fraction_input = "120.3" + zeroes16;
+  fast_float::parsed_number_string fraction = parse_number(fraction_input);
+  REQUIRE(fast_float::trim_trailing_zeros(fraction));
+  CHECK(fraction.integer.len() == 3);
+  CHECK(fraction.fraction.len() == 1);
+  CHECK(std::string(fraction.integer.ptr, fraction.integer.len()) == "120");
+  CHECK(std::string(fraction.fraction.ptr, fraction.fraction.len()) == "3");
+
+  std::string const across_point_input = "120." + zeroes16;
+  fast_float::parsed_number_string across_point =
+      parse_number(across_point_input);
+  REQUIRE(fast_float::trim_trailing_zeros(across_point));
+  CHECK(across_point.integer.len() == 2);
+  CHECK(across_point.fraction.len() == 0);
+  CHECK(std::string(across_point.integer.ptr, across_point.integer.len()) ==
+        "12");
+
+  std::string const all_zero_input = "0." + std::string(64, '0');
+  fast_float::parsed_number_string all_zero = parse_number(all_zero_input);
+  fast_float::span<char const> const all_zero_integer = all_zero.integer;
+  fast_float::span<char const> const all_zero_fraction = all_zero.fraction;
+  CHECK_FALSE(fast_float::trim_trailing_zeros(all_zero));
+  CHECK(all_zero.integer.ptr == all_zero_integer.ptr);
+  CHECK(all_zero.integer.len() == all_zero_integer.len());
+  CHECK(all_zero.fraction.ptr == all_zero_fraction.ptr);
+  CHECK(all_zero.fraction.len() == all_zero_fraction.len());
+
+  std::string const short_suffix_input = "120.3" + std::string(15, '0');
+  fast_float::parsed_number_string short_suffix =
+      parse_number(short_suffix_input);
+  CHECK_FALSE(fast_float::trim_trailing_zeros(short_suffix));
+  CHECK(short_suffix.integer.len() == 3);
+  CHECK(short_suffix.fraction.len() == 16);
 }

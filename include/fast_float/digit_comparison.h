@@ -428,6 +428,82 @@ inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa negative_digit_comp(
 // `b` as a big-integer type, scaled to the same binary exponent as
 // the actual digits. we then compare the big integer representations
 // of both, and use that to direct rounding.
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+has_trailing_zero(parsed_number_string_t<UC> const &num) noexcept {
+  if (num.fraction.ptr != nullptr && num.fraction.len() != 0) {
+    return num.fraction[num.fraction.len() - 1] == UC('0');
+  }
+  return num.integer.len() != 0 &&
+         num.integer[num.integer.len() - 1] == UC('0');
+}
+
+// The long decimal fallback is only reached for an ambiguous conversion. For
+// a sufficiently long zero suffix, scanning backward is cheaper than building
+// zero limbs in the bigint. This helper leaves `last` at the final nonzero
+// digit and returns the number of zeroes it removed.
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 size_t
+trim_zeros_from_end(UC const *first, UC const *&last) noexcept {
+  size_t zeroes = 0;
+  while (!cpp20_and_in_constexpr() &&
+         std::distance(first, last) >= int_cmp_len<UC>()) {
+    uint64_t value;
+    ::memcpy(&value, last - int_cmp_len<UC>(), sizeof(uint64_t));
+    if (value != int_cmp_zeros<UC>()) {
+      break;
+    }
+    last -= int_cmp_len<UC>();
+    zeroes += size_t(int_cmp_len<UC>());
+  }
+  while (last != first && last[-1] == UC('0')) {
+    --last;
+    ++zeroes;
+  }
+  return zeroes;
+}
+
+// Discard a long suffix of zeroes before materializing the coefficient. The
+// scientific exponent still comes from the original parsed number, so removing
+// zeroes here is balanced by the scale derived from the shorter digit count.
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+trim_trailing_zeros(parsed_number_string_t<UC> &num) noexcept {
+  constexpr size_t minimum_trailing_zeroes = 16;
+  if (!has_trailing_zero(num)) {
+    return false;
+  }
+
+  UC const *integer_end = num.integer.ptr + num.integer.len();
+  UC const *fraction_end = num.fraction.ptr;
+  size_t trailing_zeroes = 0;
+  if (fraction_end != nullptr) {
+    fraction_end += num.fraction.len();
+    trailing_zeroes = trim_zeros_from_end(num.fraction.ptr, fraction_end);
+  }
+  // Integer zeroes belong to the suffix only when every fractional digit was
+  // zero. For example, trimming 120.3000 must retain the zero in 120.
+  if (fraction_end == nullptr || fraction_end == num.fraction.ptr) {
+    trailing_zeroes += trim_zeros_from_end(num.integer.ptr, integer_end);
+  }
+
+  // Do not turn an all-zero coefficient into empty spans, and retain short
+  // suffixes where a reverse scan does not recover its setup cost.
+  if (trailing_zeroes < minimum_trailing_zeroes ||
+      (integer_end == num.integer.ptr &&
+       (fraction_end == nullptr || fraction_end == num.fraction.ptr))) {
+    return false;
+  }
+
+  num.integer = span<UC const>(
+      num.integer.ptr, size_t(integer_end - num.integer.ptr));
+  if (fraction_end != nullptr) {
+    num.fraction = span<UC const>(
+        num.fraction.ptr, size_t(fraction_end - num.fraction.ptr));
+  }
+  return true;
+}
+
 template <typename T, typename UC>
 inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 digit_comp(parsed_number_string_t<UC> &num, adjusted_mantissa am) noexcept {
@@ -439,7 +515,15 @@ digit_comp(parsed_number_string_t<UC> &num, adjusted_mantissa am) noexcept {
   size_t max_digits = binary_format<T>::max_digits();
   size_t digits = 0;
   bigint bigmant;
-  parse_mantissa(bigmant, num, max_digits, digits);
+  parsed_number_string_t<UC> trimmed_num;
+  parsed_number_string_t<UC> *mantissa_num = &num;
+  if (has_trailing_zero(num)) {
+    trimmed_num = num;
+    if (trim_trailing_zeros(trimmed_num)) {
+      mantissa_num = &trimmed_num;
+    }
+  }
+  parse_mantissa(bigmant, *mantissa_num, max_digits, digits);
   // can't underflow, since digits is at most max_digits.
   int32_t exponent = sci_exp + 1 - int32_t(digits);
   if (exponent >= 0) {
