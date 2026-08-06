@@ -285,8 +285,9 @@ parse_mantissa(bigint &result, parsed_number_string_t<UC> &num,
       // add the temporary value, then check if we've truncated any digits
       add_native(result, limb(powers_of_ten_uint64[counter]), value);
       bool truncated = is_truncated(p, pend);
-      if (num.fraction.ptr != nullptr) {
-        truncated |= is_truncated(num.fraction);
+      // A nonzero integer suffix already determines the rounding direction.
+      if (!truncated && num.fraction.ptr != nullptr) {
+        truncated = is_truncated(num.fraction);
       }
       if (truncated) {
         round_up_bigint(result, digits);
