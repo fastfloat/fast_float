@@ -18,6 +18,10 @@
 #include <arm_neon.h>
 #endif
 
+#ifdef FASTFLOAT_RVV
+#include <riscv_vector.h>
+#endif
+
 namespace fast_float {
 
 template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
@@ -126,6 +130,24 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
+#elif defined(FASTFLOAT_RVV)
+
+fastfloat_really_inline uint64_t simd_read8_to_u64(vuint16m1_t const data) {
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  vuint8mf2_t const packed = __riscv_vnsrl_wx_u8mf2(data, 0, 8);
+  uint64_t value;
+  __riscv_vse8_v_u8mf2(reinterpret_cast<uint8_t *>(&value), packed, 8);
+  return value;
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+}
+
+fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  return simd_read8_to_u64(
+      __riscv_vle16_v_u16m1(reinterpret_cast<uint16_t const *>(chars), 8));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+}
+
 #endif // FASTFLOAT_SSE2
 
 // MSVC SFINAE is broken pre-VS2017
@@ -217,6 +239,22 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   uint16x8_t const mask = vcltq_u16(t0, vmovq_n_u16('9' - '0' + 1));
 
   if (vminvq_u16(mask) == 0xFFFF) {
+    i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
+    return true;
+  } else
+    return false;
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+#elif defined(FASTFLOAT_RVV)
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  vuint16m1_t const data =
+      __riscv_vle16_v_u16m1(reinterpret_cast<uint16_t const *>(chars), 8);
+
+  // (x - '0') <= 9
+  // http://0x80.pl/articles/simd-parsing-int-sequences.html
+  vuint16m1_t const t0 = __riscv_vsub_vx_u16m1(data, '0', 8);
+  vbool16_t const nondigit = __riscv_vmsgtu_vx_u16m1_b16(t0, 9, 8);
+
+  if (__riscv_vfirst_m_b16(nondigit, 8) < 0) {
     i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
     return true;
   } else

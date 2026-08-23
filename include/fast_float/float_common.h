@@ -172,7 +172,14 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_NEON 1
 #endif
 
-#if defined(FASTFLOAT_SSE2) || defined(FASTFLOAT_NEON)
+// The RISC-V V extension guarantees VLEN >= 128. The __riscv_-prefixed
+// intrinsics used here require version 0.11 or later of the intrinsics spec.
+#if defined(__riscv_v) && defined(__riscv_v_intrinsic) &&                      \
+    __riscv_v_intrinsic >= 11000
+#define FASTFLOAT_RVV 1
+#endif
+
+#if defined(FASTFLOAT_SSE2) || defined(FASTFLOAT_NEON) || defined(FASTFLOAT_RVV)
 #define FASTFLOAT_HAS_SIMD 1
 #endif
 
