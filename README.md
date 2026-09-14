@@ -384,6 +384,40 @@ int main() {
 }
 ```
 
+### You may also enforce the JavaScript format ([ECMAScript DecimalLiteral](https://tc39.es/ecma262/#prod-DecimalLiteral))
+
+The JavaScript format is like the JSON format, except that the integer part may
+be empty (`.5`) and the fractional part may be empty (`5.`, `5.e3`). Leading
+zeros are still rejected (`01`), as are `inf` and `nan`.
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "01"; // not valid: leading zero
+  double result;
+  fast_float::parse_options options{fast_float::chars_format::javascript};
+  auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
+  if (answer.ec == std::errc()) { std::cerr << "should have failed\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = ".5"; // valid in JavaScript, not in JSON
+  double result;
+  fast_float::parse_options options{fast_float::chars_format::javascript};
+  auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
+  if (answer.ec != std::errc() || result != 0.5) { std::cerr << "should have parsed 0.5\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
 ## Multiplication of an integer by a power of 10
 An integer `W` can be multiplied by a power of ten `10^Q` and
 converted to `double` with correctly rounded value
