@@ -310,6 +310,11 @@ def check_ties(fmt):
         check(lo <= min(sub), "and the subnormal ties at q in [%d, %d]" % (min(sub), max(sub)))
     else:
         note("no subnormal tie has fewer than 20 digits")
+    # subnormal_ties_possible() in float_common.h: an upper bound on the
+    # largest q that can give a subnormal, compared with the tie range
+    q_sub = ((fmt.minimum_exponent + 1) * 1233) >> 12
+    check(10**q_sub < 2**fmt.emin < 10 ** (q_sub + 2), "q <= %d bounds the subnormal exponents" % q_sub)
+    check((lo <= q_sub) == bool(sub), "subnormal_ties_possible() == %s" % bool(sub))
     longest = len(str(((1 << (p + 2)) - 1) * 5**fmt.bias))
     check(fmt.max_digits >= longest, "max_digits=%d >= %d, the longest tie" % (fmt.max_digits, longest))
 

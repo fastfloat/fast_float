@@ -163,7 +163,8 @@ compute_float(int64_t q, uint64_t w) noexcept {
     // std::float16_t (e.g., 2^-25 = 298023223876953125e-25), so we apply the
     // same round-to-even test as in the normal case below.
     // See script/format_parameters.py.
-    if ((product.low <= 1) && (q >= binary::min_exponent_round_to_even()) &&
+    if (binary::subnormal_ties_possible() && (product.low <= 1) &&
+        (q >= binary::min_exponent_round_to_even()) &&
         (q <= binary::max_exponent_round_to_even()) &&
         ((answer.mantissa & 3) == 1)) {
       if (((answer.mantissa << subnormal_shift) << shift) == product.high) {

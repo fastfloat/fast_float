@@ -225,12 +225,16 @@ using parse_options = parse_options_t<char>;
 
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
-  { static_cast<void>(x); }
+  {                                                                            \
+    static_cast<void>(x);                                                      \
+  }
 #endif
 
 #ifndef FASTFLOAT_DEBUG_ASSERT
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
-  { static_cast<void>(x); }
+  {                                                                            \
+    static_cast<void>(x);                                                      \
+  }
 #endif
 
 // rust style `try!()` macro, or `?` operator
@@ -662,6 +666,7 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr uint64_t
   max_mantissa_fast_path(); // used when fegetround() == FE_TONEAREST
   static constexpr bool fast_path_can_overflow();
+  static constexpr bool subnormal_ties_possible();
   static constexpr int largest_power_of_ten();
   static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
@@ -1108,6 +1113,15 @@ inline constexpr bool binary_format<T>::fast_path_can_overflow() {
   return double(max_mantissa_fast_path()) *
              double(exact_power_of_ten(max_exponent_fast_path())) >
          double((std::numeric_limits<T>::max)());
+}
+
+// A subnormal needs w * 10^q < 2^(minimum_exponent() + 1), so q is at most
+// (minimum_exponent() + 1) * log10(2), with 1233/4096 < log10(2). Only
+// std::float16_t has such q in its round-to-even range.
+template <typename T>
+inline constexpr bool binary_format<T>::subnormal_ties_possible() {
+  return min_exponent_round_to_even() <=
+         (((minimum_exponent() + 1) * 1233) >> 12);
 }
 
 template <>
