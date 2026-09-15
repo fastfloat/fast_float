@@ -234,16 +234,12 @@ using parse_options = parse_options_t<char>;
 
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
-  {                                                                            \
-    static_cast<void>(x);                                                      \
-  }
+  { static_cast<void>(x); }
 #endif
 
 #ifndef FASTFLOAT_DEBUG_ASSERT
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
-  {                                                                            \
-    static_cast<void>(x);                                                      \
-  }
+  { static_cast<void>(x); }
 #endif
 
 // rust style `try!()` macro, or `?` operator
