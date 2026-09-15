@@ -418,6 +418,28 @@ int main() {
 }
 ```
 
+`fast_float::chars_format::javascript` follows the strict-mode grammar. In sloppy
+mode, JavaScript also accepts a leading zero when one of the digits is 8 or 9
+(`08.5` is 8.5, a `NonOctalDecimalIntegerLiteral`), which you can enable with
+`fast_float::chars_format::javascript_sloppy`. A leading zero followed only by
+octal digits (`0775`) is a legacy octal literal, not a decimal number: it is
+rejected with `fast_float::parse_error::legacy_octal_integer_part`, and you may
+parse it in base 8 instead.
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "08.5"; // valid in sloppy-mode JavaScript
+  double result;
+  fast_float::parse_options options{fast_float::chars_format::javascript_sloppy};
+  auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
+  if (answer.ec != std::errc() || result != 8.5) { std::cerr << "should have parsed 8.5\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
 ## Multiplication of an integer by a power of 10
 An integer `W` can be multiplied by a power of ten `10^Q` and
 converted to `double` with correctly rounded value

@@ -1,6 +1,9 @@
 /*
- * Exercise the JavaScript (ECMAScript DecimalLiteral) conversion option.
+ * Exercise the JavaScript (ECMAScript DecimalLiteral) conversion options,
+ * strict (chars_format::javascript) and sloppy
+ * (chars_format::javascript_sloppy).
  * https://tc39.es/ecma262/#prod-DecimalLiteral
+ * https://tc39.es/ecma262/#sec-additional-syntax-numeric-literals
  */
 #include <cstdlib>
 #include <iostream>
@@ -168,6 +171,120 @@ int main() {
       std::cerr << "javascript parse failure had invalid error location " << f
                 << " (expected " << expected_reason.location_offset << " got "
                 << error_location << ")" << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // Sloppy mode accepts everything strict mode accepts...
+  for (std::size_t i = 0; i < accept.size(); ++i) {
+    auto const &s = accept[i].input;
+    auto const &expected = accept[i].expected;
+    double result;
+    auto answer =
+        fast_float::from_chars(s.data(), s.data() + s.size(), result,
+                               fast_float::chars_format::javascript_sloppy);
+    if (answer.ec != std::errc() || result != expected.value ||
+        std::string(answer.ptr) != expected.junk_chars) {
+      std::cerr << "javascript_sloppy fmt failed on valid javascript " << s
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // ... plus NonOctalDecimalIntegerLiteral: a leading zero followed by digits,
+  // at least one of which is 8 or 9, is a decimal integer part.
+  std::vector<AcceptedValue> const accept_sloppy{
+      {"08", {8., ""}},      {"09", {9., ""}},      {"-08", {-8., ""}},
+      {"0888", {888., ""}},  {"0778", {778., ""}},  {"08.5", {8.5, ""}},
+      {"-08.5", {-8.5, ""}}, {"08.", {8., ""}},     {"0888e-1", {88.8, ""}},
+      {"09e+1", {90., ""}},  {"08.5e1", {85., ""}}, {"0009", {9., ""}},
+      {"08n", {8., "n"}},
+  };
+  for (std::size_t i = 0; i < accept_sloppy.size(); ++i) {
+    auto const &s = accept_sloppy[i].input;
+    auto const &expected = accept_sloppy[i].expected;
+    double result;
+    auto answer =
+        fast_float::from_chars(s.data(), s.data() + s.size(), result,
+                               fast_float::chars_format::javascript_sloppy);
+    if (answer.ec != std::errc()) {
+      std::cerr << "javascript_sloppy fmt rejected valid sloppy javascript "
+                << s << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (result != expected.value) {
+      std::cerr << "javascript_sloppy fmt gave wrong result " << s
+                << " (expected " << expected.value << " got " << result << ")"
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (std::string(answer.ptr) != expected.junk_chars) {
+      std::cerr << "javascript_sloppy fmt has wrong trailing characters " << s
+                << " (expected " << expected.junk_chars << " got " << answer.ptr
+                << ")" << std::endl;
+      return EXIT_FAILURE;
+    }
+    // Strict mode rejects all of these as leading zeros.
+    auto strict = fast_float::parse_number_string<false>(
+        s.data(), s.data() + s.size(),
+        fast_float::parse_options(fast_float::chars_format::javascript));
+    if (strict.valid ||
+        strict.error !=
+            fast_float::parse_error::leading_zeros_in_integer_part) {
+      std::cerr << "javascript fmt should have rejected " << s
+                << " for leading zeros" << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // A leading zero followed by octal digits only is a
+  // LegacyOctalIntegerLiteral, which is not a decimal number.
+  std::vector<RejectedValue> const reject_sloppy{
+      {"00", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"01", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"0775", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"-0775", {fast_float::parse_error::legacy_octal_integer_part, 1}},
+      {"00.5", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"00.0e-1", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"0775e-1", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"07.5", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      {"07n", {fast_float::parse_error::legacy_octal_integer_part, 0}},
+      // Unchanged from strict mode.
+      {".", {fast_float::parse_error::no_digits_in_mantissa, 1}},
+      {"-", {fast_float::parse_error::missing_integer_or_dot_after_sign, 1}},
+      {"+1", {fast_float::parse_error::no_digits_in_mantissa, 0}},
+      {"inf", {fast_float::parse_error::no_digits_in_mantissa, 0}},
+  };
+  for (std::size_t i = 0; i < reject_sloppy.size(); ++i) {
+    auto const &f = reject_sloppy[i].input;
+    auto const &expected_reason = reject_sloppy[i].reason;
+    double result;
+    auto answer =
+        fast_float::from_chars(f.data(), f.data() + f.size(), result,
+                               fast_float::chars_format::javascript_sloppy);
+    if (answer.ec == std::errc()) {
+      std::cerr << "javascript_sloppy fmt accepted invalid javascript " << f
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+    auto parsed = fast_float::parse_number_string<false>(
+        f.data(), f.data() + f.size(),
+        fast_float::parse_options(fast_float::chars_format::javascript_sloppy));
+    if (parsed.valid) {
+      std::cerr << "javascript_sloppy parse accepted invalid javascript " << f
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+    if (parsed.error != expected_reason.error) {
+      std::cerr << "javascript_sloppy parse failure had invalid error reason "
+                << f << std::endl;
+      return EXIT_FAILURE;
+    }
+    intptr_t error_location = parsed.lastmatch - f.data();
+    if (error_location != expected_reason.location_offset) {
+      std::cerr << "javascript_sloppy parse failure had invalid error location "
+                << f << " (expected " << expected_reason.location_offset
+                << " got " << error_location << ")" << std::endl;
       return EXIT_FAILURE;
     }
   }

@@ -40,6 +40,7 @@ namespace detail {
 constexpr chars_format basic_json_fmt = chars_format(1 << 5);
 constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
 constexpr chars_format basic_javascript_fmt = chars_format(1 << 9);
+constexpr chars_format basic_javascript_sloppy_fmt = chars_format(1 << 10);
 } // namespace detail
 
 enum class chars_format : uint64_t {
@@ -55,7 +56,7 @@ enum class chars_format : uint64_t {
   general = fixed | scientific,
   allow_leading_plus = 1 << 7,
   skip_white_space = 1 << 8,
-  // ECMAScript DecimalLiteral:
+  // ECMAScript DecimalLiteral (strict mode):
   // https://tc39.es/ecma262/#prod-DecimalLiteral
   // Like JSON, the integer part must not have leading zeros ("01" is
   // rejected), but unlike JSON the integer part may be empty (".5") and the
@@ -63,6 +64,16 @@ enum class chars_format : uint64_t {
   // accepted, and a leading plus sign with allow_leading_plus.
   javascript =
       uint64_t(detail::basic_javascript_fmt) | fixed | scientific | no_infnan,
+  // ECMAScript DecimalLiteral in sloppy mode, which adds Annex B's
+  // NonOctalDecimalIntegerLiteral: a leading zero is accepted when one of
+  // the digits is 8 or 9 ("08.5" is 8.5). A leading zero followed only by
+  // octal digits is a LegacyOctalIntegerLiteral ("0775"): it is not a
+  // decimal number, so it is rejected with legacy_octal_integer_part and the
+  // caller may parse it in base 8.
+  // https://tc39.es/ecma262/#sec-additional-syntax-numeric-literals
+  javascript_sloppy = uint64_t(detail::basic_javascript_fmt) |
+                      uint64_t(detail::basic_javascript_sloppy_fmt) | fixed |
+                      scientific | no_infnan,
 };
 
 template <typename UC> struct from_chars_result_t {

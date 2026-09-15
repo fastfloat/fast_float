@@ -298,6 +298,10 @@ enum class parse_error {
   no_digits_in_mantissa,
   // Scientific notation requires an exponential part.
   missing_exponential_part,
+  // [JavaScript-only, sloppy mode] The integer part is a legacy octal literal
+  // (a leading zero followed by octal digits only), which is not a decimal
+  // number. Parse it in base 8 instead.
+  legacy_octal_integer_part,
 };
 
 template <typename UC> struct parsed_number_string_t {
@@ -425,8 +429,23 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
     // digits: no leading zeros. Unlike JSON, the integer part may be empty
     // (".5"); the no_digits_in_mantissa check below still rejects ".".
     if ((digit_count > 1) && (start_digits[0] == UC('0'))) {
-      return report_parse_error<UC>(start_digits,
-                                    parse_error::leading_zeros_in_integer_part);
+      if (!uint64_t(fmt & detail::basic_javascript_sloppy_fmt)) {
+        return report_parse_error<UC>(
+            start_digits, parse_error::leading_zeros_in_integer_part);
+      }
+      // Sloppy mode (Annex B): a NonOctalDecimalIntegerLiteral has a leading
+      // zero and at least one digit that is 8 or 9 ("08.5" is 8.5). With
+      // octal digits only, it is a LegacyOctalIntegerLiteral ("0775"), which
+      // is not a decimal number: report it so the caller can parse it in
+      // base 8.
+      bool has_non_octal_digit = false;
+      for (UC const *q = start_digits; q != end_of_integer_part; ++q) {
+        has_non_octal_digit |= (*q >= UC('8'));
+      }
+      if (!has_non_octal_digit) {
+        return report_parse_error<UC>(start_digits,
+                                      parse_error::legacy_octal_integer_part);
+      }
     }
   }
 
