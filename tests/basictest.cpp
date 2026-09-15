@@ -1153,6 +1153,99 @@ TEST_CASE("double.inf") {
          std::errc::result_out_of_range);
 }
 
+TEST_CASE("truncated integer mantissa") {
+  constexpr size_t max_digits = fast_float::binary_format<double>::max_digits();
+  constexpr size_t integer_digits = max_digits + 1;
+  constexpr size_t fraction_length = 1024;
+
+  auto make_mantissa = [=](char final_integer_digit,
+                           char final_fraction_digit) {
+    std::string input = "1234567890123456789";
+    input.append(integer_digits - input.size() - 1, '0');
+    input.push_back(final_integer_digit);
+    input.push_back('.');
+    input.append(fraction_length - 1, '0');
+    input.push_back(final_fraction_digit);
+    return input;
+  };
+
+  auto parse_mantissa = [=](std::string const &input,
+                            fast_float::bigint &result) -> size_t {
+    fast_float::parse_options options;
+    auto number = fast_float::parse_number_string<false>(
+        input.data(), input.data() + input.size(), options, true);
+    CHECK(number.valid);
+    CHECK(number.integer.len() == integer_digits);
+    CHECK(number.fraction.len() == fraction_length);
+
+    size_t digits = 0;
+    fast_float::parse_mantissa(result, number, max_digits, digits);
+    return digits;
+  };
+
+  auto const nonzero_integer_zero_fraction = make_mantissa('1', '0');
+  auto const nonzero_integer_nonzero_fraction = make_mantissa('1', '1');
+  fast_float::bigint nonzero_integer_zero_result;
+  fast_float::bigint nonzero_integer_nonzero_result;
+  CHECK(parse_mantissa(nonzero_integer_zero_fraction,
+                       nonzero_integer_zero_result) == max_digits + 1);
+  CHECK(parse_mantissa(nonzero_integer_nonzero_fraction,
+                       nonzero_integer_nonzero_result) == max_digits + 1);
+  CHECK(nonzero_integer_zero_result.compare(nonzero_integer_nonzero_result) ==
+        0);
+
+  auto const zero_integer_zero_fraction = make_mantissa('0', '0');
+  auto const zero_integer_nonzero_fraction = make_mantissa('0', '1');
+  fast_float::bigint zero_integer_zero_result;
+  fast_float::bigint zero_integer_nonzero_result;
+  CHECK(parse_mantissa(zero_integer_zero_fraction, zero_integer_zero_result) ==
+        max_digits);
+  CHECK(parse_mantissa(zero_integer_nonzero_fraction,
+                       zero_integer_nonzero_result) == max_digits + 1);
+  CHECK(zero_integer_zero_result.compare(zero_integer_nonzero_result) < 0);
+
+  auto make_exact_conversion_input = [=](char final_fraction_digit) {
+    std::string input = "8385788696668661046";
+    input.append(integer_digits - input.size() - 1, '0');
+    input.push_back('1');
+    input.push_back('.');
+    input.append(fraction_length - 1, '0');
+    input.push_back(final_fraction_digit);
+    input += "e-1078";
+    return input;
+  };
+
+  auto const exact_input = make_exact_conversion_input('0');
+  fast_float::parse_options options;
+  auto const number = fast_float::parse_number_string<false>(
+      exact_input.data(), exact_input.data() + exact_input.size(), options,
+      true);
+  REQUIRE(number.too_many_digits);
+  REQUIRE(number.integer.len() == integer_digits);
+  REQUIRE(number.fraction.len() == fraction_length);
+  auto const approximate =
+      fast_float::compute_float<fast_float::binary_format<double>>(
+          number.exponent, number.mantissa);
+  auto const next =
+      fast_float::compute_float<fast_float::binary_format<double>>(
+          number.exponent, number.mantissa + 1);
+  REQUIRE(approximate != next);
+  REQUIRE(fast_float::compute_error<fast_float::binary_format<double>>(
+              number.exponent, number.mantissa)
+              .power2 < 0);
+
+  for (char final_fraction_digit = '0'; final_fraction_digit <= '1';
+       ++final_fraction_digit) {
+    auto const input = make_exact_conversion_input(final_fraction_digit);
+    double value = 0;
+    auto const result = fast_float::from_chars(
+        input.data(), input.data() + input.size(), value);
+    CHECK(result.ec == std::errc());
+    CHECK(result.ptr == input.data() + input.size());
+    CHECK(value == 0x0.607b00a417628p-1022);
+  }
+}
+
 TEST_CASE("double.general") {
   verify("0.95000000000000000000", 0.95);
   verify("22250738585072012e-324",
