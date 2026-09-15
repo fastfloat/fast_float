@@ -287,7 +287,7 @@ enum class parse_error {
   missing_integer_after_sign,
   // A sign must be followed by an integer or dot.
   missing_integer_or_dot_after_sign,
-  // [JSON-only] The integer part must not have leading zeros.
+  // [JSON/JavaScript-only] The integer part must not have leading zeros.
   leading_zeros_in_integer_part,
   // [JSON-only] The integer part must have at least one digit.
   no_digits_in_integer_part,
@@ -416,6 +416,15 @@ parse_number_string(UC const *p, UC const *pend, parse_options_t<UC> options,
       return report_parse_error<UC>(p, parse_error::no_digits_in_integer_part);
     }
     if ((start_digits[0] == UC('0') && digit_count > 1)) {
+      return report_parse_error<UC>(start_digits,
+                                    parse_error::leading_zeros_in_integer_part);
+    }
+  }
+  else if (uint64_t(fmt & detail::basic_javascript_fmt)) {
+    // ECMAScript DecimalIntegerLiteral is "0" or a non-zero digit followed by
+    // digits: no leading zeros. Unlike JSON, the integer part may be empty
+    // (".5"); the no_digits_in_mantissa check below still rejects ".".
+    if ((digit_count > 1) && (start_digits[0] == UC('0'))) {
       return report_parse_error<UC>(start_digits,
                                     parse_error::leading_zeros_in_integer_part);
     }

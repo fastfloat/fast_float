@@ -39,6 +39,7 @@ enum class chars_format : uint64_t;
 namespace detail {
 constexpr chars_format basic_json_fmt = chars_format(1 << 5);
 constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
+constexpr chars_format basic_javascript_fmt = chars_format(1 << 9);
 } // namespace detail
 
 enum class chars_format : uint64_t {
@@ -54,6 +55,14 @@ enum class chars_format : uint64_t {
   general = fixed | scientific,
   allow_leading_plus = 1 << 7,
   skip_white_space = 1 << 8,
+  // ECMAScript DecimalLiteral:
+  // https://tc39.es/ecma262/#prod-DecimalLiteral
+  // Like JSON, the integer part must not have leading zeros ("01" is
+  // rejected), but unlike JSON the integer part may be empty (".5") and the
+  // fractional part may be empty ("5.", "5.e3"). A leading minus sign is
+  // accepted, and a leading plus sign with allow_leading_plus.
+  javascript =
+      uint64_t(detail::basic_javascript_fmt) | fixed | scientific | no_infnan,
 };
 
 template <typename UC> struct from_chars_result_t {
@@ -225,16 +234,12 @@ using parse_options = parse_options_t<char>;
 
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
-  {                                                                            \
-    static_cast<void>(x);                                                      \
-  }
+  { static_cast<void>(x); }
 #endif
 
 #ifndef FASTFLOAT_DEBUG_ASSERT
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
-  {                                                                            \
-    static_cast<void>(x);                                                      \
-  }
+  { static_cast<void>(x); }
 #endif
 
 // rust style `try!()` macro, or `?` operator
