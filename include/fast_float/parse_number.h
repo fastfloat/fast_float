@@ -283,7 +283,16 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
   // and we have an invalid power (am.power2 < 0), then we need to go the long
   // way around again. This is very uncommon.
   if (am.power2 < 0) {
-    am = digit_comp<T>(pns, am);
+    if fastfloat_unlikely(has_minimum_trailing_zeroes(pns)) {
+      parsed_number_string_t<UC> trimmed;
+      if (trim_confirmed_trailing_zeroes(pns, trimmed)) {
+        am = digit_comp<T>(trimmed, am);
+      } else {
+        am = digit_comp<T>(pns, am);
+      }
+    } else {
+      am = digit_comp<T>(pns, am);
+    }
   }
   to_float(pns.negative, am, value);
   // Test for over/underflow.
@@ -295,14 +304,13 @@ from_chars_advanced(parsed_number_string_t<UC> &pns, T &value) noexcept {
 }
 
 // Slow path: re-parse materializing the integer/fraction spans the hot no-span
-// parse skipped, then run the full algorithm. The two callers reach it only
-// through a fastfloat_unlikely branch, so the optimizer keeps this re-parse off
-// the hot path on its own (no function-level noinline needed).
-// from_chars_advanced already handles both the too_many_digits disambiguation
-// and the am.power2<0 digit_comp recompute, so both slow branches collapse to
-// one helper call.
+// parse skipped, then run the full algorithm. Keep it out of line so the rare
+// reparse and suffix probe do not inflate the common parser.
+// from_chars_advanced handles both the too_many_digits disambiguation and the
+// am.power2<0 digit_comp recompute, so both slow branches collapse to one
+// helper call.
 template <typename T, typename UC>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+static fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_number_slow_path(UC const *first, UC const *last, T &value,
                        parse_options_t<UC> options, bool bjf) noexcept {
   parsed_number_string_t<UC> pns =
