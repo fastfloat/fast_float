@@ -527,8 +527,8 @@ parse_number_string(UC const *p, UC const *pend,
   answer.negative = *p == UC('-');
   if (answer.negative ||
       // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-      chars_format_t(options.format & chars_format::allow_leading_plus) &&
-          !json_fmt && *p == UC('+')) {
+      (chars_format_t(options.format & chars_format::allow_leading_plus) &&
+       !json_fmt && *p == UC('+'))) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -650,20 +650,21 @@ parse_number_string(UC const *p, UC const *pend,
 
   // Now we can parse the explicit exponential part.
   am_pow_t exp_number = 0; // explicit exponential part
-  if (p != pend && (chars_format_t(options.format & chars_format::scientific) &&
-                    (UC('e') == *p || UC('E') == *p))
+  if (p != pend &&
+      ((chars_format_t(options.format & chars_format::scientific) &&
+        (UC('e') == *p || UC('E') == *p))
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      || (chars_format_t(options.format & detail::fortran_fmt) &&
-          (UC('+') == *p || UC('-') == *p || UC('d') == *p || UC('D') == *p))
+       || (chars_format_t(options.format & detail::fortran_fmt) &&
+           (UC('+') == *p || UC('-') == *p || UC('d') == *p || UC('D') == *p))
 #endif
-  ) {
+           )) {
     auto const *location_of_e = p;
-#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    ++p;
-#else
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     if (UC('e') == *p || UC('E') == *p || UC('d') == *p || UC('D') == *p) {
       ++p;
     }
+#else
+    ++p;
 #endif
     bool neg_exp = false;
     if (p != pend) {
