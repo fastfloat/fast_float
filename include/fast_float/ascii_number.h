@@ -628,20 +628,19 @@ parse_number_string(UC const *p, UC const *pend,
           span<UC const>(before, static_cast<am_digits>(p - before));
     }
     digit_count -= static_cast<am_digits>(answer.exponent);
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-    if FASTFLOAT_CONSTEXPR17 (json_fmt) {
-      // at least 1 digit in fractional part
-      if (answer.exponent == 0) {
-        return report_parse_error<UC>(
-            answer, p, parse_error::no_digits_in_fractional_part);
-      }
-    }
-#endif
   }
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  if FASTFLOAT_CONSTEXPR17 (json_fmt) {
+    // at least 1 digit in fractional part
+    if (answer.exponent == 0) {
+      return report_parse_error<UC>(answer, p,
+                                    parse_error::no_digits_in_fractional_part);
+    }
+  }
+#endif
 #ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   // External parser already check that this is num and it's exist
-  else if (digit_count == 0) {
-    // We must have encountered at least one integer!
+  else if (digit_count == 0) { // We must have encountered at least one integer!
     return report_parse_error<UC>(answer, p,
                                   parse_error::no_digits_in_mantissa);
   }
