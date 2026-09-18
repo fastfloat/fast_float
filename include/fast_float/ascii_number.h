@@ -536,8 +536,7 @@ parse_number_string(UC const *p, UC const *pend,
     }
 
     if FASTFLOAT_CONSTEXPR17 (json_fmt) {
-      if (!is_integer(*p)) {
-        // A sign must be followed by an integer
+      if (!is_integer(*p)) { // A sign must be followed by an integer
         return report_parse_error<UC>(answer, p,
                                       parse_error::missing_integer_after_sign);
       }
@@ -585,6 +584,7 @@ parse_number_string(UC const *p, UC const *pend,
     }
 #endif
     if (start_digits[0] == UC('0') && digit_count > 1) {
+      // But leading zero
       return report_parse_error<UC>(answer, start_digits,
                                     parse_error::leading_zeros_in_integer_part);
     }
@@ -631,20 +631,17 @@ parse_number_string(UC const *p, UC const *pend,
   }
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   if FASTFLOAT_CONSTEXPR17 (json_fmt) {
-    // at least 1 digit in fractional part
+    // At least 1 digit in fractional part
     if (answer.exponent == 0) {
       return report_parse_error<UC>(answer, p,
                                     parse_error::no_digits_in_fractional_part);
     }
   }
 #endif
-#ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
-  // External parser already check that this is num and it's exist
   else if (digit_count == 0) { // We must have encountered at least one integer!
     return report_parse_error<UC>(answer, p,
                                   parse_error::no_digits_in_mantissa);
   }
-#endif
   // We have now parsed the integer and the fraction part of the mantissa.
 
   // Now we can parse the explicit exponential part.
@@ -678,9 +675,9 @@ parse_number_string(UC const *p, UC const *pend,
     // We have now parsed the sign of the exponent.
     if (p == pend || !is_integer(*p)) {
       if (!chars_format_t(options.format & chars_format::fixed)) {
-        // The exponential part is invalid for scientific notation, so it
-        // must be a trailing token for fixed notation. However, fixed
-        // notation is disabled, so report a scientific notation error.
+        // The exponential part is invalid for scientific notation, so it must
+        // be a trailing token for fixed notation. However, fixed notation is
+        // disabled, so report a scientific notation error.
         return report_parse_error<UC>(answer, p,
                                       parse_error::missing_exponential_part);
       }
@@ -792,7 +789,7 @@ parse_int_string(UC const *p, UC const *pend, T &value,
     return answer;
   }
   if (negative ||
-      ((chars_format_t(options.format & chars_format::allow_leading_plus)) &&
+      (chars_format_t(options.format & chars_format::allow_leading_plus) &&
        (*p == UC('+')))) {
     ++p;
   }
