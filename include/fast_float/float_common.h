@@ -17,8 +17,8 @@
 #include "constexpr_feature_detect.h"
 
 #define FASTFLOAT_VERSION_MAJOR 8
-#define FASTFLOAT_VERSION_MINOR 2
-#define FASTFLOAT_VERSION_PATCH 10
+#define FASTFLOAT_VERSION_MINOR 3
+#define FASTFLOAT_VERSION_PATCH 0
 
 #define FASTFLOAT_STRINGIZE_IMPL(x) #x
 #define FASTFLOAT_STRINGIZE(x) FASTFLOAT_STRINGIZE_IMPL(x)
@@ -57,7 +57,11 @@ constexpr static am_pow_t am_bias_limit =
     (std::numeric_limits<int16_t>::max() / 16) - 1;
 
 // Type for enum chars_format.
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 typedef uint_fast8_t chars_format_t;
+#else
+typedef uint_fast16_t chars_format_t;
+#endif
 
 // Type for base, only allowed from 2 to 36.
 typedef uint_fast8_t base_t;
@@ -66,8 +70,10 @@ enum class chars_format : chars_format_t;
 
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 namespace detail {
-constexpr chars_format basic_json_fmt = chars_format(1 << 6);
-constexpr chars_format basic_fortran_fmt = chars_format(1 << 7);
+constexpr chars_format json_fmt = chars_format(1 << 6);
+constexpr chars_format fortran_fmt = chars_format(1 << 7);
+constexpr chars_format javascript_fmt = chars_format(1 << 8);
+constexpr chars_format javascript_sloppy_fmt = chars_format(1 << 9);
 } // namespace detail
 #endif
 
@@ -81,10 +87,27 @@ enum class chars_format : chars_format_t {
   allow_leading_plus = 1 << 4,
   skip_white_space = 1 << 5,
   // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
-  json = chars_format_t(detail::basic_json_fmt) | general | no_infnan,
+  json = chars_format_t(detail::json_fmt) | general | no_infnan,
   // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
-  json_or_infnan = chars_format_t(detail::basic_json_fmt) | general,
-  fortran = chars_format_t(detail::basic_fortran_fmt) | general,
+  json_or_infnan = chars_format_t(detail::json_fmt) | general,
+  fortran = chars_format_t(detail::fortran_fmt) | general,
+  // ECMAScript DecimalLiteral (strict mode):
+  // https://tc39.es/ecma262/#prod-DecimalLiteral
+  // Like JSON, the integer part must not have leading zeros ("01" is
+  // rejected), but unlike JSON the integer part may be empty (".5") and the
+  // fractional part may be empty ("5.", "5.e3"). A leading minus sign is
+  // accepted, and a leading plus sign with allow_leading_plus.
+  javascript = chars_format_t(detail::javascript_fmt) | general | no_infnan,
+  // ECMAScript DecimalLiteral in sloppy mode, which adds Annex B's
+  // NonOctalDecimalIntegerLiteral: a leading zero is accepted when one of
+  // the digits is 8 or 9 ("08.5" is 8.5). A leading zero followed only by
+  // octal digits is a LegacyOctalIntegerLiteral ("0775"): it is not a
+  // decimal number, so it is rejected with legacy_octal_integer_part and the
+  // caller may parse it in base 8.
+  // https://tc39.es/ecma262/#sec-additional-syntax-numeric-literals
+  javascript_sloppy = chars_format_t(detail::javascript_fmt) |
+                      chars_format_t(detail::javascript_sloppy_fmt) | general |
+                      no_infnan,
 #endif
 };
 
@@ -270,12 +293,12 @@ static_assert(FASTFLOAT_X86_SIMD == 20 || FASTFLOAT_X86_SIMD == 42 ||
 // clang-format off
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
-  { ((void)(x)); }
+  { static_cast<void>(x); }
 #endif
 
 #ifndef FASTFLOAT_DEBUG_ASSERT
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
-  { ((void)(x)); }
+  { static_cast<void>(x); }
 #endif
 // clang-format on
 

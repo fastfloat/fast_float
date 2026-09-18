@@ -62,6 +62,15 @@ cc_test(
 )
 
 cc_test(
+    name = "javascript_fmt",
+    srcs = ["javascript_fmt.cpp"],
+    deps = [
+        "//:fast_float",
+        "@doctest//doctest",
+    ],
+)
+
+cc_test(
     name = "long_test",
     srcs = ["long_test.cpp"],
     deps = [

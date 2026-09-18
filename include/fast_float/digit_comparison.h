@@ -300,18 +300,18 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
 #if defined(FASTFLOAT_64BIT_LIMB) && defined(FASTFLOAT_X86_SIMD) &&            \
     FASTFLOAT_X86_SIMD >= 31
     if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 1) {
-      if (!is_constant_evaluated() && (std::distance(p, pend) >= 16) &&
-          (step - counter >= 16) && (max_digits - digits >= 16)) {
+      if (!is_constant_evaluated() std::distance(p, pend) >= 16 &&
+          step - counter >= 16 && max_digits - digits >= 16) {
         parse_sixteen_digits(p, value, counter, digits);
       }
     }
 #endif
-    while ((std::distance(p, pend) >= 8) && (step - counter >= 8) &&
-           (max_digits - digits >= 8)) {
+    while (std::distance(p, pend) >= 8 && step - counter >= 8 &&
+           max_digits - digits >= 8) {
       parse_eight_digits(p, value, counter, digits);
     }
-    while ((std::distance(p, pend) >= 4) && (step - counter >= 4) &&
-           (max_digits - digits >= 4)) {
+    if (std::distance(p, pend) >= 4 && step - counter >= 4 &&
+        max_digits - digits >= 4) {
       parse_four_digits(p, value, counter, digits);
     }
     while (counter < step && p != pend && digits < max_digits) {
@@ -350,14 +350,14 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
 #if defined(FASTFLOAT_64BIT_LIMB) && defined(FASTFLOAT_X86_SIMD) &&            \
     FASTFLOAT_X86_SIMD >= 31
       if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 1) {
-        if (!is_constant_evaluated() && (std::distance(p, pend) >= 16) &&
-            (step - counter >= 16) && (max_digits - digits >= 16)) {
+        if (!is_constant_evaluated() && std::distance(p, pend) >= 16 &&
+            step - counter >= 16 && max_digits - digits >= 16) {
           parse_sixteen_digits(p, value, counter, digits);
         }
       }
 #endif
-      while ((std::distance(p, pend) >= 8) && (step - counter >= 8) &&
-             (max_digits - digits >= 8)) {
+      while (std::distance(p, pend) >= 8 && step - counter >= 8 &&
+             max_digits - digits >= 8) {
         parse_eight_digits(p, value, counter, digits);
       }
       while (counter < step && p != pend && digits < max_digits) {

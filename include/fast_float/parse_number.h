@@ -357,17 +357,26 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   from_chars_result_t<UC> answer;
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if (chars_format_t(options.format & chars_format::skip_white_space)) {
-    while ((first != last) && fast_float::is_space(*first)) {
-      ++first;
-    }
-  }
-#else
 #ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   // We are in parser code with external loop that checks bounds.
   FASTFLOAT_ASSUME(first < last);
 #endif
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  if (chars_format_t(options.format & chars_format::skip_white_space)) {
+#ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
+    while (first != last && fast_float::is_space(*first)) {
+      ++first;
+    }
+#else
+    do {
+      if (fast_float::is_space(*first)) {
+        ++first;
+      } else {
+        break;
+      }
+    } while (first != last)
+#endif
+  }
 #endif
 #ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   if (first == last) {
@@ -377,7 +386,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   }
 #endif
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  bool const bjf = chars_format_t(options.format & detail::basic_json_fmt) != 0;
+  bool const bjf = chars_format_t(options.format & detail::json_fmt) != 0;
 #endif
   // Fast path: parse WITHOUT materializing the integer/fraction spans (read
   // only by the rare slow paths). Skipping their stores keeps the fat

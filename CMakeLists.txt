@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 
 
-project(fast_float VERSION 8.2.10 LANGUAGES CXX)
-
+project(fast_float VERSION 8.3.0 LANGUAGES CXX)
 set(FASTFLOAT_CXX_STANDARD 11 CACHE STRING "the C++ standard to use for fastfloat")
 set(CMAKE_CXX_STANDARD ${FASTFLOAT_CXX_STANDARD})
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 option(FASTFLOAT_TEST "Enable tests" OFF)
 
 if(FASTFLOAT_TEST)
@@ -17,7 +14,8 @@ else(FASTFLOAT_TEST)
 endif(FASTFLOAT_TEST)
 
 option(FASTFLOAT_SANITIZE "Sanitize addresses" OFF)
-if(NOT CMAKE_BUILD_TYPE)
+
+if (NOT CMAKE_BUILD_TYPE)
   if(FASTFLOAT_SANITIZE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
   else()
@@ -34,12 +32,14 @@ endif()
 
 add_library(fast_float INTERFACE)
 
+
 option(FASTFLOAT_BENCHMARKS "Enable benchmarks" OFF)
 if(FASTFLOAT_BENCHMARKS)
   add_subdirectory(benchmarks)
 else(FASTFLOAT_BENCHMARKS)
   message(STATUS "Benchmarks are disabled. Set FASTFLOAT_BENCHMARKS to ON to build benchmarks (assumes C++17).")
 endif(FASTFLOAT_BENCHMARKS)
+
 
 add_library(FastFloat::fast_float ALIAS fast_float)
 target_include_directories(
@@ -49,33 +49,15 @@ target_include_directories(
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_compile_features(fast_float INTERFACE cxx_std_11)
-
 if(FASTFLOAT_SANITIZE)
-  target_compile_options(
-    fast_float
-    INTERFACE
-      -fsanitize=address
-      -fno-omit-frame-pointer
-      -fsanitize=undefined
-      -fno-sanitize-recover=all
-  )
-  target_link_libraries(
-    fast_float
-    INTERFACE
-      -fsanitize=address
-      -fno-omit-frame-pointer
-      -fsanitize=undefined
-      -fno-sanitize-recover=all
-  )
-  if(CMAKE_COMPILER_IS_GNUCC)
+  target_compile_options(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
+  target_link_libraries(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
+  if (CMAKE_COMPILER_IS_GNUCC)
     target_link_libraries(fast_float INTERFACE -fuse-ld=gold)
   endif()
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
-   AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10)
-  target_compile_options(fast_float INTERFACE /permissive-)
-endif()
+target_compile_options(fast_float INTERFACE $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,19.10>>:/permissive->)
 
 if(FASTFLOAT_INSTALL)
   include(CMakePackageConfigHelpers)
@@ -84,58 +66,23 @@ if(FASTFLOAT_INSTALL)
   set(FASTFLOAT_PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/module/FastFloatConfig.cmake")
   set(FASTFLOAT_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/cmake/FastFloat")
 
-  if(CMAKE_VERSION VERSION_LESS "3.14")
-    write_basic_package_version_file(
-      "${FASTFLOAT_VERSION_CONFIG}"
-      VERSION ${PROJECT_VERSION}
-      COMPATIBILITY SameMajorVersion
-    )
+  if(${CMAKE_VERSION} VERSION_LESS "3.14")
+    write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
   else()
-    write_basic_package_version_file(
-      "${FASTFLOAT_VERSION_CONFIG}"
-      VERSION ${PROJECT_VERSION}
-      COMPATIBILITY SameMajorVersion
-      ARCH_INDEPENDENT
-    )
+    write_basic_package_version_file("${FASTFLOAT_VERSION_CONFIG}" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion ARCH_INDEPENDENT)
   endif()
+  configure_package_config_file("cmake/config.cmake.in"
+                                "${FASTFLOAT_PROJECT_CONFIG}"
+                                INSTALL_DESTINATION "${FASTFLOAT_CONFIG_INSTALL_DIR}")
 
-  configure_package_config_file(
-    "cmake/config.cmake.in"
-    "${FASTFLOAT_PROJECT_CONFIG}"
-    INSTALL_DESTINATION "${FASTFLOAT_CONFIG_INSTALL_DIR}"
-  )
+  install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/fast_float" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+  install(FILES "${FASTFLOAT_PROJECT_CONFIG}" "${FASTFLOAT_VERSION_CONFIG}" DESTINATION "${FASTFLOAT_CONFIG_INSTALL_DIR}")
+  install(EXPORT ${PROJECT_NAME}-targets NAMESPACE FastFloat:: DESTINATION "${FASTFLOAT_CONFIG_INSTALL_DIR}")
 
-  install(
-    DIRECTORY
-      "${PROJECT_SOURCE_DIR}/include/fast_float"
-    DESTINATION
-      "${CMAKE_INSTALL_INCLUDEDIR}"
-  )
-
-  install(
-    FILES
-      "${FASTFLOAT_PROJECT_CONFIG}"
-      "${FASTFLOAT_VERSION_CONFIG}"
-    DESTINATION
-      "${FASTFLOAT_CONFIG_INSTALL_DIR}"
-  )
-
-  install(
-    EXPORT
-      ${PROJECT_NAME}-targets
-    NAMESPACE
-      FastFloat::
-    DESTINATION
-      "${FASTFLOAT_CONFIG_INSTALL_DIR}"
-  )
-
-  install(
-    TARGETS
-      fast_float
-    EXPORT
-      ${PROJECT_NAME}-targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  install(TARGETS fast_float
+          EXPORT ${PROJECT_NAME}-targets
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 endif()
