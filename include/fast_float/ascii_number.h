@@ -477,8 +477,8 @@ enum class parse_error : uint_fast8_t {
 };
 
 template <typename UC> struct parsed_number_string_t {
-  FASTFLOAT_NO_UNIQUE_ADDRESS UC const *lastmatch;
   FASTFLOAT_NO_UNIQUE_ADDRESS am_mant_t mantissa;
+  FASTFLOAT_NO_UNIQUE_ADDRESS UC const *lastmatch;
   FASTFLOAT_NO_UNIQUE_ADDRESS am_pow_t exponent;
 
   FASTFLOAT_NO_UNIQUE_ADDRESS parse_error error;
@@ -525,26 +525,28 @@ parse_number_string(UC const *p, UC const *pend,
   parsed_number_string_t<UC> answer{};
   FASTFLOAT_ASSUME(p < pend); // so dereference without checks
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  answer.negative = *p == UC('-');
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
+  answer.negative = *p == UC('-');
   if (answer.negative ||
-      (!json_fmt &&
-       chars_format_t(options.format & chars_format::allow_leading_plus) &&
+      (chars_format_t(options.format & chars_format::allow_leading_plus) &&
        *p == UC('+'))) {
     ++p;
 
+    if fastfloat_unlikely (p == pend) {
+      return report_parse_error<UC>(
+          answer, p, parse_error::missing_integer_or_dot_after_sign);
+    }
     if (json_fmt) {
-      if (p == pend &&
-          !is_integer(*p)) { // A sign must be followed by an integer
+      if fastfloat_unlikely (!is_integer(*p)) {
+        // A sign must be followed by an integer
         return report_parse_error<UC>(answer, p,
                                       parse_error::missing_integer_after_sign);
       }
-    } else {
-      if (p == pend && !is_integer(*p) && *p != options.decimal_point) {
-        // A sign must be followed by an integer or the dot
-        return report_parse_error<UC>(
-            answer, p, parse_error::missing_integer_or_dot_after_sign);
-      }
+    } else if fastfloat_unlikely (!is_integer(*p) &&
+                                  *p != options.decimal_point) {
+      // A sign must be followed by an integer or the dot
+      return report_parse_error<UC>(
+          answer, p, parse_error::missing_integer_or_dot_after_sign);
     }
   }
 #endif
@@ -569,26 +571,26 @@ parse_number_string(UC const *p, UC const *pend,
     ++p;
   } while (p != pend && is_integer(*p));
 #endif
+
   UC const *const end_of_integer_part = p;
   auto digit_count = static_cast<am_digits>(end_of_integer_part - start_digits);
   if fastfloat_unlikely (store_spans) {
     answer.integer = span<UC const>(start_digits, digit_count);
   }
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if (json_fmt) {
+  if fastfloat_unlikely (json_fmt && digit_count == 0) {
     // At least 1 digit in integer part
-    if (digit_count == 0) {
-      return report_parse_error<UC>(answer, p,
-                                    parse_error::no_digits_in_integer_part);
-    }
+    return report_parse_error<UC>(answer, p,
+                                  parse_error::no_digits_in_integer_part);
   }
   if (json_fmt || chars_format_t(options.format & detail::javascript_fmt)) {
     // ECMAScript DecimalIntegerLiteral is "0" or a non-zero digit followed by
     // digits: no leading zeros. Unlike JSON, the integer part may be empty
     // (".5"); the no_digits_in_mantissa check below still rejects ".".
-    if (start_digits[0] == UC('0') && digit_count > 1) {
-      if (json_fmt ||
-          !chars_format_t(options.format & detail::javascript_sloppy_fmt)) {
+    if fastfloat_unlikely (start_digits[0] == UC('0') && digit_count > 1) {
+      if fastfloat_unlikely (json_fmt ||
+                             !chars_format_t(options.format &
+                                             detail::javascript_sloppy_fmt)) {
         return report_parse_error<UC>(
             answer, start_digits, parse_error::leading_zeros_in_integer_part);
       }
@@ -602,7 +604,7 @@ parse_number_string(UC const *p, UC const *pend,
         for (UC const *q = start_digits; q != end_of_integer_part; ++q) {
           has_non_octal_digit |= (*q >= UC('8'));
         }
-        if (!has_non_octal_digit) {
+        if fastfloat_unlikely (!has_non_octal_digit) {
           return report_parse_error<UC>(answer, start_digits,
                                         parse_error::legacy_octal_integer_part);
         }
@@ -621,22 +623,22 @@ parse_number_string(UC const *p, UC const *pend,
     loop_parse_if_digits(p, pend, answer.mantissa);
 
     answer.exponent = static_cast<am_pow_t>(before - p);
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    if fastfloat_unlikely (json_fmt && answer.exponent == 0) {
+      // At least 1 digit in fractional part
+      return report_parse_error<UC>(answer, p,
+                                    parse_error::no_digits_in_fractional_part);
+    }
+#endif
     if fastfloat_unlikely (store_spans) {
       answer.fraction =
           span<UC const>(before, static_cast<am_digits>(p - before));
     }
     digit_count -= static_cast<am_digits>(answer.exponent);
   }
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if (json_fmt) {
-    // At least 1 digit in fractional part
-    if (has_decimal_point && answer.exponent == 0) {
-      return report_parse_error<UC>(answer, p,
-                                    parse_error::no_digits_in_fractional_part);
-    }
-  } else
-#endif
-      if (digit_count == 0) { // We must have encountered at least one integer!
+
+  if fastfloat_unlikely (digit_count == 0) {
+    // We must have encountered at least one integer!
     return report_parse_error<UC>(answer, p,
                                   parse_error::no_digits_in_mantissa);
   }
@@ -671,8 +673,9 @@ parse_number_string(UC const *p, UC const *pend,
       }
     }
     // We have now parsed the sign of the exponent.
-    if (p == pend || !is_integer(*p)) {
-      if (!chars_format_t(options.format & chars_format::fixed)) {
+    if fastfloat_unlikely (p == pend || !is_integer(*p)) {
+      if fastfloat_unlikely (!chars_format_t(options.format &
+                                             chars_format::fixed)) {
         // The exponential part is invalid for scientific notation, so it must
         // be a trailing token for fixed notation. However, fixed notation is
         // disabled, so report a scientific notation error.
@@ -684,8 +687,8 @@ parse_number_string(UC const *p, UC const *pend,
     } else {
       // Now let's parse the explicit exponent.
       while (p != pend && is_integer(*p)) {
-        if (exp_number < am_bias_limit) {
-          // check for exponent overflow if we have too many digits.
+        if fastfloat_likely (exp_number < am_bias_limit) {
+          // check for exponent overflow if we have big explicit exponent.
           auto const digit = static_cast<uint8_t>(*p - UC('0'));
           exp_number = 10 * exp_number + digit;
         }
@@ -696,13 +699,13 @@ parse_number_string(UC const *p, UC const *pend,
       }
       answer.exponent += exp_number;
     }
-  } else {
+  } else if fastfloat_unlikely (chars_format_t(options.format &
+                                               chars_format::scientific) &&
+                                !chars_format_t(options.format &
+                                                chars_format::fixed)) {
     // If it scientific and not fixed, we have to bail out.
-    if (chars_format_t(options.format & chars_format::scientific) &&
-        !chars_format_t(options.format & chars_format::fixed)) {
-      return report_parse_error<UC>(answer, p,
-                                    parse_error::missing_exponential_part);
-    }
+    return report_parse_error<UC>(answer, p,
+                                  parse_error::missing_exponential_part);
   }
 
   // We sucessfully parsed all parts of the number, let's save progress.
@@ -715,7 +718,7 @@ parse_number_string(UC const *p, UC const *pend,
   // of a 64-bit integer. However, this is uncommon.
   //
   // We can deal with up to 19 digits.
-  if (digit_count > 19) {
+  if fastfloat_unlikely (digit_count > 19) {
     // It is possible that the integer had an overflow.
     // We have to handle the case where we have 0.0000somenumber.
     // We need to be mindful of the case where we only have zeroes...
@@ -730,7 +733,7 @@ parse_number_string(UC const *p, UC const *pend,
     } while (++start != pend);
 
     // We have to check if number has more than 19 significant digits.
-    if (digit_count > 19) {
+    if fastfloat_unlikely (digit_count > 19) {
       answer.too_many_digits = true;
       // The truncation recompute below reads the integer/fraction spans. When
       // store_spans is false we didn't materialize them, so just flag

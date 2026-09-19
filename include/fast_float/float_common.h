@@ -284,10 +284,13 @@ static_assert(FASTFLOAT_X86_SIMD == 20 || FASTFLOAT_X86_SIMD == 42 ||
 
 #ifdef FASTFLOAT_USE_UNLIKELY_ATTR
 #define fastfloat_unlikely(x) (x) [[unlikely]]
+#define fastfloat_likely(x) (x) [[likely]]
 #elif defined(__GNUC__) || defined(__clang__)
 #define fastfloat_unlikely(x) (__builtin_expect(!!(x), 0))
+#define fastfloat_likely /*????*/
 #else
 #define fastfloat_unlikely(x) (x)
+#define fastfloat_likely(x) (x)
 #endif
 
 // clang-format off
