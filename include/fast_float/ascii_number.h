@@ -528,7 +528,8 @@ parse_number_string(UC const *p, UC const *pend,
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
   answer.negative = *p == UC('-');
   if (answer.negative ||
-      (chars_format_t(options.format & chars_format::allow_leading_plus) &&
+      (!json_fmt &&
+       chars_format_t(options.format & chars_format::allow_leading_plus) &&
        *p == UC('+'))) {
     ++p;
 
