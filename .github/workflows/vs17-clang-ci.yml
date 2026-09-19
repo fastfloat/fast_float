@@ -2,6 +2,9 @@ name: VS17-CLANG-CI
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     name: vs17/${{matrix.arch}}/${{matrix.cfg}}

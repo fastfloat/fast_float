@@ -2,6 +2,9 @@ name: VS18-CI
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     name: vs18/${{matrix.arch}}/${{matrix.cfg}}
