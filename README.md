@@ -83,7 +83,7 @@ Introduced new optional macros to minimize overhead when certain parsing feature
 ---
 
 ✅ **Result:**
-Smaller, [faster by default](https://github.com/fastfloat/fast_float/pull/307#issuecomment-3775676197), and more configurable builds — now library can be used for **internal numeric parsers** or **embedded environments** — while maintaining full compatibility, functionality, and performance improvements in the default configuration.
+Smaller, [faster by default](https://github.com/fastfloat/fast_float/pull/307#issuecomment-4352796857), and more configurable builds — now library can be used for **internal numeric parsers** or **embedded environments** — while maintaining full compatibility, functionality, and performance improvements in the default configuration.
 
 
 🔥 **Motivation:**
