@@ -533,7 +533,7 @@ parse_number_string(UC const *p, UC const *pend,
        *p == UC('+'))) {
     ++p;
 
-    if FASTFLOAT_CONSTEXPR17 (json_fmt) {
+    if (json_fmt) {
       if (p == pend &&
           !is_integer(*p)) { // A sign must be followed by an integer
         return report_parse_error<UC>(answer, p,
@@ -575,25 +575,24 @@ parse_number_string(UC const *p, UC const *pend,
     answer.integer = span<UC const>(start_digits, digit_count);
   }
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if FASTFLOAT_CONSTEXPR17 (json_fmt) {
-#ifndef FASTFLOAT_ISNOT_CHECKED_BOUNDS
+  if (json_fmt) {
     // At least 1 digit in integer part
     if (digit_count == 0) {
       return report_parse_error<UC>(answer, p,
                                     parse_error::no_digits_in_integer_part);
     }
-#endif
   }
   if (json_fmt || chars_format_t(options.format & detail::javascript_fmt)) {
     // ECMAScript DecimalIntegerLiteral is "0" or a non-zero digit followed by
     // digits: no leading zeros. Unlike JSON, the integer part may be empty
     // (".5"); the no_digits_in_mantissa check below still rejects ".".
     if (start_digits[0] == UC('0') && digit_count > 1) {
-      if (!chars_format_t(options.format & detail::javascript_sloppy_fmt)) {
+      if (json_fmt ||
+          !chars_format_t(options.format & detail::javascript_sloppy_fmt)) {
         return report_parse_error<UC>(
             answer, start_digits, parse_error::leading_zeros_in_integer_part);
       }
-      if FASTFLOAT_CONSTEXPR17 (!json_fmt) {
+      if (!json_fmt) {
         // Sloppy mode (Annex B): a NonOctalDecimalIntegerLiteral has a leading
         // zero and at least one digit that is 8 or 9 ("08.5" is 8.5). With
         // octal digits only, it is a LegacyOctalIntegerLiteral ("0775"), which
@@ -629,7 +628,7 @@ parse_number_string(UC const *p, UC const *pend,
     digit_count -= static_cast<am_digits>(answer.exponent);
   }
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-  if FASTFLOAT_CONSTEXPR17 (json_fmt) {
+  if (json_fmt) {
     // At least 1 digit in fractional part
     if (has_decimal_point && answer.exponent == 0) {
       return report_parse_error<UC>(answer, p,
