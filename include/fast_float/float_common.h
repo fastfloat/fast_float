@@ -34,36 +34,70 @@
 
 namespace fast_float {
 
-enum class chars_format : uint64_t;
+// 64 bit integer is used because mantissa can be up to 53 bits for double.
+// An unsigned int avoids signed overflows (which are bad)
+typedef uint_fast64_t am_mant_t;
 
+// The number of digits in the mantissa.
+typedef uint_fast16_t am_digits;
+
+// The number of bits in the limb.
+typedef uint_fast8_t limb_t;
+
+// Size of bits in the mantissa and path and rounding shifts
+typedef int_fast8_t am_bits_t;
+
+// 16 bit signed integer is used for power to cover all exponents up to double.
+typedef int_fast16_t am_pow_t;
+// Power bias is signed for handling a denormal float or an invalid mantissa.
+// Bias so we can get the real exponent with an invalid adjusted_mantissa.
+constexpr static am_pow_t invalid_am_bias =
+    std::numeric_limits<int16_t>::min() + 1;
+constexpr static am_pow_t am_bias_limit =
+    (std::numeric_limits<int16_t>::max() / 16) - 1;
+
+// Type for enum chars_format.
+#ifdef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+typedef uint_fast8_t chars_format_t;
+#else
+typedef uint_fast16_t chars_format_t;
+#endif
+
+// Type for base, only allowed from 2 to 36.
+typedef uint_fast8_t base_t;
+
+enum class chars_format : chars_format_t;
+
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 namespace detail {
-constexpr chars_format basic_json_fmt = chars_format(1 << 5);
-constexpr chars_format basic_fortran_fmt = chars_format(1 << 6);
-constexpr chars_format basic_javascript_fmt = chars_format(1 << 9);
-constexpr chars_format basic_javascript_sloppy_fmt = chars_format(1 << 10);
+constexpr chars_format json_fmt = chars_format(1 << 6);
+constexpr chars_format fortran_fmt = chars_format(1 << 7);
+constexpr chars_format javascript_fmt = chars_format(1 << 8);
+constexpr chars_format javascript_sloppy_fmt = chars_format(1 << 9);
 } // namespace detail
+#endif
 
-enum class chars_format : uint64_t {
+enum class chars_format : chars_format_t {
   scientific = 1 << 0,
-  fixed = 1 << 2,
-  hex = 1 << 3,
-  no_infnan = 1 << 4,
-  // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
-  json = uint64_t(detail::basic_json_fmt) | fixed | scientific | no_infnan,
-  // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
-  json_or_infnan = uint64_t(detail::basic_json_fmt) | fixed | scientific,
-  fortran = uint64_t(detail::basic_fortran_fmt) | fixed | scientific,
+  fixed = 1 << 1,
   general = fixed | scientific,
-  allow_leading_plus = 1 << 7,
-  skip_white_space = 1 << 8,
+  hex = 1 << 2,
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  no_infnan = 1 << 3,
+  allow_leading_plus = 1 << 4,
+  skip_white_space = 1 << 5,
+  // RFC 8259: https://datatracker.ietf.org/doc/html/rfc8259#section-6
+  json = chars_format_t(detail::json_fmt) | general | no_infnan,
+  // Extension of RFC 8259 where, e.g., "inf" and "nan" are allowed.
+  json_or_infnan = chars_format_t(detail::json_fmt) | general,
+  fortran = chars_format_t(detail::fortran_fmt) | general,
   // ECMAScript DecimalLiteral (strict mode):
   // https://tc39.es/ecma262/#prod-DecimalLiteral
   // Like JSON, the integer part must not have leading zeros ("01" is
   // rejected), but unlike JSON the integer part may be empty (".5") and the
   // fractional part may be empty ("5.", "5.e3"). A leading minus sign is
   // accepted, and a leading plus sign with allow_leading_plus.
-  javascript =
-      uint64_t(detail::basic_javascript_fmt) | fixed | scientific | no_infnan,
+  javascript = chars_format_t(detail::javascript_fmt) | general | no_infnan,
   // ECMAScript DecimalLiteral in sloppy mode, which adds Annex B's
   // NonOctalDecimalIntegerLiteral: a leading zero is accepted when one of
   // the digits is 8 or 9 ("08.5" is 8.5). A leading zero followed only by
@@ -71,14 +105,15 @@ enum class chars_format : uint64_t {
   // decimal number, so it is rejected with legacy_octal_integer_part and the
   // caller may parse it in base 8.
   // https://tc39.es/ecma262/#sec-additional-syntax-numeric-literals
-  javascript_sloppy = uint64_t(detail::basic_javascript_fmt) |
-                      uint64_t(detail::basic_javascript_sloppy_fmt) | fixed |
-                      scientific | no_infnan,
+  javascript_sloppy = chars_format_t(detail::javascript_fmt) |
+                      chars_format_t(detail::javascript_sloppy_fmt) | general |
+                      no_infnan,
+#endif
 };
 
 template <typename UC> struct from_chars_result_t {
-  UC const *ptr;
-  std::errc ec;
+  FASTFLOAT_NO_UNIQUE_ADDRESS UC const *ptr;
+  FASTFLOAT_NO_UNIQUE_ADDRESS std::errc ec;
 
   // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2497r0.html
   constexpr explicit operator bool() const noexcept {
@@ -89,25 +124,22 @@ template <typename UC> struct from_chars_result_t {
 using from_chars_result = from_chars_result_t<char>;
 
 template <typename UC> struct parse_options_t {
-  constexpr explicit parse_options_t(chars_format fmt = chars_format::general,
-                                     UC dot = UC('.'), int b = 10)
-      : format(fmt), decimal_point(dot), base(b) {}
+  constexpr explicit parse_options_t(
+      chars_format const fmt = chars_format::general, UC const dot = UC('.'),
+      base_t const b = 10) noexcept
+      : format(fmt), base(b), decimal_point(dot) {}
 
   /** Which number formats are accepted */
   chars_format format;
-  /** The character used as decimal point */
-  UC decimal_point;
   /** The base used for integers */
-  int base;
+  base_t base;
+  /** The character used as decimal point for floats */
+  UC decimal_point;
 };
 
 using parse_options = parse_options_t<char>;
 
 } // namespace fast_float
-
-#if FASTFLOAT_HAS_BIT_CAST
-#include <bit>
-#endif
 
 #if (defined(__x86_64) || defined(__x86_64__) || defined(_M_X64) ||            \
      defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) ||          \
@@ -122,7 +154,7 @@ using parse_options = parse_options_t<char>;
        (defined(__riscv) && __riscv_xlen == 32))
 #define FASTFLOAT_32BIT 1
 #else
-  // Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
+// Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
 // We can never tell the register width, but the SIZE_MAX is a good
 // approximation. UINTPTR_MAX and INTPTR_MAX are optional, so avoid them for max
 // portability.
@@ -135,11 +167,6 @@ using parse_options = parse_options_t<char>;
 #else
 #error Unknown platform (not 32-bit, not 64-bit?)
 #endif
-#endif
-
-#if ((defined(_WIN32) || defined(_WIN64)) && !defined(__clang__)) ||           \
-    (defined(_M_ARM64) && !defined(__MINGW32__))
-#include <intrin.h>
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -182,39 +209,59 @@ using parse_options = parse_options_t<char>;
 #endif
 #endif
 
-#if defined(__SSE2__) || (defined(FASTFLOAT_VISUAL_STUDIO) &&                  \
-                          (defined(_M_AMD64) || defined(_M_X64) ||             \
-                           (defined(_M_IX86_FP) && _M_IX86_FP == 2)))
-#define FASTFLOAT_SSE2 1
+#ifdef FASTFLOAT_USE_SIMD
+// user defined
+#elif defined(FASTFLOAT_X86_SIMD)
+// user defined level
+static_assert(FASTFLOAT_X86_SIMD == 20 || FASTFLOAT_X86_SIMD == 42 ||
+                  FASTFLOAT_X86_SIMD == 52 || FASTFLOAT_ARM_NEON,
+              "FASTFLOAT_X86_SIMD should be 20(SSE2), 42(SSE4.2) and 52(AVX2)");
+#elif defined(__AVX2__)
+#define FASTFLOAT_X86_SIMD 52
+#elif defined(__AVX__)
+// On MSVC there's no way to check for SSE4.2 specifically so check AVX.
+#define FASTFLOAT_X86_SIMD 50
+#elif defined(__SSE4_2__)
+#define FASTFLOAT_X86_SIMD 42
+#elif defined(__SSE4_1__)
+#define FASTFLOAT_X86_SIMD 41
+#elif defined(__SSSE3__)
+#define FASTFLOAT_X86_SIMD 31
+#elif defined(__SSE3__)
+#define FASTFLOAT_X86_SIMD 30
+#elif defined(__SSE2__) || (defined(FASTFLOAT_VISUAL_STUDIO) &&                \
+                            (defined(_M_AMD64) || defined(_M_X64) ||           \
+                             (defined(_M_IX86_FP) && _M_IX86_FP == 2)))
+#define FASTFLOAT_X86_SIMD 20
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define FASTFLOAT_ARM_NEON 1
 #endif
 
-#if defined(__aarch64__) || defined(_M_ARM64)
-#define FASTFLOAT_NEON 1
-#endif
-
-#if defined(FASTFLOAT_SSE2) || defined(FASTFLOAT_NEON)
-#define FASTFLOAT_HAS_SIMD 1
-#endif
+#if FASTFLOAT_X86_SIMD || FASTFLOAT_ARM_NEON
+#define FASTFLOAT_USE_SIMD 1
 
 #if defined(__GNUC__)
 // disable -Wcast-align=strict (GCC only)
 #define FASTFLOAT_SIMD_DISABLE_WARNINGS                                        \
   _Pragma("GCC diagnostic push")                                               \
       _Pragma("GCC diagnostic ignored \"-Wcast-align\"")
-#else
-#define FASTFLOAT_SIMD_DISABLE_WARNINGS
-#endif
 
-#if defined(__GNUC__)
 #define FASTFLOAT_SIMD_RESTORE_WARNINGS _Pragma("GCC diagnostic pop")
 #else
+#define FASTFLOAT_SIMD_DISABLE_WARNINGS
 #define FASTFLOAT_SIMD_RESTORE_WARNINGS
+#endif
 #endif
 
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #define fastfloat_really_inline __forceinline
-#else
+#define fastfloat_noinline __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
 #define fastfloat_really_inline inline __attribute__((always_inline))
+#define fastfloat_noinline __attribute__((noinline))
+#else
+#define fastfloat_really_inline inline
+#define fastfloat_noinline
 #endif
 
 // Branch-probability hint marking the rare slow-path branches as cold, so the
@@ -237,12 +284,16 @@ using parse_options = parse_options_t<char>;
 
 #ifdef FASTFLOAT_USE_UNLIKELY_ATTR
 #define fastfloat_unlikely(x) (x) [[unlikely]]
+#define fastfloat_likely(x) (x) [[likely]]
 #elif defined(__GNUC__) || defined(__clang__)
 #define fastfloat_unlikely(x) (__builtin_expect(!!(x), 0))
+#define fastfloat_likely /*????*/
 #else
 #define fastfloat_unlikely(x) (x)
+#define fastfloat_likely(x) (x)
 #endif
 
+// clang-format off
 #ifndef FASTFLOAT_ASSERT
 #define FASTFLOAT_ASSERT(x)                                                    \
   { static_cast<void>(x); }
@@ -252,6 +303,7 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_DEBUG_ASSERT(x)                                              \
   { static_cast<void>(x); }
 #endif
+// clang-format on
 
 // rust style `try!()` macro, or `?` operator
 #define FASTFLOAT_TRY(x)                                                       \
@@ -263,15 +315,32 @@ using parse_options = parse_options_t<char>;
 #define FASTFLOAT_ENABLE_IF(...)                                               \
   typename std::enable_if<(__VA_ARGS__), int>::type
 
+#if FASTFLOAT_HAS_BIT_CAST
+#include <bit>
+#endif
+
 namespace fast_float {
 
-fastfloat_really_inline constexpr bool cpp20_and_in_constexpr() {
-#if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
-  return std::is_constant_evaluated();
+#if FASTFLOAT_HAS_BIT_CAST
+using std::bit_cast;
 #else
-  return false;
-#endif
+template <typename To, typename From>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 To bit_cast(const From &from) {
+  // Implementation of std::bit_cast for pre-C++20.
+  auto to = To();
+  // The cast suppresses a bogus -Wclass-memaccess on GCC.
+  std::memcpy(static_cast<void *>(&to), &from, sizeof(to));
+  return to;
 }
+#endif
+
+#if FASTFLOAT_HAS_IS_CONSTANT_EVALUATED
+using std::is_constant_evaluated;
+#else
+fastfloat_really_inline constexpr bool is_constant_evaluated() noexcept {
+  return false;
+}
+#endif
 
 template <typename T>
 struct is_supported_float_type
@@ -314,126 +383,14 @@ struct is_supported_char_type
                              > {
 };
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <typename UC>
-inline FASTFLOAT_CONSTEXPR14 bool
+inline FASTFLOAT_CONSTEXPR20 bool
 fastfloat_strncasecmp3(UC const *actual_mixedcase,
                        UC const *expected_lowercase) {
-  uint64_t mask{0};
-  FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
-  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
-    mask = 0x0020002000200020;
-  }
-  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
-    mask = 0x0000002000000020;
-  }
-  else {
-    return false;
-  }
-
-  uint64_t val1{0}, val2{0};
-  if (cpp20_and_in_constexpr()) {
-    for (size_t i = 0; i < 3; i++) {
-      if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
-        return false;
-      }
-    }
-    return true;
-  } else {
-    FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1 || sizeof(UC) == 2) {
-      ::memcpy(&val1, actual_mixedcase, 3 * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase, 3 * sizeof(UC));
-      val1 |= mask;
-      val2 |= mask;
-      return val1 == val2;
-    }
-    else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
-      ::memcpy(&val1, actual_mixedcase, 2 * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase, 2 * sizeof(UC));
-      val1 |= mask;
-      if (val1 != val2) {
-        return false;
-      }
-      return (actual_mixedcase[2] | 32) == (expected_lowercase[2]);
-    }
-    else {
-      return false;
-    }
-  }
-}
-
-template <typename UC>
-inline FASTFLOAT_CONSTEXPR14 bool
-fastfloat_strncasecmp5(UC const *actual_mixedcase,
-                       UC const *expected_lowercase) {
-  uint64_t mask{0};
-  uint64_t val1{0}, val2{0};
-  if (cpp20_and_in_constexpr()) {
-    for (size_t i = 0; i < 5; i++) {
-      if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
-        return false;
-      }
-    }
-    return true;
-  } else {
-    FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) {
-      mask = 0x2020202020202020;
-      ::memcpy(&val1, actual_mixedcase, 5 * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase, 5 * sizeof(UC));
-      val1 |= mask;
-      val2 |= mask;
-      return val1 == val2;
-    }
-    else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
-      mask = 0x0020002000200020;
-      ::memcpy(&val1, actual_mixedcase, 4 * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase, 4 * sizeof(UC));
-      val1 |= mask;
-      if (val1 != val2) {
-        return false;
-      }
-      return (actual_mixedcase[4] | 32) == (expected_lowercase[4]);
-    }
-    else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
-      mask = 0x0000002000000020;
-      ::memcpy(&val1, actual_mixedcase, 2 * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase, 2 * sizeof(UC));
-      val1 |= mask;
-      if (val1 != val2) {
-        return false;
-      }
-      ::memcpy(&val1, actual_mixedcase + 2, 2 * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase + 2, 2 * sizeof(UC));
-      val1 |= mask;
-      if (val1 != val2) {
-        return false;
-      }
-      return (actual_mixedcase[4] | 32) == (expected_lowercase[4]);
-    }
-    else {
-      return false;
-    }
-  }
-}
-
-// Compares two ASCII strings in a case insensitive manner.
-template <typename UC>
-inline FASTFLOAT_CONSTEXPR14 bool
-fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
-                      size_t length) {
-  uint64_t mask{0};
-  FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 1) { mask = 0x2020202020202020; }
-  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 2) {
-    mask = 0x0020002000200020;
-  }
-  else FASTFLOAT_IF_CONSTEXPR17(sizeof(UC) == 4) {
-    mask = 0x0000002000000020;
-  }
-  else {
-    return false;
-  }
-
-  if (cpp20_and_in_constexpr()) {
-    for (size_t i = 0; i < length; i++) {
+  if (is_constant_evaluated()) {
+    for (uint_fast8_t i = 0; i != 3; ++i) {
       if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
         return false;
       }
@@ -441,21 +398,122 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
     return true;
   } else {
     uint64_t val1{0}, val2{0};
-    size_t sz{8 / (sizeof(UC))};
-    for (size_t i = 0; i < length; i += sz) {
-      val1 = val2 = 0;
+    uint64_t mask{0};
+    if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 1) {
+      mask = 0x2020202020202020;
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 2) {
+      mask = 0x0020002000200020;
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 4) {
+      mask = 0x0000002000000020;
+    }
+    if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 1 || sizeof(UC) == 2) {
+      std::memcpy(&val1, actual_mixedcase, 3 * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase, 3 * sizeof(UC));
+      val1 |= mask;
+      val2 |= mask;
+      return val1 == val2;
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 4) {
+      std::memcpy(&val1, actual_mixedcase, 2 * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase, 2 * sizeof(UC));
+      val1 |= mask;
+      if (val1 != val2) {
+        return false;
+      }
+      return (actual_mixedcase[2] | 32) == (expected_lowercase[2]);
+    } else {
+      return false;
+    }
+  }
+}
+
+template <typename UC>
+inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_strncasecmp5(UC const *actual_mixedcase,
+                       UC const *expected_lowercase) noexcept {
+  if (is_constant_evaluated()) {
+    for (uint_fast8_t i = 0; i != 5; ++i) {
+      if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    uint64_t val1{0}, val2{0};
+    if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 1) {
+      constexpr uint64_t mask = 0x2020202020202020;
+      std::memcpy(&val1, actual_mixedcase, 5 * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase, 5 * sizeof(UC));
+      val1 |= mask;
+      val2 |= mask;
+      return val1 == val2;
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 2) {
+      constexpr uint64_t mask = 0x0020002000200020;
+      std::memcpy(&val1, actual_mixedcase, 4 * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase, 4 * sizeof(UC));
+      val1 |= mask;
+      if (val1 != val2) {
+        return false;
+      }
+      return (actual_mixedcase[4] | 32) == (expected_lowercase[4]);
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 4) {
+      constexpr uint64_t mask = 0x0000002000000020;
+      std::memcpy(&val1, actual_mixedcase, 2 * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase, 2 * sizeof(UC));
+      val1 |= mask;
+      if (val1 != val2) {
+        return false;
+      }
+      std::memcpy(&val1, actual_mixedcase + 2, 2 * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase + 2, 2 * sizeof(UC));
+      val1 |= mask;
+      if (val1 != val2) {
+        return false;
+      }
+      return (actual_mixedcase[4] | 32) == (expected_lowercase[4]);
+    } else {
+      return false;
+    }
+  }
+}
+
+// Compares two ASCII strings in a case insensitive manner.
+template <typename UC>
+inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
+                      uint_fast8_t const length) noexcept {
+  if (is_constant_evaluated()) {
+    for (uint_fast8_t i = 0; i != length; ++i) {
+      if ((actual_mixedcase[i] | 32) != expected_lowercase[i]) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    uint64_t val1{0}, val2{0};
+    uint64_t mask{0};
+    if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 1) {
+      mask = 0x2020202020202020;
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 2) {
+      mask = 0x0020002000200020;
+    } else if FASTFLOAT_CONSTEXPR17 (sizeof(UC) == 4) {
+      mask = 0x0000002000000020;
+    }
+    uint_fast8_t sz = 8 / (sizeof(UC));
+    for (uint_fast8_t i = 0; i < length; i += sz) {
       sz = sz < (length - i) ? sz : length - i;
-      ::memcpy(&val1, actual_mixedcase + i, sz * sizeof(UC));
-      ::memcpy(&val2, expected_lowercase + i, sz * sizeof(UC));
+      std::memcpy(&val1, actual_mixedcase + i, sz * sizeof(UC));
+      std::memcpy(&val2, expected_lowercase + i, sz * sizeof(UC));
       val1 |= mask;
       val2 |= mask;
       if (val1 != val2) {
         return false;
       }
     }
-    return true;
   }
+  return true;
 }
+
+#endif
 
 #ifndef FLT_EVAL_METHOD
 #error "FLT_EVAL_METHOD should be defined, please include cfloat."
@@ -463,16 +521,17 @@ fastfloat_strncasecmp(UC const *actual_mixedcase, UC const *expected_lowercase,
 
 // a pointer and a length to a contiguous block of memory
 template <typename T> struct span {
-  T const *ptr;
-  size_t length;
+  FASTFLOAT_NO_UNIQUE_ADDRESS T const *ptr;
+  FASTFLOAT_NO_UNIQUE_ADDRESS am_digits length;
 
-  constexpr span(T const *_ptr, size_t _length) : ptr(_ptr), length(_length) {}
+  constexpr span(T const *_ptr, am_digits _length) noexcept
+      : ptr(_ptr), length(_length) {}
 
-  constexpr span() : ptr(nullptr), length(0) {}
+  constexpr span() noexcept = default;
 
-  constexpr size_t len() const noexcept { return length; }
+  constexpr am_digits len() const noexcept { return length; }
 
-  FASTFLOAT_CONSTEXPR14 const T &operator[](size_t index) const noexcept {
+  FASTFLOAT_CONSTEXPR14 const T &operator[](am_digits index) const noexcept {
     FASTFLOAT_DEBUG_ASSERT(index < length);
     return ptr[index];
   }
@@ -482,14 +541,18 @@ struct value128 {
   uint64_t low;
   uint64_t high;
 
-  constexpr value128(uint64_t _low, uint64_t _high) : low(_low), high(_high) {}
+  constexpr value128(uint64_t _low, uint64_t _high) noexcept
+      : low(_low), high(_high) {}
 
-  constexpr value128() : low(0), high(0) {}
+  constexpr value128() noexcept : low(0), high(0) {}
 };
 
-/* Helper C++14 constexpr generic implementation of leading_zeroes */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int
-leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
+/* Helper C++14 constexpr generic implementation of leading_zeroes for 64-bit */
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
+leading_zeroes_generic(uint64_t input_num) noexcept {
+  assert(input_num > 0);
+  FASTFLOAT_ASSUME(input_num > 0);
+  uint_fast32_t last_bit = 0;
   if (input_num & uint64_t(0xffffffff00000000)) {
     input_num >>= 32;
     last_bit |= 32;
@@ -513,38 +576,50 @@ leading_zeroes_generic(uint64_t input_num, int last_bit = 0) {
   if (input_num & uint64_t(0x2)) { /* input_num >>=  1; */
     last_bit |= 1;
   }
-  return 63 - last_bit;
+  return 63 - static_cast<limb_t>(last_bit);
 }
 
 /* result might be undefined when input_num is zero */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
-leading_zeroes(uint64_t input_num) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
+leading_zeroes(uint64_t input_num) noexcept {
   assert(input_num > 0);
-  if (cpp20_and_in_constexpr()) {
+  FASTFLOAT_ASSUME(input_num > 0);
+  if (is_constant_evaluated()) {
     return leading_zeroes_generic(input_num);
   }
 #ifdef FASTFLOAT_VISUAL_STUDIO
-#if defined(_M_X64) || defined(_M_ARM64)
-  unsigned long leading_zero = 0;
+#if FASTFLOAT_X86_SIMD >= 52
+  // use lzcnt on MSVC only on AVX2 capable CPU's that all have this BMI
+  // instruction
+  return __lzcnt64(input_num);
+#elif defined(_M_X64) || defined(_M_ARM64)
+  unsigned long leading_zero;
   // Search the mask data from most significant bit (MSB)
   // to least significant bit (LSB) for a set bit (1).
   _BitScanReverse64(&leading_zero, input_num);
-  return static_cast<int>(63 - leading_zero);
+  return static_cast<limb_t>(63 - leading_zero);
 #else
-  return leading_zeroes_generic(input_num);
+  return static_cast<limb_t>(leading_zeroes_generic(input_num));
 #endif
+#elif FASTFLOAT_HAS_BUILTIN(__builtin_clzll)
+  return static_cast<limb_t>(__builtin_clzll(input_num));
 #else
-  return __builtin_clzll(input_num);
+  // Unlike MSVC, clang and gcc recognize this implementation and replace
+  // it with the assembly instructions which are appropriate for the
+  // target (lzcnt or bsr + zero handling).
+  int n = 64;
+  for (; input_num > 0; input_num >>= 1)
+    --n;
+  return static_cast<limb_t>(n);
 #endif
 }
 
 /* Helper C++14 constexpr generic implementation of countr_zero for 32-bit */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 int
-countr_zero_generic_32(uint32_t input_num) {
-  if (input_num == 0) {
-    return 32;
-  }
-  int last_bit = 0;
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 limb_t
+countr_zero_generic_32(uint32_t input_num) noexcept {
+  assert(input_num > 0);
+  FASTFLOAT_ASSUME(input_num > 0);
+  uint_fast16_t last_bit = 0;
   if (!(input_num & 0x0000FFFF)) {
     input_num >>= 16;
     last_bit |= 16;
@@ -564,127 +639,124 @@ countr_zero_generic_32(uint32_t input_num) {
   if (!(input_num & 0x1)) {
     last_bit |= 1;
   }
-  return last_bit;
+  return static_cast<limb_t>(last_bit);
 }
 
 /* count trailing zeroes for 32-bit integers */
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
-countr_zero_32(uint32_t input_num) {
-  if (cpp20_and_in_constexpr()) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb_t
+countr_zero_32(uint32_t input_num) noexcept {
+  if (is_constant_evaluated()) {
     return countr_zero_generic_32(input_num);
   }
 #ifdef FASTFLOAT_VISUAL_STUDIO
   unsigned long trailing_zero = 0;
   if (_BitScanForward(&trailing_zero, input_num)) {
-    return static_cast<int>(trailing_zero);
+    return static_cast<limb_t>(trailing_zero);
   }
   return 32;
 #else
-  return input_num == 0 ? 32 : __builtin_ctz(input_num);
+  return input_num == 0 ? 32 : static_cast<limb_t>(__builtin_ctz(input_num));
 #endif
 }
 
-// slow emulation routine for 32-bit
-fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) {
+fastfloat_really_inline constexpr uint64_t emulu_generic(uint32_t x,
+                                                         uint32_t y) noexcept {
   return x * static_cast<uint64_t>(y);
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
-umul128_generic(uint64_t ab, uint64_t cd, uint64_t *hi) {
-  uint64_t ad =
-      emulu(static_cast<uint32_t>(ab >> 32), static_cast<uint32_t>(cd));
-  uint64_t bd = emulu(static_cast<uint32_t>(ab), static_cast<uint32_t>(cd));
-  uint64_t adbc =
-      ad + emulu(static_cast<uint32_t>(ab), static_cast<uint32_t>(cd >> 32));
-  uint64_t adbc_carry = static_cast<uint64_t>(adbc < ad);
-  uint64_t lo = bd + (adbc << 32);
-  *hi =
-      emulu(static_cast<uint32_t>(ab >> 32), static_cast<uint32_t>(cd >> 32)) +
-      (adbc >> 32) + (adbc_carry << 32) + static_cast<uint64_t>(lo < bd);
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+umul128_generic(uint64_t ab, uint64_t cd, uint64_t &hi) noexcept {
+  auto ab_shifted = static_cast<uint32_t>(ab >> 32);
+  auto cd_shifted = static_cast<uint32_t>(cd >> 32);
+
+  auto ad = emulu_generic(ab_shifted, static_cast<uint32_t>(cd));
+  auto bd = emulu_generic(static_cast<uint32_t>(ab), static_cast<uint32_t>(cd));
+  auto adbc = ad + emulu_generic(static_cast<uint32_t>(ab), cd_shifted);
+  auto adbc_carry = static_cast<uint64_t>(adbc < ad) << 32;
+  auto lo = bd + (adbc << 32);
+
+  hi = emulu_generic(ab_shifted, cd_shifted) +
+       static_cast<uint32_t>(adbc >> 32) + adbc_carry +
+       static_cast<uint64_t>(lo < bd);
+
   return lo;
 }
 
-#ifdef FASTFLOAT_32BIT
-
-// slow emulation routine for 32-bit
-#if !defined(__MINGW64__)
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t _umul128(uint64_t ab,
-                                                                uint64_t cd,
-                                                                uint64_t *hi) {
-  return umul128_generic(ab, cd, hi);
-}
-#endif // !__MINGW64__
-
-#endif // FASTFLOAT_32BIT
-
-// compute 64-bit a*b
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
-full_multiplication(uint64_t a, uint64_t b) {
-  if (cpp20_and_in_constexpr()) {
-    value128 answer;
-    answer.low = umul128_generic(a, b, &answer.high);
-    return answer;
+// Compute hi and low parts of 128-bit.
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+umul128(uint64_t ab, uint64_t cd, uint64_t &hi) noexcept {
+  if (is_constant_evaluated()) {
+    return umul128_generic(ab, cd, hi);
   }
-  value128 answer;
 #if defined(_M_ARM64) && !defined(__MINGW32__)
   // ARM64 has native support for 64-bit multiplications, no need to emulate
   // But MinGW on ARM64 doesn't have native support for 64-bit multiplications
-  answer.high = __umulh(a, b);
-  answer.low = a * b;
-#elif defined(FASTFLOAT_32BIT) || (defined(_WIN64) && !defined(__clang__) &&   \
-                                   !defined(_M_ARM64) && !defined(__GNUC__))
-  answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
-#elif defined(FASTFLOAT_64BIT) && defined(__SIZEOF_INT128__)
-  __uint128_t r = static_cast<__uint128_t>(a) * b;
-  answer.low = uint64_t(r);
-  answer.high = uint64_t(r >> 64);
+  hi = __umulh(ab, cd);
+  return ab * cd;
+#elif (defined(_WIN64) && !defined(__clang__) && !defined(_M_ARM64) &&         \
+       !defined(__GNUC__))
+  return _umul128(ab, cd, &hi); // _umul128 not available on ARM64
 #else
-  answer.low = umul128_generic(a, b, &answer.high);
+  return umul128_generic(ab, cd, hi);
+#endif
+}
+
+// Compute 128-bit result.
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
+full_multiplication(uint64_t a, uint64_t b) noexcept {
+  value128 answer;
+#if defined(FASTFLOAT_64BIT) && defined(__SIZEOF_INT128__)
+  __uint128_t r = (static_cast<__uint128_t>(a)) * b;
+  answer.low = static_cast<uint64_t>(r);
+  answer.high = static_cast<uint64_t>(r >> 64);
+#else
+  answer.low = umul128(a, b, answer.high);
 #endif
   return answer;
 }
 
 struct adjusted_mantissa {
-  uint64_t mantissa{0};
-  int32_t power2{0}; // a negative value indicates an invalid result
-  adjusted_mantissa() = default;
+  FASTFLOAT_NO_UNIQUE_ADDRESS am_mant_t mantissa;
+  FASTFLOAT_NO_UNIQUE_ADDRESS am_pow_t power2;
 
-  constexpr bool operator==(adjusted_mantissa const &o) const {
+  constexpr adjusted_mantissa() noexcept : mantissa(0), power2(0) {}
+
+  constexpr bool operator==(adjusted_mantissa const &o) const noexcept {
     return mantissa == o.mantissa && power2 == o.power2;
   }
 
-  constexpr bool operator!=(adjusted_mantissa const &o) const {
+  constexpr bool operator!=(adjusted_mantissa const &o) const noexcept {
     return mantissa != o.mantissa || power2 != o.power2;
   }
 };
 
-// Bias so we can get the real exponent with an invalid adjusted_mantissa.
-constexpr static int32_t invalid_am_bias = -0x8000;
+// used by parse_digits_until_19
+constexpr am_mant_t minimal_nineteen_digit_integer{1000000000000000000ULL};
 
 // used for binary_format_lookup_tables<T>::max_mantissa
-constexpr uint64_t constant_55555 = 5 * 5 * 5 * 5 * 5;
+constexpr am_mant_t constant_55555 = 5 * 5 * 5 * 5 * 5;
 
 template <typename T, typename U = void> struct binary_format_lookup_tables;
 
 template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   using equiv_uint = equiv_uint_t<T>;
 
-  static constexpr int mantissa_explicit_bits();
-  static constexpr int minimum_exponent();
-  static constexpr int infinite_power();
-  static constexpr int sign_index();
-  static constexpr int
+  static constexpr am_bits_t mantissa_explicit_bits();
+  static constexpr am_pow_t minimum_exponent();
+  static constexpr am_pow_t infinite_power();
+  static constexpr am_bits_t sign_index();
+  static constexpr am_bits_t
   min_exponent_fast_path(); // used when fegetround() == FE_TONEAREST
-  static constexpr int max_exponent_fast_path();
-  static constexpr int max_exponent_round_to_even();
-  static constexpr int min_exponent_round_to_even();
-  static constexpr uint64_t max_mantissa_fast_path(int64_t power);
-  static constexpr uint64_t
+  static constexpr am_bits_t max_exponent_fast_path();
+  static constexpr am_pow_t max_exponent_round_to_even();
+  static constexpr am_pow_t min_exponent_round_to_even();
+  static constexpr am_mant_t max_mantissa_fast_path(am_pow_t const power);
+  static constexpr am_mant_t
   max_mantissa_fast_path(); // used when fegetround() == FE_TONEAREST
-  static constexpr int largest_power_of_ten();
-  static constexpr int smallest_power_of_ten();
-  static constexpr T exact_power_of_ten(int64_t power);
-  static constexpr size_t max_digits();
+  static constexpr am_pow_t largest_power_of_ten();
+  static constexpr am_pow_t smallest_power_of_ten();
+  static constexpr T exact_power_of_ten(am_pow_t const power);
+  static constexpr am_digits max_digits();
   static constexpr equiv_uint exponent_mask();
   static constexpr equiv_uint mantissa_mask();
   static constexpr equiv_uint hidden_bit_mask();
@@ -748,7 +820,7 @@ template <typename U> struct binary_format_lookup_tables<float, U> {
 
   // Largest integer value v so that (5**index * v) <= 1<<24.
   // 0x1000000 == 1<<24
-  static constexpr uint64_t max_mantissa[] = {
+  static constexpr uint32_t max_mantissa[] = {
       0x1000000,
       0x1000000 / 5,
       0x1000000 / (5 * 5),
@@ -769,12 +841,12 @@ template <typename U>
 constexpr float binary_format_lookup_tables<float, U>::powers_of_ten[];
 
 template <typename U>
-constexpr uint64_t binary_format_lookup_tables<float, U>::max_mantissa[];
+constexpr uint32_t binary_format_lookup_tables<float, U>::max_mantissa[];
 
 #endif
 
 template <>
-inline constexpr int binary_format<double>::min_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<double>::min_exponent_fast_path() {
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return 0;
 #else
@@ -783,7 +855,7 @@ inline constexpr int binary_format<double>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr int binary_format<float>::min_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<float>::min_exponent_fast_path() {
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return 0;
 #else
@@ -792,77 +864,82 @@ inline constexpr int binary_format<float>::min_exponent_fast_path() {
 }
 
 template <>
-inline constexpr int binary_format<double>::mantissa_explicit_bits() {
+inline constexpr am_bits_t binary_format<double>::mantissa_explicit_bits() {
   return 52;
 }
 
 template <>
-inline constexpr int binary_format<float>::mantissa_explicit_bits() {
+inline constexpr am_bits_t binary_format<float>::mantissa_explicit_bits() {
   return 23;
 }
 
 template <>
-inline constexpr int binary_format<double>::max_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<double>::max_exponent_round_to_even() {
   return 23;
 }
 
 template <>
-inline constexpr int binary_format<float>::max_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<float>::max_exponent_round_to_even() {
   return 10;
 }
 
 template <>
-inline constexpr int binary_format<double>::min_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<double>::min_exponent_round_to_even() {
   return -4;
 }
 
 template <>
-inline constexpr int binary_format<float>::min_exponent_round_to_even() {
+inline constexpr am_pow_t binary_format<float>::min_exponent_round_to_even() {
   return -17;
 }
 
-template <> inline constexpr int binary_format<double>::minimum_exponent() {
+template <>
+inline constexpr am_pow_t binary_format<double>::minimum_exponent() {
   return -1023;
 }
 
-template <> inline constexpr int binary_format<float>::minimum_exponent() {
+template <> inline constexpr am_pow_t binary_format<float>::minimum_exponent() {
   return -127;
 }
 
-template <> inline constexpr int binary_format<double>::infinite_power() {
+template <> inline constexpr am_pow_t binary_format<double>::infinite_power() {
   return 0x7FF;
 }
 
-template <> inline constexpr int binary_format<float>::infinite_power() {
+template <> inline constexpr am_pow_t binary_format<float>::infinite_power() {
   return 0xFF;
 }
 
-template <> inline constexpr int binary_format<double>::sign_index() {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
+template <> inline constexpr am_bits_t binary_format<double>::sign_index() {
   return 63;
 }
 
-template <> inline constexpr int binary_format<float>::sign_index() {
+template <> inline constexpr am_bits_t binary_format<float>::sign_index() {
   return 31;
 }
 
+#endif
+
 template <>
-inline constexpr int binary_format<double>::max_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<double>::max_exponent_fast_path() {
   return 22;
 }
 
 template <>
-inline constexpr int binary_format<float>::max_exponent_fast_path() {
+inline constexpr am_bits_t binary_format<float>::max_exponent_fast_path() {
   return 10;
 }
 
 template <>
-inline constexpr uint64_t binary_format<double>::max_mantissa_fast_path() {
-  return uint64_t(2) << mantissa_explicit_bits();
+inline constexpr am_mant_t binary_format<double>::max_mantissa_fast_path() {
+  return am_mant_t(2) << mantissa_explicit_bits();
 }
 
 template <>
-inline constexpr uint64_t binary_format<float>::max_mantissa_fast_path() {
-  return uint64_t(2) << mantissa_explicit_bits();
+inline constexpr am_mant_t binary_format<float>::max_mantissa_fast_path() {
+  return am_mant_t(2) << mantissa_explicit_bits();
 }
 
 // credit: Jakub Jelínek
@@ -873,7 +950,7 @@ template <typename U> struct binary_format_lookup_tables<std::float16_t, U> {
 
   // Largest integer value v so that (5**index * v) <= 1<<11.
   // 0x800 == 1<<11
-  static constexpr uint64_t max_mantissa[] = {0x800,
+  static constexpr uint16_t max_mantissa[] = {0x800,
                                               0x800 / 5,
                                               0x800 / (5 * 5),
                                               0x800 / (5 * 5 * 5),
@@ -888,16 +965,20 @@ constexpr std::float16_t
     binary_format_lookup_tables<std::float16_t, U>::powers_of_ten[];
 
 template <typename U>
-constexpr uint64_t
+constexpr uint16_t
     binary_format_lookup_tables<std::float16_t, U>::max_mantissa[];
 
 #endif
 
 template <>
 inline constexpr std::float16_t
-binary_format<std::float16_t>::exact_power_of_ten(int64_t power) {
+binary_format<std::float16_t>::exact_power_of_ten(am_pow_t power) {
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(powers_of_ten[0]), powers_of_ten[power];
+  return (void)powers_of_ten[0], powers_of_ten[power];
+#else
+  return powers_of_ten[power];
+#endif
 }
 
 template <>
@@ -919,74 +1000,87 @@ binary_format<std::float16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::max_exponent_fast_path() {
+inline constexpr am_bits_t
+binary_format<std::float16_t>::max_exponent_fast_path() {
   return 4;
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::mantissa_explicit_bits() {
+inline constexpr am_bits_t
+binary_format<std::float16_t>::mantissa_explicit_bits() {
   return 10;
 }
 
 template <>
-inline constexpr uint64_t
+inline constexpr am_mant_t
 binary_format<std::float16_t>::max_mantissa_fast_path() {
-  return uint64_t(2) << mantissa_explicit_bits();
+  return am_mant_t(2) << mantissa_explicit_bits();
 }
 
 template <>
-inline constexpr uint64_t
-binary_format<std::float16_t>::max_mantissa_fast_path(int64_t power) {
+inline constexpr am_mant_t
+binary_format<std::float16_t>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 4
-  //
+  FASTFLOAT_ASSUME(power >= 0 && power <= 4);
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(max_mantissa[0]), max_mantissa[power];
+  return (void)max_mantissa[0], max_mantissa[power];
+#else
+  return max_mantissa[power];
+#endif
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::min_exponent_fast_path() {
+inline constexpr am_bits_t
+binary_format<std::float16_t>::min_exponent_fast_path() {
   return 0;
 }
 
 template <>
-inline constexpr int
+inline constexpr am_pow_t
 binary_format<std::float16_t>::max_exponent_round_to_even() {
   return 5;
 }
 
 template <>
-inline constexpr int
+inline constexpr am_pow_t
 binary_format<std::float16_t>::min_exponent_round_to_even() {
   return -22;
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::minimum_exponent() {
+inline constexpr am_pow_t binary_format<std::float16_t>::minimum_exponent() {
   return -15;
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::infinite_power() {
+inline constexpr am_pow_t binary_format<std::float16_t>::infinite_power() {
   return 0x1F;
 }
 
-template <> inline constexpr int binary_format<std::float16_t>::sign_index() {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
+template <>
+inline constexpr am_bits_t binary_format<std::float16_t>::sign_index() {
   return 15;
 }
 
+#endif
+
 template <>
-inline constexpr int binary_format<std::float16_t>::largest_power_of_ten() {
+inline constexpr am_pow_t
+binary_format<std::float16_t>::largest_power_of_ten() {
   return 4;
 }
 
 template <>
-inline constexpr int binary_format<std::float16_t>::smallest_power_of_ten() {
+inline constexpr am_pow_t
+binary_format<std::float16_t>::smallest_power_of_ten() {
   return -27;
 }
 
 template <>
-inline constexpr size_t binary_format<std::float16_t>::max_digits() {
+inline constexpr am_digits binary_format<std::float16_t>::max_digits() {
   return 22;
 }
 #endif // __STDCPP_FLOAT16_T__
@@ -999,7 +1093,7 @@ template <typename U> struct binary_format_lookup_tables<std::bfloat16_t, U> {
 
   // Largest integer value v so that (5**index * v) <= 1<<8.
   // 0x100 == 1<<8
-  static constexpr uint64_t max_mantissa[] = {0x100, 0x100 / 5, 0x100 / (5 * 5),
+  static constexpr uint16_t max_mantissa[] = {0x100, 0x100 / 5, 0x100 / (5 * 5),
                                               0x100 / (5 * 5 * 5),
                                               0x100 / (5 * 5 * 5 * 5)};
 };
@@ -1011,20 +1105,25 @@ constexpr std::bfloat16_t
     binary_format_lookup_tables<std::bfloat16_t, U>::powers_of_ten[];
 
 template <typename U>
-constexpr uint64_t
+constexpr uint16_t
     binary_format_lookup_tables<std::bfloat16_t, U>::max_mantissa[];
 
 #endif
 
 template <>
 inline constexpr std::bfloat16_t
-binary_format<std::bfloat16_t>::exact_power_of_ten(int64_t power) {
+binary_format<std::bfloat16_t>::exact_power_of_ten(am_pow_t power) {
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(powers_of_ten[0]), powers_of_ten[power];
+  return (void)powers_of_ten[0], powers_of_ten[power];
+#else
+  return powers_of_ten[power];
+#endif
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::max_exponent_fast_path() {
+inline constexpr am_bits_t
+binary_format<std::bfloat16_t>::max_exponent_fast_path() {
   return 3;
 }
 
@@ -1047,128 +1146,162 @@ binary_format<std::bfloat16_t>::hidden_bit_mask() {
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
+inline constexpr am_bits_t
+binary_format<std::bfloat16_t>::mantissa_explicit_bits() {
   return 7;
 }
 
 template <>
-inline constexpr uint64_t
+inline constexpr am_mant_t
 binary_format<std::bfloat16_t>::max_mantissa_fast_path() {
-  return uint64_t(2) << mantissa_explicit_bits();
+  return am_mant_t(2) << mantissa_explicit_bits();
 }
 
 template <>
-inline constexpr uint64_t
-binary_format<std::bfloat16_t>::max_mantissa_fast_path(int64_t power) {
+inline constexpr am_mant_t
+binary_format<std::bfloat16_t>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 3
-  //
+  FASTFLOAT_ASSUME(power >= 0 && power <= 3);
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(max_mantissa[0]), max_mantissa[power];
+  return (void)max_mantissa[0], max_mantissa[power];
+#else
+  return max_mantissa[power];
+#endif
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::min_exponent_fast_path() {
+inline constexpr am_bits_t
+binary_format<std::bfloat16_t>::min_exponent_fast_path() {
   return 0;
 }
 
 template <>
-inline constexpr int
+inline constexpr am_pow_t
 binary_format<std::bfloat16_t>::max_exponent_round_to_even() {
   return 3;
 }
 
 template <>
-inline constexpr int
+inline constexpr am_pow_t
 binary_format<std::bfloat16_t>::min_exponent_round_to_even() {
   return -24;
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::minimum_exponent() {
+inline constexpr am_pow_t binary_format<std::bfloat16_t>::minimum_exponent() {
   return -127;
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::infinite_power() {
+inline constexpr am_pow_t binary_format<std::bfloat16_t>::infinite_power() {
   return 0xFF;
 }
 
-template <> inline constexpr int binary_format<std::bfloat16_t>::sign_index() {
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
+template <>
+inline constexpr am_bits_t binary_format<std::bfloat16_t>::sign_index() {
   return 15;
 }
 
+#endif
+
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::largest_power_of_ten() {
+inline constexpr am_pow_t
+binary_format<std::bfloat16_t>::largest_power_of_ten() {
   return 38;
 }
 
 template <>
-inline constexpr int binary_format<std::bfloat16_t>::smallest_power_of_ten() {
+inline constexpr am_pow_t
+binary_format<std::bfloat16_t>::smallest_power_of_ten() {
   return -60;
 }
 
 template <>
-inline constexpr size_t binary_format<std::bfloat16_t>::max_digits() {
+inline constexpr am_digits binary_format<std::bfloat16_t>::max_digits() {
   return 98;
 }
 #endif // __STDCPP_BFLOAT16_T__
 
 template <>
-inline constexpr uint64_t
-binary_format<double>::max_mantissa_fast_path(int64_t power) {
+inline constexpr am_mant_t
+binary_format<double>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 22
-  //
+  FASTFLOAT_ASSUME(power >= 0 && power <= 22);
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(max_mantissa[0]), max_mantissa[power];
+  return (void)max_mantissa[0], max_mantissa[power];
+#else
+  return max_mantissa[power];
+#endif
 }
 
 template <>
-inline constexpr uint64_t
-binary_format<float>::max_mantissa_fast_path(int64_t power) {
+inline constexpr am_mant_t
+binary_format<float>::max_mantissa_fast_path(am_pow_t power) {
   // caller is responsible to ensure that
-  // power >= 0 && power <= 10
-  //
+  FASTFLOAT_ASSUME(power >= 0 && power <= 10);
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(max_mantissa[0]), max_mantissa[power];
+  return (void)max_mantissa[0], max_mantissa[power];
+#else
+  return max_mantissa[power];
+#endif
 }
 
 template <>
 inline constexpr double
-binary_format<double>::exact_power_of_ten(int64_t power) {
+binary_format<double>::exact_power_of_ten(am_pow_t power) {
+  // caller is responsible to ensure that
+  FASTFLOAT_ASSUME(power >= 0 && power <= 22);
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(powers_of_ten[0]), powers_of_ten[power];
+  return (void)powers_of_ten[0], powers_of_ten[power];
+#else
+  return powers_of_ten[power];
+#endif
 }
 
 template <>
-inline constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
+inline constexpr float
+binary_format<float>::exact_power_of_ten(am_pow_t power) {
+  // caller is responsible to ensure that
+  FASTFLOAT_ASSUME(power >= 0 && power <= 10);
+#if defined(__clang__)
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
-  return static_cast<void>(powers_of_ten[0]), powers_of_ten[power];
+  return (void)powers_of_ten[0], powers_of_ten[power];
+#else
+  return powers_of_ten[power];
+#endif
 }
 
-template <> inline constexpr int binary_format<double>::largest_power_of_ten() {
+template <>
+inline constexpr am_pow_t binary_format<double>::largest_power_of_ten() {
   return 308;
 }
 
-template <> inline constexpr int binary_format<float>::largest_power_of_ten() {
+template <>
+inline constexpr am_pow_t binary_format<float>::largest_power_of_ten() {
   return 38;
 }
 
 template <>
-inline constexpr int binary_format<double>::smallest_power_of_ten() {
+inline constexpr am_pow_t binary_format<double>::smallest_power_of_ten() {
   return -342;
 }
 
-template <> inline constexpr int binary_format<float>::smallest_power_of_ten() {
+template <>
+inline constexpr am_pow_t binary_format<float>::smallest_power_of_ten() {
   return -64;
 }
 
-template <> inline constexpr size_t binary_format<double>::max_digits() {
+template <> inline constexpr am_digits binary_format<double>::max_digits() {
   return 769;
 }
 
-template <> inline constexpr size_t binary_format<float>::max_digits() {
+template <> inline constexpr am_digits binary_format<float>::max_digits() {
   return 114;
 }
 
@@ -1209,23 +1342,26 @@ binary_format<double>::hidden_bit_mask() {
 }
 
 template <typename T>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
-to_float(bool negative, adjusted_mantissa am, T &value) {
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void to_float(
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+    bool const negative,
+#endif
+    adjusted_mantissa const &am, T &value) noexcept {
   using equiv_uint = equiv_uint_t<T>;
   equiv_uint word = equiv_uint(am.mantissa);
   word = equiv_uint(word | equiv_uint(am.power2)
                                << binary_format<T>::mantissa_explicit_bits());
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   word =
       equiv_uint(word | equiv_uint(negative) << binary_format<T>::sign_index());
-#if FASTFLOAT_HAS_BIT_CAST
-  value = std::bit_cast<T>(word);
-#else
-  ::memcpy(&value, &word, sizeof(T));
 #endif
+  value = bit_cast<T>(word);
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+
 template <typename = void> struct space_lut {
-  static constexpr bool value[] = {
+  static constexpr uint8_t value[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1241,7 +1377,7 @@ template <typename = void> struct space_lut {
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
 
-template <typename T> constexpr bool space_lut<T>::value[];
+template <typename T> constexpr uint8_t space_lut<T>::value[];
 
 #endif
 
@@ -1252,6 +1388,8 @@ template <typename UC> constexpr bool is_space(UC c) {
   using UnsignedUC = typename std::make_unsigned<UC>::type;
   return static_cast<UnsignedUC>(c) < 256 && space_lut<>::value[uint8_t(c)];
 }
+
+#endif
 
 template <typename UC> static constexpr uint64_t int_cmp_zeros() {
   static_assert((sizeof(UC) == 1) || (sizeof(UC) == 2) || (sizeof(UC) == 4),
@@ -1266,6 +1404,8 @@ template <typename UC> static constexpr uint64_t int_cmp_zeros() {
 template <typename UC> static constexpr int int_cmp_len() {
   return sizeof(uint64_t) / sizeof(UC);
 }
+
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 
 template <typename UC> constexpr UC const *str_const_nan();
 
@@ -1309,6 +1449,8 @@ template <> constexpr char8_t const *str_const_inf<char8_t>() {
 }
 #endif
 
+#endif
+
 template <typename = void> struct int_luts {
   static constexpr uint8_t chdigit[] = {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -1330,7 +1472,7 @@ template <typename = void> struct int_luts {
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255};
 
-  static constexpr size_t maxdigits_u64[] = {
+  static constexpr limb_t maxdigits_u64[] = {
       64, 41, 32, 28, 25, 23, 22, 21, 20, 19, 18, 18, 17, 17, 16, 16, 16, 16,
       15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13};
 
@@ -1353,14 +1495,14 @@ template <typename = void> struct int_luts {
 
 template <typename T> constexpr uint8_t int_luts<T>::chdigit[];
 
-template <typename T> constexpr size_t int_luts<T>::maxdigits_u64[];
+template <typename T> constexpr limb_t int_luts<T>::maxdigits_u64[];
 
 template <typename T> constexpr uint64_t int_luts<T>::min_safe_u64[];
 
 #endif
 
 template <typename UC>
-fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
+fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) noexcept {
   // wchar_t and char can be signed, so we need to be careful.
   using UnsignedUC = typename std::make_unsigned<UC>::type;
   return int_luts<>::chdigit[static_cast<unsigned char>(
@@ -1369,13 +1511,13 @@ fastfloat_really_inline constexpr uint8_t ch_to_digit(UC c) {
           -((static_cast<UnsignedUC>(c) & ~0xFFull) == 0)))];
 }
 
-fastfloat_really_inline constexpr size_t max_digits_u64(int base) {
+fastfloat_really_inline constexpr limb_t max_digits_u64(base_t base) noexcept {
   return int_luts<>::maxdigits_u64[base - 2];
 }
 
 // If a u64 is exactly max_digits_u64() in length, this is
 // the value below which it has definitely overflowed.
-fastfloat_really_inline constexpr uint64_t min_safe_u64(int base) {
+fastfloat_really_inline constexpr uint64_t min_safe_u64(base_t base) noexcept {
   return int_luts<>::min_safe_u64[base - 2];
 }
 
@@ -1467,19 +1609,6 @@ operator^=(chars_format &lhs, chars_format rhs) noexcept {
   return lhs = (lhs ^ rhs);
 }
 
-namespace detail {
-// adjust for deprecated feature macros
-constexpr chars_format adjust_for_feature_macros(chars_format fmt) {
-  return fmt
-#ifdef FASTFLOAT_ALLOWS_LEADING_PLUS
-         | chars_format::allow_leading_plus
-#endif
-#ifdef FASTFLOAT_SKIP_WHITE_SPACE
-         | chars_format::skip_white_space
-#endif
-      ;
-}
-} // namespace detail
 } // namespace fast_float
 
 #endif

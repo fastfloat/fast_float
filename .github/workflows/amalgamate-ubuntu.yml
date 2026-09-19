@@ -1,10 +1,10 @@
-name: Amalgamate Ubuntu 24.04 CI
+name: Amalgamate Ubuntu CI
 
 on: [push, pull_request]
 
 jobs:
   ubuntu-build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Compile with amalgamation

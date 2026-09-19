@@ -1,13 +1,17 @@
 name: Alpine Linux
+
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
 
 jobs:
   build:
     name: Build on Alpine ${{ matrix.arch }}
+
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         arch:
           - x86_64
@@ -16,32 +20,44 @@ jobs:
           - armv7
           - ppc64le
           - riscv64
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Install latest Alpine Linux for ${{ matrix.arch }}
+      - name: Install Alpine Linux for ${{ matrix.arch }}
         uses: jirutka/setup-alpine@v1
         with:
           arch: ${{ matrix.arch }}
-          branch: ${{ matrix.arch == 'riscv64' && 'edge' || 'latest-stable' }}
+
+          # Keep CI reproducible.
+          # riscv64 currently uses edge because stable Alpine support
+          # for this architecture can lag behind the other architectures.
+          branch: ${{ matrix.arch == 'riscv64' && 'edge' || 'v3.23' }}
+
           packages: >
             build-base
             cmake
-            g++
             linux-headers
             git
             bash
-            build-base
+
       - name: Prepare
         run: |
-          cmake -DFASTFLOAT_TEST=ON -B build
+          cmake \
+            -DFASTFLOAT_TEST=ON \
+            -B build
         shell: alpine.sh {0}
+
       - name: Build
         run: |
           cmake --build build
         shell: alpine.sh {0}
+
       - name: Test
         run: |
-          ctest --test-dir build -R basictest
+          ctest \
+            --test-dir build \
+            -R basictest \
+            --output-on-failure
         shell: alpine.sh {0}

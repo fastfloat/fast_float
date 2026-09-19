@@ -1,10 +1,125 @@
 
-## fast_float number parsing library: 4x faster than strtod
+## fast_float HE edition number parsing library.
+[![Ubuntu 22.04](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22.yml)
+[![Ubuntu 22.04 clang](https://github.com/irainman/fast_float/actions/workflows/ubuntu22-clang.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu22-clang.yml)
+[![Ubuntu 24.04](https://github.com/irainman/fast_float/actions/workflows/ubuntu24.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu24.yml)
+[![Ubuntu 24.04 C++20](https://github.com/irainman/fast_float/actions/workflows/ubuntu24-cxx20.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/ubuntu24-cxx20.yml)
+[![vs17](https://github.com/irainman/fast_float/actions/workflows/vs17-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-ci.yml)
+[![vs17 C++20](https://github.com/irainman/fast_float/actions/workflows/vs17-cxx20.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-cxx20.yml)
+[![vs17 clang](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs17-clang-ci.yml)
+[![vs18](https://github.com/irainman/fast_float/actions/workflows/vs18-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs18-ci.yml)
+[![vs18 C++23](https://github.com/irainman/fast_float/actions/workflows/vs18-cxx23.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs18-cxx23.yml)
+[![vs18 clang](https://github.com/irainman/fast_float/actions/workflows/vs18-clang-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs18-clang-ci.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
 
-[![Ubuntu 22.04 CI (GCC 11)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml/badge.svg)](https://github.com/fastfloat/fast_float/actions/workflows/ubuntu22.yml)
+## This is a fork of [fast_float](https://github.com/fastfloat/fast_float) made by HedgehogInTheCPP with some additional options, code refactoring and big cleanup to maximize performance, reduce size and improve mainteinability, please give a star to this repo ^^ 
 
-*Note: This library is for C++ users. C programmers should consider [ffc.h](https://github.com/kolemannix/ffc.h). It is a high-performance port of fast_float to C.*
+### 🚀 Performance and Code Size Improvements
 
+* Optimized parsing logic for use as an **internal lightweight parser** (for example, inside other libraries).
+* Reduced binary size by conditionally excluding unneeded parsing features.
+* The `from_chars_result_t` structure is reduced to **4 bytes** for better memory efficiency.
+* Improved the `parsed_number_string_t` layout and increased `constexpr`/`consteval` propagation to enable compile-time optimizations.
+* Reduced register and cache pressure and branching in parsing hot paths.
+* Improved performance in both 64-bit and 32-bit builds for all supported types.
+* Added more optimized x86 specific code that uses up to SSE4.2 instructions in algorithms and significantly improve speed parsing especially for big numbers.
+
+---
+
+### ⚙️ New Configuration Macros
+
+Introduced new optional macros to minimize overhead when certain parsing features are not required:
+
+* **`FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`**
+  Restricts parsing to **positive C-style numbers only** — no sign characters, no `INF`, `INFINITY`, or `NaN` and no additional options like skip white spaces or support for Fortran or JSON.
+
+* **`FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED`**
+  Assumes that only the **IEEE 754 “round-to-nearest”** rounding mode is needed, removing crutches support code for other modes.
+
+* **`FASTFLOAT_ISNOT_CHECKED_BOUNDS`**
+  Disables bounds checking for input ranges that are assumed to be valid.
+  This option is very usefull if you use library as **internal lightweight parser** — this reduces branching and improves performance.
+
+* **`FASTFLOAT_ASSUME`**
+  Provides a portable abstraction for the compiler’s `[[assume]]` intrinsic.
+
+* **`FASTFLOAT_HAS_BYTESWAP`**
+  Automatically uses std::byteswap if available to reduce code size and speed up.
+
+* **`FASTFLOAT_HAS_BIT_CAST`**
+  Automatically uses std::bit_cast if available to reduce code size and speed up.
+  
+* **`FASTFLOAT_X86_SIMD`**
+  Automatically uses reworking SSE parsing algorithms to improve performance on x86 machines. And hardware level also can be set manually by user.
+  
+* **`FASTFLOAT_USE_SIMD`**
+  Can be set to 0 for completely disable manually optimized SIMD paths and use compiler + linker to give the best possible result automatically
+
+---
+
+### 🧩 Remove Deprecated Macros
+
+* Removed obsolete macroses **`FASTFLOAT_ALLOWS_LEADING_PLUS`** and **`FASTFLOAT_SKIP_WHITE_SPACE`**, which are now superseded by the stricter limited-mode options above.
+
+---
+
+### 🧠 Internal Refactoring and Quality Improvements
+
+* Simplified internal parsing logic with compile-time branching controlled by the new macros.
+* Enhanced `constexpr` coverage across the codebase for greater compile-time evaluation.
+* Updated benchmarks and tests to validate new restricted configurations.
+* Fixed minor compiler warnings and addressed **PVS-Studio** static analysis feedback.
+* Properly use FASTFLOAT_SIMD_DISABLE_WARNINGS and FASTFLOAT_SIMD_RESTORE_WARNINGS only for instructions that allow unaligned loads.
+* Many small cleanups and fixes.
+* Added many comments about functionality and realization details.
+
+---
+
+### 📘 Documentation and Build
+
+* Updated **README.md** to describe all new configuration macros and their intended use cases.
+* Adjusted build scripts and benchmark configurations for the new compile-time flags.
+
+---
+
+✅ **Result:**
+Smaller, [faster by default](https://github.com/fastfloat/fast_float/pull/307#issuecomment-3775676197), and more configurable builds — now library can be used for **internal numeric parsers** or **embedded environments** — while maintaining full compatibility, functionality, and performance improvements in the default configuration.
+
+
+🔥 **Motivation:**
+There is a really common use case in mathematical and other abstract syntax tree (AST)-like parsers that already processes
+the sign and all other symbols before any number by itself. In this case you can use fastfloat to only parse positive numbers
+in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
+and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
+it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
+macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
+also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
+supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
+since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization (I use C++23 and some from C++26):
+```
+-O3 -DNDEBUG + LTO
+```
+```C++
+#define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+#define FASTFLOAT_ISNOT_CHECKED_BOUNDS
+#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+#include "fast_float/fast_float.h"
+#include "fmt/base.h"
+#include <string_view>
+
+int main() {
+  std::string_view input = "23.14069263277926900572";
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result);
+  if ((answer.ec != std::errc()) || ((result != 23.14069263277927 /*properly rounded value */)))
+  {
+    fmt::print(stderr, "parsing failure!\n    the number {}.", result);
+    return 1;
+  }
+  fmt::print("parsed the number {}.", result);
+  return 0;
+}
+```
 
 The fast_float library provides fast header-only implementations for the C++
 from_chars functions for `float` and `double` types as well as integer types.
@@ -52,7 +167,8 @@ parsed value. In case of error, the returned `ec` contains a representative
 error, otherwise the default (`std::errc()`) value is stored.
 
 The implementation does not throw and does not allocate memory (e.g., with `new`
-or `malloc`).
+or `malloc`) and can be usable in the kernel, embeded and other scenarious that
+relays on such behavior.
 
 It will parse infinity and nan values.
 
@@ -586,7 +702,7 @@ sufficiently recent version of CMake (3.11 or better at least):
 ```cmake
 FetchContent_Declare(
   fast_float
-  GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
+  GIT_REPOSITORY https://github.com/irainman/fast_float.git
   GIT_TAG tags/v8.3.0
   GIT_SHALLOW TRUE)
 
@@ -602,7 +718,7 @@ You may also use [CPM](https://github.com/cpm-cmake/CPM.cmake), like so:
 ```cmake
 CPMAddPackage(
   NAME fast_float
-  GITHUB_REPOSITORY "fastfloat/fast_float"
+  GITHUB_REPOSITORY "irainman/fast_float"
   GIT_TAG v8.3.0)
 ```
 
@@ -615,7 +731,7 @@ if desired as described in the command line help.
 
 You may directly download automatically generated single-header files:
 
-<https://github.com/fastfloat/fast_float/releases/download/v8.3.0/fast_float.h>
+<https://github.com/irainman/fast_float/releases/download/v8.3.0/fast_float.h>
 
 ## Benchmarking
 
@@ -668,6 +784,10 @@ long digits.
 
 The library includes code adapted from Google Wuffs (written by Nigel Tao) which
 was originally published under the Apache 2.0 license.
+
+## SAST Tools
+
+[PVS-Studio](https://pvs-studio.com/en/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.
 
 ## License
 

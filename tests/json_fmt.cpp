@@ -76,6 +76,7 @@ int main() {
       {"0.02", {0.02, ""}},
       {"0.002", {0.002, ""}},
       {"1e+0000", {1., ""}},
+      {"1e-0000", {1., ""}},
       {"0e-2", {0., ""}},
       {"1e", {1., "e"}},
       {"1e+", {1., "e+"}},
@@ -136,7 +137,7 @@ int main() {
         fast_float::parse_options(
             fast_float::chars_format::json |
             fast_float::chars_format::allow_leading_plus)); // should be ignored
-    if (answer.valid) {
+    if (!answer.invalid) {
       std::cerr << "json parse accepted invalid json " << f << std::endl;
       return EXIT_FAILURE;
     }

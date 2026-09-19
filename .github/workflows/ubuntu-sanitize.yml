@@ -1,0 +1,16 @@
+name: Ubuntu latest CI Sanitized
+
+on: [push, pull_request]
+
+jobs:
+  ubuntu-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Use cmake
+        run: |
+          mkdir build &&
+          cd build &&
+          cmake -DFASTFLOAT_TEST=ON -D FASTFLOAT_SANITIZE=ON  ..  &&
+          cmake --build .   &&
+          ctest --output-on-failure
