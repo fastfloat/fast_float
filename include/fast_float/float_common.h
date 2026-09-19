@@ -534,7 +534,6 @@ template <typename T> struct span {
   }
 };
 
-/* alignas(16) - better data cache usage wo align */
 struct value128 {
   uint64_t low;
   uint64_t high;
@@ -713,7 +712,6 @@ full_multiplication(uint64_t a, uint64_t b) noexcept {
   return answer;
 }
 
-/* alignas(16) - better data cache usage without align */
 struct adjusted_mantissa {
   FASTFLOAT_NO_UNIQUE_ADDRESS am_mant_t mantissa;
   FASTFLOAT_NO_UNIQUE_ADDRESS am_pow_t power2;
