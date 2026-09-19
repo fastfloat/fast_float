@@ -104,7 +104,7 @@ since C++17, and if you want maximum performance, use the latest compiler with t
 #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 #define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 #include "fast_float/fast_float.h"
-#include "fmt/base.h"
+#include "fmt/core.h"
 #include <string_view>
 
 int main() {
