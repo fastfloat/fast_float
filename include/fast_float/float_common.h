@@ -217,6 +217,17 @@ using parse_options = parse_options_t<char>;
 #define fastfloat_really_inline inline __attribute__((always_inline))
 #endif
 
+// Opposite of fastfloat_really_inline. Used for a rare, format-specific variant
+// of a force-inlined function, so that its body does not land in the frame of
+// every caller that will never execute it.
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#define fastfloat_never_inline __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define fastfloat_never_inline __attribute__((noinline))
+#else
+#define fastfloat_never_inline
+#endif
+
 // Branch-probability hint marking the rare slow-path branches as cold, so the
 // optimizer keeps the out-of-line slow-path re-parse off the hot path (and does
 // not duplicate the force-inlined hot scanner into the caller, which bloated
