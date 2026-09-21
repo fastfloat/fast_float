@@ -336,6 +336,14 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   }
   bool const bjf = uint64_t(fmt & detail::basic_json_fmt) != 0;
 
+  // A mantissa of more than 19 significant digits needs more than 19
+  // characters, so only a longer input can be too_many_digits. Predicting it
+  // from the length sends it straight to the span-materializing parse instead
+  // of parsing once without spans and then re-parsing with them.
+  if fastfloat_unlikely ((last - first) > 19) {
+    return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
+  }
+
   // Fast path: parse WITHOUT materializing the integer/fraction spans (read
   // only by the rare slow paths). Skipping their stores keeps the fat
   // parsed_number_string_t off the hot path. store_spans is a runtime argument,
