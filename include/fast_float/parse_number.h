@@ -306,8 +306,41 @@ FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_number_slow_path(UC const *first, UC const *last, T &value,
                        parse_options_t<UC> options, bool bjf) noexcept {
   parsed_number_string_t<UC> pns =
-      bjf ? parse_number_string<true, UC>(first, last, options, true)
-          : parse_number_string<false, UC>(first, last, options, true);
+      bjf ? parse_number_string_impl<true, false, UC>(first, last, options,
+                                                      true)
+          : parse_number_string_impl<false, false, UC>(first, last, options,
+                                                       true);
+  return from_chars_advanced(pns, value);
+}
+
+// Cold: the whole chars_format::javascript conversion. Kept out of line and out
+// of from_chars_float_advanced so the common frame holds neither the javascript
+// parser body nor a call that would force the parsed number string onto the
+// stack. Mirrors the main path, only with the javascript parser.
+template <typename T, typename UC>
+fastfloat_never_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_float_javascript(UC const *first, UC const *last, T &value,
+                            parse_options_t<UC> options) noexcept {
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
+  if (uint64_t(fmt & chars_format::skip_white_space)) {
+    while ((first != last) && fast_float::is_space(*first)) {
+      first++;
+    }
+  }
+  from_chars_result_t<UC> answer;
+  answer.ec = std::errc::invalid_argument;
+  answer.ptr = first;
+  if (first == last) {
+    return answer;
+  }
+  parsed_number_string_t<UC> pns =
+      parse_number_string_javascript<UC>(first, last, options, true);
+  if (!pns.valid) {
+    if (uint64_t(fmt & chars_format::no_infnan)) {
+      return answer;
+    }
+    return detail::parse_infnan(first, last, value, fmt);
+  }
   return from_chars_advanced(pns, value);
 }
 
@@ -322,6 +355,13 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
                 "only char, wchar_t, char16_t and char32_t are supported");
 
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
+
+  // Leave for the javascript conversion before anything else is live, so this
+  // compiles to a tail call and the common path keeps its registers. The cold
+  // function repeats the leading-whitespace and empty-input handling below.
+  if fastfloat_unlikely (uint64_t(fmt & detail::basic_javascript_fmt)) {
+    return from_chars_float_javascript<T, UC>(first, last, value, options);
+  }
 
   from_chars_result_t<UC> answer;
   if (uint64_t(fmt & chars_format::skip_white_space)) {
@@ -339,10 +379,12 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Fast path: parse WITHOUT materializing the integer/fraction spans (read
   // only by the rare slow paths). Skipping their stores keeps the fat
   // parsed_number_string_t off the hot path. store_spans is a runtime argument,
-  // so this reuses the single parse_number_string instantiation.
+  // so this reuses the single parse_number_string_impl instantiation.
   parsed_number_string_t<UC> pns =
-      bjf ? parse_number_string<true, UC>(first, last, options, false)
-          : parse_number_string<false, UC>(first, last, options, false);
+      bjf ? parse_number_string_impl<true, false, UC>(first, last, options,
+                                                      false)
+          : parse_number_string_impl<false, false, UC>(first, last, options,
+                                                       false);
   if (!pns.valid) {
     if (uint64_t(fmt & chars_format::no_infnan)) {
       answer.ec = std::errc::invalid_argument;
