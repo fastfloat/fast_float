@@ -139,9 +139,10 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 
 template <typename T> struct from_chars_caller {
   template <typename UC>
-  FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
-  call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> options) noexcept {
+  fastfloat_clang_really_inline
+      FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+      call(UC const *first, UC const *last, T &value,
+           parse_options_t<UC> options) noexcept {
     return from_chars_advanced(first, last, value, options);
   }
 };
@@ -180,10 +181,29 @@ template <> struct from_chars_caller<std::float64_t> {
 };
 #endif
 
+#ifdef __clang__
+// Parser instantiated for a format fixed at compile time, so that every test
+// on the format folds away inside it. GCC gets the same effect by inlining the
+// whole parser into each caller, where the format is a constant; clang keeps
+// it out of line and would otherwise re-test each format flag per conversion.
+template <typename T, typename UC, chars_format Fmt>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
+  return from_chars_caller<T>::call(first, last, value,
+                                    parse_options_t<UC>(Fmt));
+}
+#endif
+
 template <typename T, typename UC, typename>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
            chars_format fmt /*= chars_format::general*/) noexcept {
+#ifdef __clang__
+  if (fmt == chars_format::general) {
+    return from_chars_fixed_format<T, UC, chars_format::general>(first, last,
+                                                                 value);
+  }
+#endif
   return from_chars_caller<T>::call(first, last, value,
                                     parse_options_t<UC>(fmt));
 }
@@ -428,15 +448,19 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   if fastfloat_unlikely (am.power2 < 0) {
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
+  to_float(pns.negative, am, value);
+  // Test for over/underflow. Marked unlikely so that clang keeps it as a
+  // branch instead of folding it into a chain of conditional moves that
+  // every conversion pays for.
+  if fastfloat_clang_unlikely ((pns.mantissa != 0 && am.mantissa == 0 &&
+                                am.power2 == 0) ||
+                               am.power2 ==
+                                   binary_format<T>::infinite_power()) {
+    answer.ec = std::errc::result_out_of_range;
+  }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-  to_float(pns.negative, am, value);
-  // Test for over/underflow.
-  if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
-      am.power2 == binary_format<T>::infinite_power()) {
-    answer.ec = std::errc::result_out_of_range;
-  }
   return answer;
 }
 

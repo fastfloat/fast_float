@@ -228,6 +228,27 @@ using parse_options = parse_options_t<char>;
 #define fastfloat_never_inline
 #endif
 
+// fastfloat_really_inline under clang only, a no-op elsewhere. Clang declines
+// to inline the parser into its callers, so the parser instantiation with a
+// compile-time format (from_chars_fixed_format) must force the one thin
+// forwarder between it and the parser body. GCC inlines the chain on its own,
+// and forcing it there changes its inlining order for the worse.
+#ifdef __clang__
+#define fastfloat_clang_really_inline fastfloat_really_inline
+#else
+#define fastfloat_clang_really_inline
+#endif
+
+// fastfloat_unlikely under clang only, a plain condition elsewhere. Clang
+// if-converts rare checks into chains of conditional moves that every
+// conversion executes; the hint keeps them as branches. GCC already emits
+// branches there, and the hint only reorders its blocks, for the worse.
+#ifdef __clang__
+#define fastfloat_clang_unlikely(x) fastfloat_unlikely(x)
+#else
+#define fastfloat_clang_unlikely(x) (x)
+#endif
+
 // Branch-probability hint marking the rare slow-path branches as cold, so the
 // optimizer keeps the out-of-line slow-path re-parse off the hot path (and does
 // not duplicate the force-inlined hot scanner into the caller, which bloated
