@@ -95,6 +95,8 @@ endif()
 if (FASTFLOAT_FIXEDWIDTH_TESTS)
   fast_float_add_cpp_test(fixedwidthtest)
   target_compile_features(fixedwidthtest PUBLIC cxx_std_23)
+  fast_float_add_cpp_test(exhaustive16_midpoint)
+  target_compile_features(exhaustive16_midpoint PUBLIC cxx_std_23)
 endif()
 
 option(FASTFLOAT_EXHAUSTIVE "Exhaustive tests" OFF)

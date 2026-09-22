@@ -241,6 +241,12 @@ clinger_fast_path_impl(uint64_t mantissa, int64_t exponent, bool is_negative,
         value = value / binary_format<T>::exact_power_of_ten(-exponent);
       } else {
         value = value * binary_format<T>::exact_power_of_ten(exponent);
+        // Only std::float16_t can overflow here (e.g., "656e2"); let the
+        // slow path report result_out_of_range.
+        if (binary_format<T>::fast_path_can_overflow() &&
+            value > (std::numeric_limits<T>::max)()) {
+          return false;
+        }
       }
       if (is_negative) {
         value = -value;

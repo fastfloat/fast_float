@@ -588,6 +588,8 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr uint64_t max_mantissa_fast_path(int64_t power);
   static constexpr uint64_t
   max_mantissa_fast_path(); // used when fegetround() == FE_TONEAREST
+  static constexpr bool fast_path_can_overflow();
+  static constexpr bool subnormal_ties_possible();
   static constexpr int largest_power_of_ten();
   static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
@@ -619,6 +621,7 @@ template <typename U> struct binary_format_lookup_tables<double, U> {
       0x20000000000000 / (constant_55555 * constant_55555 * 5),
       0x20000000000000 / (constant_55555 * constant_55555 * 5 * 5),
       0x20000000000000 / (constant_55555 * constant_55555 * 5 * 5 * 5),
+      0x20000000000000 / (constant_55555 * constant_55555 * 5 * 5 * 5 * 5),
       0x20000000000000 / (constant_55555 * constant_55555 * constant_55555),
       0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 * 5),
       0x20000000000000 /
@@ -634,9 +637,7 @@ template <typename U> struct binary_format_lookup_tables<double, U> {
       0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 *
                           constant_55555 * 5 * 5),
       0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 *
-                          constant_55555 * 5 * 5 * 5),
-      0x20000000000000 / (constant_55555 * constant_55555 * constant_55555 *
-                          constant_55555 * 5 * 5 * 5 * 5)};
+                          constant_55555 * 5 * 5 * 5)};
 };
 
 #if FASTFLOAT_DETAIL_MUST_DEFINE_CONSTEXPR_VARIABLE
@@ -853,7 +854,9 @@ binary_format<std::float16_t>::max_mantissa_fast_path(int64_t power) {
 
 template <>
 inline constexpr int binary_format<std::float16_t>::min_exponent_fast_path() {
-  return 0;
+  // w / 10^k with w <= 2^11 and k <= 4 rounds correctly even when evaluated
+  // in float or double first (checked in script/format_parameters.py).
+  return -4;
 }
 
 template <>
@@ -865,7 +868,9 @@ binary_format<std::float16_t>::max_exponent_round_to_even() {
 template <>
 inline constexpr int
 binary_format<std::float16_t>::min_exponent_round_to_even() {
-  return -22;
+  // -22 covers the normal ties; subnormal ties such as
+  // 2^-25 = 298023223876953125e-25 need q = -25 and q = -26.
+  return -26;
 }
 
 template <>
@@ -889,7 +894,8 @@ inline constexpr int binary_format<std::float16_t>::largest_power_of_ten() {
 
 template <>
 inline constexpr int binary_format<std::float16_t>::smallest_power_of_ten() {
-  return -27;
+  // (10^19 - 1) * 10^-27 < 2^-25, so any q < -26 rounds to zero.
+  return -26;
 }
 
 template <>
@@ -976,7 +982,8 @@ binary_format<std::bfloat16_t>::max_mantissa_fast_path(int64_t power) {
 
 template <>
 inline constexpr int binary_format<std::bfloat16_t>::min_exponent_fast_path() {
-  return 0;
+  // Same argument as for std::float16_t (w <= 2^8, k <= 3).
+  return -3;
 }
 
 template <>
@@ -1012,7 +1019,8 @@ inline constexpr int binary_format<std::bfloat16_t>::largest_power_of_ten() {
 
 template <>
 inline constexpr int binary_format<std::bfloat16_t>::smallest_power_of_ten() {
-  return -60;
+  // (10^19 - 1) * 10^-60 < 2^-134, so any q < -59 rounds to zero.
+  return -59;
 }
 
 template <>
@@ -1020,6 +1028,25 @@ inline constexpr size_t binary_format<std::bfloat16_t>::max_digits() {
   return 98;
 }
 #endif // __STDCPP_BFLOAT16_T__
+
+// Whether Clinger's fast path can overflow: only for std::float16_t, where
+// 2^11 * 10^4 > 65504.
+template <typename T>
+inline constexpr bool binary_format<T>::fast_path_can_overflow() {
+  return double(max_mantissa_fast_path()) *
+             double(exact_power_of_ten(max_exponent_fast_path())) >
+         double((std::numeric_limits<T>::max)());
+}
+
+// A subnormal needs w * 10^q < 2^(minimum_exponent() + 1), so q is at most
+// (minimum_exponent() + 1) * log10(2), with 1233/4096 < log10(2). Only
+// std::float16_t has such q in its round-to-even range. We compare
+// 4096 * q with (minimum_exponent() + 1) * 1233 to avoid right-shifting a
+// negative value (implementation-defined before C++20).
+template <typename T>
+inline constexpr bool binary_format<T>::subnormal_ties_possible() {
+  return min_exponent_round_to_even() * 4096 <= (minimum_exponent() + 1) * 1233;
+}
 
 template <>
 inline constexpr uint64_t
