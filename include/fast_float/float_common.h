@@ -548,7 +548,7 @@ countr_zero_32(uint32_t input_num) noexcept {
 }
 
 fastfloat_inline constexpr uint64_t emulu_generic(uint32_t x,
-                                                         uint32_t y) noexcept {
+                                                  uint32_t y) noexcept {
   return x * static_cast<uint64_t>(y);
 }
 
@@ -571,8 +571,9 @@ umul128_generic(uint64_t ab, uint64_t cd, uint64_t &hi) noexcept {
 }
 
 // Compute hi and low parts of 128-bit.
-fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t
-umul128(uint64_t ab, uint64_t cd, uint64_t &hi) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t umul128(uint64_t ab,
+                                                        uint64_t cd,
+                                                        uint64_t &hi) noexcept {
   if (is_constant_evaluated()) {
     return umul128_generic(ab, cd, hi);
   }
