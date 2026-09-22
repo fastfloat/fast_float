@@ -19,7 +19,7 @@
 namespace fast_float {
 
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEVAL bool has_simd_opt() noexcept {
+fastfloat_inline FASTFLOAT_CONSTEVAL bool has_simd_opt() noexcept {
 #ifdef FASTFLOAT_USE_SIMD
   return std::is_same<UC, char16_t>::value;
 #else
@@ -30,7 +30,7 @@ fastfloat_really_inline FASTFLOAT_CONSTEVAL bool has_simd_opt() noexcept {
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 bool is_integer(UC c) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR14 bool is_integer(UC c) noexcept {
   const auto d = c - UC('0');
   // UC may be signed.
   return d >= 0 && d <= 9;
@@ -44,14 +44,14 @@ using std::byteswap;
 }
 #else
 
-fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
+fastfloat_inline constexpr uint64_t byteswap(uint64_t val) noexcept {
   return (val & 0xFF00000000000000) >> 56 | (val & 0x00FF000000000000) >> 40 |
          (val & 0x0000FF0000000000) >> 24 | (val & 0x000000FF00000000) >> 8 |
          (val & 0x00000000FF000000) << 8 | (val & 0x0000000000FF0000) << 24 |
          (val & 0x000000000000FF00) << 40 | (val & 0x00000000000000FF) << 56;
 }
 
-fastfloat_really_inline constexpr uint32_t byteswap(uint32_t val) noexcept {
+fastfloat_inline constexpr uint32_t byteswap(uint32_t val) noexcept {
   return (val >> 24) | ((val >> 8) & 0x0000FF00u) | ((val << 8) & 0x00FF0000u) |
          (val << 24);
 }
@@ -62,7 +62,7 @@ fastfloat_really_inline constexpr uint32_t byteswap(uint32_t val) noexcept {
 
 // Read UCs into an unsigned integer. Truncates UC if not char.
 template <typename T, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 T
+fastfloat_inline FASTFLOAT_CONSTEXPR20 T
 read_chars_to_unsigned(UC const *chars) noexcept {
   if (is_constant_evaluated() || !std::is_same<UC, char>::value) {
     T val = 0;
@@ -85,7 +85,7 @@ read_chars_to_unsigned(UC const *chars) noexcept {
 
 #if FASTFLOAT_X86_SIMD
 
-fastfloat_really_inline uint64_t simd_read8(__m128i const data) {
+fastfloat_inline uint64_t simd_read8(__m128i const data) {
   // _mm_packus_epi16 is SSE2, converts 8×u16 → 8×u8
   __m128i const packed = _mm_packus_epi16(data, data);
 
@@ -104,7 +104,7 @@ fastfloat_really_inline uint64_t simd_read8(__m128i const data) {
 #endif
 }
 
-fastfloat_really_inline uint64_t simd_read8(char16_t const *chars) {
+fastfloat_inline uint64_t simd_read8(char16_t const *chars) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   // unaligned SIMD instruction -> all fine.
   return simd_read8(_mm_loadu_si128(reinterpret_cast<__m128i const *>(chars)));
@@ -113,12 +113,12 @@ fastfloat_really_inline uint64_t simd_read8(char16_t const *chars) {
 
 #elif FASTFLOAT_ARM_NEON
 
-fastfloat_really_inline uint64_t simd_read8(uint16x8_t const &data) {
+fastfloat_inline uint64_t simd_read8(uint16x8_t const &data) {
   uint8x8_t utf8_packed = vmovn_u16(data);
   return vget_lane_u64(vreinterpret_u64_u8(utf8_packed), 0);
 }
 
-fastfloat_really_inline uint64_t simd_read8(char16_t const *chars) {
+fastfloat_inline uint64_t simd_read8(char16_t const *chars) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   return simd_read8(vld1q_u16(reinterpret_cast<uint16_t const *>(chars)));
   FASTFLOAT_SIMD_RESTORE_WARNINGS
@@ -140,7 +140,7 @@ uint64_t simd_read8(UC const *) {
 }
 
 // credit  @aqrit
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+fastfloat_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_8_digits(uint64_t val) noexcept {
   uint64_t const mask = 0x000000FF000000FF;
   uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
@@ -153,7 +153,7 @@ parse_8_digits(uint64_t val) noexcept {
 
 // Call this if chars are definitely 8 digits.
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint32_t
 parse_8_digits(UC const *chars) noexcept {
   if (is_constant_evaluated() || !has_simd_opt<UC>()) {
     return parse_8_digits(
@@ -163,18 +163,16 @@ parse_8_digits(UC const *chars) noexcept {
 }
 
 // credit @aqrit
-fastfloat_really_inline constexpr bool
-is_made_of_8_digits(uint64_t val) noexcept {
+fastfloat_inline constexpr bool is_made_of_8_digits(uint64_t val) noexcept {
   return !((((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
             0x8080808080808080));
 }
 
-fastfloat_really_inline constexpr bool
-is_made_of_4_digits(uint32_t val) noexcept {
+fastfloat_inline constexpr bool is_made_of_4_digits(uint32_t val) noexcept {
   return !((((val + 0x46464646) | (val - 0x30303030)) & 0x80808080));
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+fastfloat_inline FASTFLOAT_CONSTEXPR14 uint32_t
 parse_4_digits(uint32_t val) noexcept {
   val -= 0x30303030;
   val = (val * 10) + (val >> 8);
@@ -187,7 +185,7 @@ parse_4_digits(uint32_t val) noexcept {
 
 #if FASTFLOAT_X86_SIMD >= 31
 // credit @hedgehoginthecpp
-fastfloat_really_inline __m128i parse_4x4_digits(__m128i data) noexcept {
+fastfloat_inline __m128i parse_4x4_digits(__m128i data) noexcept {
   // 1. convert from ASCII '0' .. '9' to numbers 0 .. 9
   const __m128i ascii0 = _mm_set1_epi8('0');
   const __m128i t0 = _mm_subs_epu8(data, ascii0);
@@ -204,8 +202,7 @@ fastfloat_really_inline __m128i parse_4x4_digits(__m128i data) noexcept {
 #endif
 
 // credit @hedgehoginthecpp
-fastfloat_really_inline uint64_t
-convert_4x4_to_16_digits(__m128i data) noexcept {
+fastfloat_inline uint64_t convert_4x4_to_16_digits(__m128i data) noexcept {
   // 4. convert to 16-digit number
   // v[0] * 10^12 + v[1] * 10^8 + v[2] * 10^4 + v[3]
   const uint64_t lo = static_cast<uint32_t>(_mm_cvtsi128_si32(data));
@@ -222,8 +219,8 @@ convert_4x4_to_16_digits(__m128i data) noexcept {
 
 #if FASTFLOAT_X86_SIMD >= 42
 // credit @hedgehoginthecpp
-fastfloat_really_inline bool parse_if_16_digits(char const *chars,
-                                                uint64_t &value) noexcept {
+fastfloat_inline bool parse_if_16_digits(char const *chars,
+                                         uint64_t &value) noexcept {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   const __m128i data =
       _mm_loadu_si128(reinterpret_cast<__m128i const *>(chars));
@@ -262,14 +259,14 @@ fastfloat_really_inline bool parse_if_16_digits(char const *chars,
 
 #if FASTFLOAT_X86_SIMD >= 31
 // credit @hedgehoginthecpp
-fastfloat_really_inline uint64_t parse_16_digits(char const *p) noexcept {
+fastfloat_inline uint64_t parse_16_digits(char const *p) noexcept {
   const __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i *>(p));
   return convert_4x4_to_16_digits(parse_4x4_digits(data));
 }
 #endif
 
 // credit @hedgehoginthecpp
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 parse_digits_until_19(char const *&p, char const *pend, am_mant_t &mantissa) {
 #if FASTFLOAT_X86_SIMD >= 31
   if (!is_constant_evaluated()) {
@@ -302,7 +299,7 @@ parse_digits_until_19(char const *&p, char const *pend, am_mant_t &mantissa) {
 }
 
 template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 parse_digits_until_19(UC const *&p, UC const *pend,
                       am_mant_t &mantissa) noexcept {
   do {
@@ -311,7 +308,7 @@ parse_digits_until_19(UC const *&p, UC const *pend,
 }
 #else
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 parse_digits_until_19(UC const *&p, UC const *pend,
                       am_mant_t &mantissa) noexcept {
   do {
@@ -323,7 +320,7 @@ parse_digits_until_19(UC const *&p, UC const *pend,
 // Call this if chars might not be 8 digits.
 // Using this style (instead of is_made_of_8_digits() then
 // parse_8_digits()) ensures we don't load SIMD registers twice.
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool
 simd_parse_if_8_digits(char16_t const *chars, uint64_t &i) noexcept {
   if (is_constant_evaluated()) {
     return false;
@@ -370,7 +367,7 @@ simd_parse_if_8_digits(char16_t const *chars, uint64_t &i) noexcept {
 }
 #else
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 parse_digits_until_19(UC const *&p, UC const *pend,
                       am_mant_t &mantissa) noexcept {
   do {
@@ -391,7 +388,7 @@ constexpr bool simd_parse_if_8_digits(UC const *, uint64_t &) {
 }
 
 template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_digits(UC const *&p, UC const *const pend, uint64_t &i) noexcept {
   if (!is_constant_evaluated()) {
     if FASTFLOAT_CONSTEXPR17 (has_simd_opt<UC>()) {
@@ -408,7 +405,7 @@ loop_parse_if_digits(UC const *&p, UC const *const pend, uint64_t &i) noexcept {
   }
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_digits(char const *&p, char const *const pend,
                      uint64_t &i) noexcept {
 #if FASTFLOAT_USE_SIMD && FASTFLOAT_X86_SIMD >= 42
@@ -499,7 +496,7 @@ using parsed_number_string = parsed_number_string_t<char>;
 
 // Helper for error creating
 template <typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC> &
+fastfloat_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC> &
 report_parse_error(parsed_number_string_t<UC> &answer, UC const *p,
                    parse_error error) noexcept {
   answer.invalid = true;
@@ -517,11 +514,11 @@ report_parse_error(parsed_number_string_t<UC> &answer, UC const *p,
 // spans (read only by the rare digit_comp slow path) are not materialized,
 // which keeps the fat parsed_number_string_t off the hot path. The caller
 // re-parses with store_spans=true if the slow path is actually reached.
-template <bool json_fmt, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
-parse_number_string(UC const *p, UC const *pend,
-                    parse_options_t<UC> const options,
-                    bool store_spans = true) noexcept {
+template <bool json_fmt, bool javascript_fmt, typename UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
+parse_number_string_impl(UC const *p, UC const *pend,
+                         parse_options_t<UC> const options,
+                         bool const store_spans) noexcept {
   parsed_number_string_t<UC> answer{};
   FASTFLOAT_ASSUME(p < pend); // so dereference without checks
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -555,7 +552,7 @@ parse_number_string(UC const *p, UC const *pend,
 
   // HedgehogInTheCPP: compiler generate much better code in any mode without
   // manual unroling because it's less branching and also it's allow more
-  // inlining which is better. A a multiplication by 10 is cheaper than an
+  // inlining which is better. A multiplication by 10 is cheaper than an
   // arbitrary integer multiplication. might overflow, handled later
 #if !defined(FASTFLOAT_ISNOT_CHECKED_BOUNDS) &&                                \
     !defined(FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN)
@@ -584,7 +581,7 @@ parse_number_string(UC const *p, UC const *pend,
     return report_parse_error<UC>(answer, p,
                                   parse_error::no_digits_in_integer_part);
   }
-  if (json_fmt || chars_format_t(options.format & detail::javascript_fmt)) {
+  if (json_fmt || javascript_fmt) {
     // ECMAScript DecimalIntegerLiteral is "0" or a non-zero digit followed by
     // digits: no leading zeros. Unlike JSON, the integer part may be empty
     // (".5"); the no_digits_in_mantissa check below still rejects ".".
@@ -595,7 +592,7 @@ parse_number_string(UC const *p, UC const *pend,
         return report_parse_error<UC>(
             answer, start_digits, parse_error::leading_zeros_in_integer_part);
       }
-      if (!json_fmt) {
+      if (javascript_fmt) {
         // Sloppy mode (Annex B): a NonOctalDecimalIntegerLiteral has a leading
         // zero and at least one digit that is 8 or 9 ("08.5" is 8.5). With
         // octal digits only, it is a LegacyOctalIntegerLiteral ("0775"), which
@@ -765,8 +762,45 @@ parse_number_string(UC const *p, UC const *pend,
   return answer;
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+// Cold instantiation of the parser: the ECMAScript integer-part rule costs two
+// error returns plus the Annex B octal scan, and parse_number_string_impl is
+// force-inlined, so an inlined javascript body would enlarge the frame of every
+// caller that never asks for it. Out of line, it costs those callers nothing.
+template <typename UC>
+fastfloat_noinline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
+parse_number_string_javascript(UC const *p, UC const *pend,
+                               parse_options_t<UC> const options,
+                               bool const store_spans) noexcept {
+  return parse_number_string_impl<false, true, UC>(p, pend, options,
+                                                   store_spans);
+}
+
+// Public entry point, behaviour unchanged: chars_format::javascript is still
+// honoured, it is just selected here once instead of being re-tested inside the
+// parser loop. Callers that have already ruled the format out (see
+// from_chars_float_advanced) should call parse_number_string_impl directly so
+// that not even this test reaches their hot path.
+template <bool basic_json_fmt, typename UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
+parse_number_string(UC const *p, UC const *pend,
+                    parse_options_t<UC> const options,
+                    bool const store_spans = true) noexcept {
+  // JSON and JavaScript are mutually exclusive, so only the non-JSON
+  // instantiation has to look at the flag.
+  if (!basic_json_fmt) {
+    if fastfloat_unlikely (chars_format_t(options.format &
+                                          detail::basic_javascript_fmt)) {
+      return parse_number_string_javascript<UC>(p, pend, options, store_spans);
+    }
+  }
+  return parse_number_string_impl<basic_json_fmt, false, UC>(p, pend, options,
+                                                             store_spans);
+}
+#endif
+
 template <typename T, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
                  parse_options_t<UC> const options) noexcept {
   FASTFLOAT_ASSUME(p < pend); // so dereference without checks

@@ -158,20 +158,20 @@ template <limb_t size> struct stackvec {
   }
 };
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint64_t
+fastfloat_inline FASTFLOAT_CONSTEXPR14 uint64_t
 empty_hi64(bool &truncated) noexcept {
   truncated = false;
   return 0;
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint64_hi64(uint64_t r0, bool &truncated) noexcept {
   truncated = false;
   auto const shl = leading_zeroes(r0);
   return r0 << shl;
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint64_hi64(uint64_t r0, uint64_t r1, bool &truncated) noexcept {
   auto const shl = leading_zeroes(r0);
   if (shl == 0) {
@@ -184,19 +184,19 @@ uint64_hi64(uint64_t r0, uint64_t r1, bool &truncated) noexcept {
   }
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint32_hi64(uint32_t r0, bool &truncated) noexcept {
   return uint64_hi64(r0, truncated);
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint32_hi64(uint32_t r0, uint32_t r1, bool &truncated) noexcept {
   uint64_t x0 = r0;
   uint64_t x1 = r1;
   return uint64_hi64((x0 << 32) | x1, truncated);
 }
 
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint64_t
+fastfloat_inline FASTFLOAT_CONSTEXPR20 uint64_t
 uint32_hi64(uint32_t r0, uint32_t r1, uint32_t r2, bool &truncated) noexcept {
   uint64_t x0 = r0;
   uint64_t x1 = r1;
@@ -208,7 +208,7 @@ uint32_hi64(uint32_t r0, uint32_t r1, uint32_t r2, bool &truncated) noexcept {
 // we want an efficient operation. for msvc, where
 // we don't have built-in intrinsics, this is still
 // pretty fast.
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb
+fastfloat_inline FASTFLOAT_CONSTEXPR20 limb
 scalar_add(limb x, limb y, bool &overflow) noexcept {
   limb z;
 // gcc and clang
@@ -226,8 +226,8 @@ scalar_add(limb x, limb y, bool &overflow) noexcept {
 }
 
 // multiply two small integers, getting both the high and low bits.
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 limb
-scalar_mul(limb x, limb y, limb &carry) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR20 limb scalar_mul(limb x, limb y,
+                                                       limb &carry) noexcept {
 #ifdef FASTFLOAT_64BIT_LIMB
 #if defined(__SIZEOF_INT128__)
   // GCC and clang both define it as an extension.
@@ -254,7 +254,7 @@ scalar_mul(limb x, limb y, limb &carry) noexcept {
 // add scalar value to bigint starting from offset.
 // used in grade school multiplication
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool
 small_add_from(stackvec<size> &vec, limb carry, limb_t start) noexcept {
   bool overflow;
   while (carry != 0 && start < vec.len()) {
@@ -270,15 +270,15 @@ small_add_from(stackvec<size> &vec, limb carry, limb_t start) noexcept {
 
 // add scalar value to bigint.
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-small_add(stackvec<size> &vec, limb y) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool small_add(stackvec<size> &vec,
+                                                      limb y) noexcept {
   return small_add_from(vec, y, 0);
 }
 
 // multiply bigint by scalar value.
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-small_mul(stackvec<size> &vec, limb y) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool small_mul(stackvec<size> &vec,
+                                                      limb y) noexcept {
   limb carry = 0;
   for (limb_t index = 0; index != vec.len(); ++index) {
     vec[index] = scalar_mul(vec[index], y, carry);
@@ -292,7 +292,7 @@ small_mul(stackvec<size> &vec, limb y) noexcept {
 // add bigint to bigint starting from index.
 // used in grade school multiplication
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool
 large_add_from(stackvec<size> &x, limb_span y, limb_t start) noexcept {
   // the effective x buffer is from `xstart..x.len()`, so exit early
   // if we can't get that current range.
@@ -324,15 +324,15 @@ large_add_from(stackvec<size> &x, limb_span y, limb_t start) noexcept {
 
 // add bigint to bigint.
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool
 large_add_from(stackvec<size> &x, limb_span y) noexcept {
   return large_add_from(x, y, 0);
 }
 
 // grade-school multiplication algorithm
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-long_mul(stackvec<size> &x, limb_span y) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool long_mul(stackvec<size> &x,
+                                                     limb_span y) noexcept {
   limb_span xs = limb_span(x.data, x.len());
   stackvec<size> z(xs);
   limb_span zs = limb_span(z.data, z.len());
@@ -360,8 +360,8 @@ long_mul(stackvec<size> &x, limb_span y) noexcept {
 
 // grade-school multiplication algorithm
 template <limb_t size>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
-large_mul(stackvec<size> &x, limb_span y) noexcept {
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool large_mul(stackvec<size> &x,
+                                                      limb_span y) noexcept {
   if (y.len() == 1) {
     FASTFLOAT_TRY(small_mul(x, y[0]));
   } else {

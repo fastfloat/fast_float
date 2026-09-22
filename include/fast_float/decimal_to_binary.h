@@ -18,7 +18,7 @@ namespace fast_float {
 // bits.
 //
 template <am_bits_t bit_precision>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 value128
+fastfloat_inline FASTFLOAT_CONSTEXPR20 value128
 compute_product_approximation(am_pow_t q, am_mant_t w) noexcept {
   am_pow_t const index = 2 * (q - powers::smallest_power_of_five);
   // For small values of q, e.g., q in [0,27], the answer is always exact
@@ -64,7 +64,7 @@ namespace detail {
  * where
  *   p = log(5**-q)/log(2) = -q * log(5)/log(2)
  */
-constexpr fastfloat_really_inline am_pow_t power(am_pow_t const q) noexcept {
+constexpr fastfloat_inline am_pow_t power(am_pow_t const q) noexcept {
   return (((152170 + 65536) * q) >> 16) + 63;
 }
 } // namespace detail
@@ -72,7 +72,7 @@ constexpr fastfloat_really_inline am_pow_t power(am_pow_t const q) noexcept {
 // create an adjusted mantissa, biased by the invalid power2
 // for significant digits already multiplied by 10 ** q.
 template <typename binary>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
+fastfloat_inline FASTFLOAT_CONSTEXPR14 adjusted_mantissa
 compute_error_scaled(am_pow_t q, am_mant_t w, limb_t lz) noexcept {
   auto const hilz = static_cast<am_bits_t>((w >> 63) ^ 1);
   adjusted_mantissa answer;
@@ -86,7 +86,7 @@ compute_error_scaled(am_pow_t q, am_mant_t w, limb_t lz) noexcept {
 // w * 10 ** q, without rounding the representation up.
 // the power2 in the exponent will be adjusted by invalid_am_bias.
 template <typename binary>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
+fastfloat_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_error(am_pow_t q, am_mant_t w) noexcept {
   auto const lz = leading_zeroes(w);
   w <<= lz;
@@ -101,17 +101,17 @@ compute_error(am_pow_t q, am_mant_t w) noexcept {
 // cases, we return an adjusted_mantissa with a negative power of 2: the caller
 // should recompute in such cases.
 template <typename binary>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
+fastfloat_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_float(am_pow_t q, am_mant_t w) noexcept {
   adjusted_mantissa answer;
   if ((w == 0) || (q < binary::smallest_power_of_ten())) {
-    // we want to get zero:
+    // result should be zero
     answer.power2 = 0;
     answer.mantissa = 0;
     return answer;
   }
   if (q > binary::largest_power_of_ten()) {
-    // we want to get infinity:
+    // result should be infinity
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
     return answer;
@@ -152,22 +152,32 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
 
   // Now, we need to round the mantissa correctly.
 
-  if (answer.power2 <= 0) { // we have a subnormal or very small value.
+  if (answer.power2 <= 0) {
+    // We have a subnormal or very small number.
     // Here have that answer.power2 <= 0 so -answer.power2 >= 0
-    if (-answer.power2 + 1 >=
-        64) { // if we have more than 64 bits below the minimum exponent, you
-              // have a zero for sure.
+    auto const subnormal_shift = static_cast<am_bits_t>(-answer.power2 + 1);
+    if (subnormal_shift >= 64) {
+      // We have more than 64 bits below the minimum exponent
+      // result should be zero
       answer.power2 = 0;
       answer.mantissa = 0;
-      // result should be zero
       return answer;
     }
     // We have a subnormal number. We need to shift the mantissa to the right
-    // next line is safe because -answer.power2 + 1 < 64
-    answer.mantissa >>= -answer.power2 + 1;
-    // Thankfully, we can't have both "round-to-even" and subnormals because
-    // "round-to-even" only occurs for powers close to 0 in the 32-bit and
-    // and 64-bit case (with no more than 19 digits).
+    answer.mantissa >>= subnormal_shift;
+    // A subnormal result can also fall exactly between two floats. With at
+    // most 19 digits this never happens for float and double, but it does for
+    // std::float16_t (e.g., 2^-25 = 298023223876953125e-25), so we apply the
+    // same round-to-even test as in the normal case below.
+    // See script/format_parameters.py.
+    if (binary::subnormal_ties_possible() && (product.low <= 1) &&
+        (q >= binary::min_exponent_round_to_even()) &&
+        (q <= binary::max_exponent_round_to_even()) &&
+        ((answer.mantissa & 3) == 1)) {
+      if (((answer.mantissa << subnormal_shift) << shift) == product.high) {
+        answer.mantissa &= ~am_mant_t(1); // flip it so that we do not round up
+      }
+    }
     answer.mantissa += (answer.mantissa & 1); // round up
     answer.mantissa >>= 1;
     // There is a weird scenario where we don't have a subnormal but just.
@@ -184,8 +194,8 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
     return answer;
   }
 
-  // usually, we round *up*, but if we fall right in between and and we have an
-  // even basis, we need to round down
+  // Usually, we round *up*, but if we fall right in between and we have an even
+  // basis, we need to round down.
   // We are only concerned with the cases where 5**q fits in single 64-bit word.
   if ((product.low <= 1) && (q >= binary::min_exponent_round_to_even()) &&
       (q <= binary::max_exponent_round_to_even()) &&
@@ -203,18 +213,30 @@ compute_float(am_pow_t q, am_mant_t w) noexcept {
   // Normal rounding
   answer.mantissa += (answer.mantissa & 1); // round up
   answer.mantissa >>= 1;
-  if (answer.mantissa >= (am_mant_t(2) << binary::mantissa_explicit_bits())) {
+  // Both fix-ups below are rare. They are marked unlikely so that clang keeps
+  // them as branches instead of folding them into conditional moves that
+  // every conversion pays for.
+#ifdef __clang__
+#pragma clang diagnostic push
+#if (!defined(__APPLE_CC__) && __clang_major__ >= 10) || (__clang_major__ >= 13)
+#pragma clang diagnostic ignored "-Wc++20-extensions"
+#endif
+#endif
+  if fastfloat_unlikely (answer.mantissa >=
+                         (am_mant_t(2) << binary::mantissa_explicit_bits())) {
     answer.mantissa = (am_mant_t(1) << binary::mantissa_explicit_bits());
-    ++answer.power2; // undo previous line addition
+    ++answer.power2; // undo previous addition
   }
 
-  // Check if we have infinity after computation
   answer.mantissa &= ~(am_mant_t(1) << binary::mantissa_explicit_bits());
-  if (answer.power2 >= binary::infinite_power()) { // infinity
+  if fastfloat_unlikely (answer.power2 >= binary::infinite_power()) {
+    // result should be infinity
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
   }
-
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
   return answer;
 }
 

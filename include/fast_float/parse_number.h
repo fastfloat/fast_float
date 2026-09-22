@@ -38,7 +38,7 @@ from_chars_result_t<UC>
   }
 
   if (last - first >= 3) {
-    if (fastfloat_strncasecmp3(first, str_const_nan<UC>())) {
+    if (fastfloat_strncasecmp(first, str_const_nan<UC>(), 3)) {
       answer.ptr = (first += 3);
       value = minusSign ? -std::numeric_limits<T>::quiet_NaN()
                         : std::numeric_limits<T>::quiet_NaN();
@@ -58,9 +58,9 @@ from_chars_result_t<UC>
       answer.ec = std::errc();
       return answer;
     }
-    if (fastfloat_strncasecmp3(first, str_const_inf<UC>())) {
+    if (fastfloat_strncasecmp(first, str_const_inf<UC>(), 3)) {
       if ((last - first >= 8) &&
-          fastfloat_strncasecmp5(first + 3, str_const_inf<UC>() + 3)) {
+          fastfloat_strncasecmp(first + 3, str_const_inf<UC>() + 3, 5)) {
         answer.ptr = first + 8;
       } else {
         answer.ptr = first + 3;
@@ -82,7 +82,7 @@ from_chars_result_t<UC>
  * It is the default on most system. This function is meant to be inexpensive.
  * Credit : @mwalcott3
  */
-fastfloat_really_inline bool rounds_to_nearest() noexcept {
+fastfloat_inline bool rounds_to_nearest() noexcept {
   // https://lemire.me/blog/2020/06/26/gcc-not-nearest/
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   return false;
@@ -147,7 +147,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 
 template <typename T> struct from_chars_caller {
   template <typename UC>
-  FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
        parse_options_t<UC> const options) noexcept {
     return from_chars_advanced(first, last, value, options);
@@ -157,7 +157,7 @@ template <typename T> struct from_chars_caller {
 #ifdef __STDCPP_FLOAT32_T__
 template <> struct from_chars_caller<std::float32_t> {
   template <typename UC>
-  FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, std::float32_t &value,
        parse_options_t<UC> const options) noexcept {
     // if std::float32_t is defined, and we are in C++23 mode; macro set for
@@ -171,7 +171,7 @@ template <> struct from_chars_caller<std::float32_t> {
 #ifdef __STDCPP_FLOAT64_T__
 template <> struct from_chars_caller<std::float64_t> {
   template <typename UC>
-  FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, std::float64_t &value,
        parse_options_t<UC> const options) noexcept {
     // if std::float64_t is defined, and we are in C++23 mode; macro set for
@@ -182,16 +182,31 @@ template <> struct from_chars_caller<std::float64_t> {
 };
 #endif
 
+// Parser instantiated for a format fixed at compile time, so that every test
+// on the format folds away inside it. GCC gets the same effect by inlining the
+// whole parser into each caller, where the format is a constant; clang keeps
+// it out of line and would otherwise re-test each format flag per conversion.
+template <typename T, typename UC, chars_format Fmt>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
+  return from_chars_caller<T>::call(first, last, value,
+                                    parse_options_t<UC>(Fmt));
+}
+
 template <typename T, typename UC, typename>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
            chars_format const fmt /*= chars_format::general*/) noexcept {
+  if (fmt == chars_format::general) {
+    return from_chars_fixed_format<T, UC, chars_format::general>(first, last,
+                                                                 value);
+  }
   return from_chars_caller<T>::call(first, last, value,
                                     parse_options_t<UC>(fmt));
 }
 
 template <typename T>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+fastfloat_inline FASTFLOAT_CONSTEXPR20 bool
 clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                        bool const is_negative,
@@ -225,21 +240,25 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
     ) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
-      if (mantissa <= binary_format<T>::max_mantissa_fast_path()) {
-        value = static_cast<T>(mantissa);
-        if (exponent < 0) {
-          value = value / binary_format<T>::exact_power_of_ten(-exponent);
-        } else {
-          value = value * binary_format<T>::exact_power_of_ten(exponent);
+      value = static_cast<T>(mantissa);
+      if (exponent < 0) {
+        value = value / binary_format<T>::exact_power_of_ten(-exponent);
+      } else {
+        value = value * binary_format<T>::exact_power_of_ten(exponent);
+        // Only std::float16_t can overflow here (e.g., "656e2"); let the
+        // slow path report result_out_of_range.
+        if (binary_format<T>::fast_path_can_overflow() &&
+            value > (std::numeric_limits<T>::max)()) {
+          return false;
         }
-#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-        if (is_negative) {
-          value = -value;
-        }
-#endif
-        return true;
-#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
       }
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+      if (is_negative) {
+        value = -value;
+      }
+#endif
+      return true;
+#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
     } else {
       // We do not have that fegetround() == FE_TONEAREST.
       // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's
@@ -265,8 +284,8 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
         }
 #endif
         return true;
-#endif
       }
+#endif
     }
   }
   return false;
@@ -278,7 +297,7 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
  * parsing options or other parsing custom function implemented by user.
  */
 template <typename T, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
   static_assert(is_supported_float_type<T>::value,
                 "this type of floating-point type isn't supported");
@@ -341,20 +360,65 @@ parse_number_slow_path(UC const *first, UC const *last, T &value,
                        ) noexcept {
   parsed_number_string_t<UC> const pns =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      bjf ? parse_number_string<true, UC>(first, last, options, true) :
+      bjf ? parse_number_string_impl<true, false, UC>(first, last, options,
+                                                      true)
+          :
 #endif
-          parse_number_string<false, UC>(first, last, options, true);
+          parse_number_string_impl<false, false, UC>(first, last, options,
+                                                     true);
+
   return from_chars_advanced(pns, value);
 }
 
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+// Cold: the whole chars_format::javascript conversion. Kept out of line and out
+// of from_chars_float_advanced so the common frame holds neither the javascript
+// parser body nor a call that would force the parsed number string onto the
+// stack. Mirrors the main path, only with the javascript parser.
 template <typename T, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_float_javascript(UC const *first, UC const *last, T &value,
+                            parse_options_t<UC> options) noexcept {
+  if (uint64_t(fmt & chars_format::skip_white_space)) {
+    while ((first != last) && fast_float::is_space(*first)) {
+      first++;
+    }
+  }
+  from_chars_result_t<UC> answer;
+  answer.ec = std::errc::invalid_argument;
+  answer.ptr = first;
+  if (first == last) {
+    return answer;
+  }
+  parsed_number_string_t<UC> pns =
+      parse_number_string_javascript<UC>(first, last, options, true);
+  if (pns.invalid) {
+    if (uint64_t(fmt & chars_format::no_infnan)) {
+      return answer;
+    }
+    return detail::parse_infnan(first, last, value, fmt);
+  }
+  return from_chars_advanced(pns, value);
+}
+#endif
+
+template <typename T, typename UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
                           parse_options_t<UC> const options) noexcept {
   static_assert(is_supported_float_type<T>::value,
                 "this type of floating-point type isn't supported");
   static_assert(is_supported_char_type<UC>::value,
                 "only char, wchar_t, char16_t and char32_t are supported");
+
+#ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
+  // Leave for the javascript conversion before anything else is live, so this
+  // compiles to a tail call and the common path keeps its registers. The cold
+  // function repeats the leading-whitespace and empty-input handling below.
+  if fastfloat_unlikely (uint64_t(fmt & detail::basic_javascript_fmt)) {
+    return from_chars_float_javascript<T, UC>(first, last, value, options);
+  }
+#endif
 
   from_chars_result_t<UC> answer;
 #ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
@@ -391,12 +455,15 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Fast path: parse WITHOUT materializing the integer/fraction spans (read
   // only by the rare slow paths). Skipping their stores keeps the fat
   // parsed_number_string_t off the hot path. store_spans is a runtime argument,
-  // so this reuses the single parse_number_string instantiation.
+  // so this reuses the single parse_number_string_impl instantiation.
   parsed_number_string_t<UC> const pns =
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-      bjf ? parse_number_string<true, UC>(first, last, options, false) :
+      bjf ? parse_number_string_impl<true, false, UC>(first, last, options,
+                                                      false)
+          :
 #endif
-          parse_number_string<false, UC>(first, last, options, false);
+          parse_number_string_impl<false, false, UC>(first, last, options,
+                                                     false);
   if (pns.invalid) {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
     if (chars_format_t(options.format & chars_format::no_infnan)) {
@@ -458,19 +525,22 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 #endif
     );
   }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       pns.negative,
 #endif
       am, value);
-  // Test for over/underflow.
-  if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
-      am.power2 == binary_format<T>::infinite_power()) {
+  // Test for over/underflow. Marked unlikely so that clang keeps it as a
+  // branch instead of folding it into a chain of conditional moves that
+  // every conversion pays for.
+  if fastfloat_unlikely ((pns.mantissa != 0 && am.mantissa == 0 &&
+                          am.power2 == 0) ||
+                         am.power2 == binary_format<T>::infinite_power()) {
     answer.ec = std::errc::result_out_of_range;
   }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
   return answer;
 }
 
@@ -493,15 +563,15 @@ FASTFLOAT_CONSTEXPR20
     integer_times_pow10(uint64_t const mantissa,
                         int const decimal_exponent) noexcept {
   T value;
-  const auto exponent = static_cast<am_pow_t>(decimal_exponent);
-  if (clinger_fast_path_impl(mantissa, exponent,
+  if (clinger_fast_path_impl(mantissa, static_cast<am_pow_t>(decimal_exponent),
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                              false,
 #endif
                              value))
     return value;
 
-  adjusted_mantissa am = compute_float<binary_format<T>>(exponent, mantissa);
+  adjusted_mantissa am = compute_float<binary_format<T>>(
+      static_cast<am_pow_t>(decimal_exponent), mantissa);
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
       false,
@@ -522,16 +592,16 @@ FASTFLOAT_CONSTEXPR20
   FASTFLOAT_ASSUME(mantissa >= 0);
   const auto m = static_cast<am_mant_t>(mantissa);
 #endif
-  const auto exponent = static_cast<am_pow_t>(decimal_exponent);
   T value;
-  if (clinger_fast_path_impl(m, exponent,
+  if (clinger_fast_path_impl(m, static_cast<am_pow_t>(decimal_exponent),
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
                              is_negative,
 #endif
                              value))
     return value;
 
-  adjusted_mantissa const am = compute_float<binary_format<T>>(exponent, m);
+  adjusted_mantissa const am = compute_float<binary_format<T>>(
+      static_cast<am_pow_t>(decimal_exponent), m);
 
   to_float(
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -634,7 +704,7 @@ template <size_t TypeIx> struct from_chars_advanced_caller {
 
 template <> struct from_chars_advanced_caller<1> {
   template <typename T, typename UC>
-  fastfloat_really_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
        parse_options_t<UC> const options) noexcept {
     return from_chars_float_advanced(first, last, value, options);
@@ -643,7 +713,7 @@ template <> struct from_chars_advanced_caller<1> {
 
 template <> struct from_chars_advanced_caller<2> {
   template <typename T, typename UC>
-  fastfloat_really_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
        parse_options_t<UC> const options) noexcept {
     return from_chars_int_advanced(first, last, value, options);
@@ -651,7 +721,7 @@ template <> struct from_chars_advanced_caller<2> {
 };
 
 template <typename T, typename UC>
-fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
                     parse_options_t<UC> const options) noexcept {
   return from_chars_advanced_caller<

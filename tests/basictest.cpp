@@ -1828,6 +1828,20 @@ TEST_CASE("float16.inf") {
          std::errc::result_out_of_range);
   verify("3.5028234666e38", std::numeric_limits<std::float16_t>::infinity(),
          std::errc::result_out_of_range);
+  // overflow in the fast path
+  verify("656e2", std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("-656e2", -std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("7e4", std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("2048e4", std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("655e2", 0x1.ffcp+15f16); // 65500 rounds to max
+  // max + ulp/2 rounds to even
+  verify("6552e1", std::numeric_limits<std::float16_t>::infinity(),
+         std::errc::result_out_of_range);
+  verify("65519", 0x1.ffcp+15f16);
 }
 
 TEST_CASE("float16.general") {
@@ -1847,6 +1861,22 @@ TEST_CASE("float16.general") {
   // -denorm_min
   verify("-0.000000059604644775390625", -0x1p-24f16);
   verify("-5.9604644775390625e-8", -0x1p-24f16);
+
+  // subnormal ties round to even
+  verify("2.98023223876953125e-8", 0.0f16, std::errc::result_out_of_range);
+  verify("0.0000000298023223876953125", 0.0f16, std::errc::result_out_of_range);
+  verify("-2.98023223876953125e-8", -0.0f16, std::errc::result_out_of_range);
+  verify("8.94069671630859375e-8", 0x1p-23f16);
+  verify("1.490116119384765625e-7", 0x1p-23f16);
+  verify("9.834766387939453125e-7", 0x1p-20f16);
+  // just above or below a tie
+  verify("2.980232238769531251e-8", 0x1p-24f16);
+  verify("2.980232238769531249e-8", 0.0f16, std::errc::result_out_of_range);
+  verify("1.4901161193847656251e-7", 0x1.8p-23f16);
+  verify("1.4901161193847656249e-7", 0x1p-23f16);
+  // more than 19 digits
+  verify("2.9802322387695312500e-8", 0.0f16, std::errc::result_out_of_range);
+  verify("1.4901161193847656250000e-7", 0x1p-23f16);
 
   verify("-1e-999", -0.0f16, std::errc::result_out_of_range);
   verify("6.0975551605224609375", 0x1.864p+2f16);
