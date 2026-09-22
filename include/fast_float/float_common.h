@@ -1117,11 +1117,12 @@ inline constexpr bool binary_format<T>::fast_path_can_overflow() {
 
 // A subnormal needs w * 10^q < 2^(minimum_exponent() + 1), so q is at most
 // (minimum_exponent() + 1) * log10(2), with 1233/4096 < log10(2). Only
-// std::float16_t has such q in its round-to-even range.
+// std::float16_t has such q in its round-to-even range. We compare
+// 4096 * q with (minimum_exponent() + 1) * 1233 to avoid right-shifting a
+// negative value (implementation-defined before C++20).
 template <typename T>
 inline constexpr bool binary_format<T>::subnormal_ties_possible() {
-  return min_exponent_round_to_even() <=
-         (((minimum_exponent() + 1) * 1233) >> 12);
+  return min_exponent_round_to_even() * 4096 <= (minimum_exponent() + 1) * 1233;
 }
 
 template <>
