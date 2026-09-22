@@ -194,16 +194,31 @@ compute_float(int64_t q, uint64_t w) noexcept {
 
   answer.mantissa += (answer.mantissa & 1); // round up
   answer.mantissa >>= 1;
-  if (answer.mantissa >= (uint64_t(2) << binary::mantissa_explicit_bits())) {
+  // Both fix-ups below are rare. They are marked unlikely so that clang keeps
+  // them as branches instead of folding them into conditional moves that
+  // every conversion pays for.
+#ifdef __clang__
+#pragma clang diagnostic push
+#if (!defined(__APPLE_CC__) && __clang_major__ >= 10) || (__clang_major__ >= 13)
+#pragma clang diagnostic ignored "-Wc++20-extensions"
+#endif
+#endif
+  if fastfloat_clang_unlikely (answer.mantissa >=
+                               (uint64_t(2)
+                                << binary::mantissa_explicit_bits())) {
     answer.mantissa = (uint64_t(1) << binary::mantissa_explicit_bits());
     answer.power2++; // undo previous addition
   }
 
   answer.mantissa &= ~(uint64_t(1) << binary::mantissa_explicit_bits());
-  if (answer.power2 >= binary::infinite_power()) { // infinity
+  if fastfloat_clang_unlikely (answer.power2 >= binary::infinite_power()) {
+    // infinity
     answer.power2 = binary::infinite_power();
     answer.mantissa = 0;
   }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
   return answer;
 }
 
