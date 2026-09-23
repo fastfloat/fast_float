@@ -127,7 +127,7 @@ pre:hover .copy-btn { opacity: 1; }
 .skip {
   position: absolute; left: -9999px;
   background: var(--accent); color: white;
-  padding: 0.6rem 1rem; border-radius: 0 0 6px 0;
+  padding: 0.6rem 1rem; border-radius: 0 0 6px;
 }
 .skip:focus { left: 0; top: 0; }
 
