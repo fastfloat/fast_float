@@ -416,7 +416,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // compiles to a tail call and the common path keeps its registers. The cold
   // function repeats the leading-whitespace and empty-input handling below.
   if fastfloat_unlikely (chars_format_t(options.format &
-                                        detail::basic_javascript_fmt)) {
+                                        detail::javascript_fmt)) {
     return from_chars_float_javascript<T, UC>(first, last, value, options);
   }
 #endif

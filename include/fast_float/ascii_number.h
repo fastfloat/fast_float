@@ -790,7 +790,7 @@ parse_number_string(UC const *p, UC const *pend,
   // instantiation has to look at the flag.
   if (!basic_json_fmt) {
     if fastfloat_unlikely (chars_format_t(options.format &
-                                          detail::basic_javascript_fmt)) {
+                                          detail::javascript_fmt)) {
       return parse_number_string_javascript<UC>(p, pend, options, store_spans);
     }
   }
