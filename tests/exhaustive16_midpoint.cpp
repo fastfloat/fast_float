@@ -13,6 +13,8 @@
 #include <string>
 #include <system_error>
 
+#ifdef __STDCPP_FLOAT16_T__
+
 namespace {
 
 // Decimal digit strings, most significant digit first, no leading zeros.
@@ -149,7 +151,10 @@ template <typename T> Failure sweep() {
 
 } // namespace
 
+#endif
+
 int main() {
+#ifdef __STDCPP_FLOAT16_T__
   Failure f16 = sweep<std::float16_t>();
   std::printf("float16: %ld strings, %ld failures\n", f16.checked, f16.count);
   Failure bf16 = sweep<std::bfloat16_t>();
@@ -158,6 +163,7 @@ int main() {
   if (f16.count != 0 || bf16.count != 0) {
     return EXIT_FAILURE;
   }
+#endif
   std::printf("all ok\n");
   return EXIT_SUCCESS;
 }
