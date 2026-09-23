@@ -379,7 +379,7 @@ template <typename T, typename UC>
 fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_javascript(UC const *first, UC const *last, T &value,
                             parse_options_t<UC> options) noexcept {
-  if (uint64_t(fmt & chars_format::skip_white_space)) {
+  if (chars_format_t(options.format & chars_format::skip_white_space)) {
     while ((first != last) && fast_float::is_space(*first)) {
       first++;
     }
@@ -393,10 +393,10 @@ from_chars_float_javascript(UC const *first, UC const *last, T &value,
   parsed_number_string_t<UC> pns =
       parse_number_string_javascript<UC>(first, last, options, true);
   if (pns.invalid) {
-    if (uint64_t(fmt & chars_format::no_infnan)) {
+    if (chars_format_t(options.format & chars_format::no_infnan)) {
       return answer;
     }
-    return detail::parse_infnan(first, last, value, fmt);
+    return detail::parse_infnan(first, last, value, options.format);
   }
   return from_chars_advanced(pns, value);
 }
@@ -415,7 +415,8 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Leave for the javascript conversion before anything else is live, so this
   // compiles to a tail call and the common path keeps its registers. The cold
   // function repeats the leading-whitespace and empty-input handling below.
-  if fastfloat_unlikely (uint64_t(fmt & detail::basic_javascript_fmt)) {
+  if fastfloat_unlikely (chars_format_t(options.format &
+                                        detail::basic_javascript_fmt)) {
     return from_chars_float_javascript<T, UC>(first, last, value, options);
   }
 #endif
