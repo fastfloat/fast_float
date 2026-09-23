@@ -34,8 +34,7 @@ void pretty_print(size_t volume, size_t bytes, std::string name,
   printf("\n");
 }
 
-fastfloat_really_inline const char *seek_ip_end(const char *p,
-                                                const char *pend) {
+fastfloat_inline const char *seek_ip_end(const char *p, const char *pend) {
   const char *current = p;
   size_t count = 0;
   for (; current != pend; ++current) {
@@ -60,7 +59,7 @@ fastfloat_really_inline const char *seek_ip_end(const char *p,
 enum class parse_method { standard, fast_float };
 
 template <parse_method use_standard>
-fastfloat_really_inline std::pair<bool, uint32_t>
+fastfloat_inline std::pair<bool, uint32_t>
 simple_parse_ip_line(const char *p, const char *pend) {
   const char *current = p;
   uint32_t ip = 0;
