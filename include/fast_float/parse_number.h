@@ -458,8 +458,9 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Test for over/underflow. One comparison catches both a zero and an
   // infinite exponent, so normal values pay a single, never-taken branch. The
   // result is then selected: which case it is follows the sign of the exponent.
-  if fastfloat_clang_unlikely (uint32_t(am.power2 - 1) >=
-                               uint32_t(binary_format<T>::infinite_power() - 1)) {
+  constexpr uint32_t max_power2 =
+      uint32_t(binary_format<T>::infinite_power() - 1);
+  if fastfloat_clang_unlikely (uint32_t(am.power2 - 1) >= max_power2) {
     bool const out_of_range =
         (am.power2 != 0) | ((am.mantissa == 0) & (pns.mantissa != 0));
     answer.ec = out_of_range ? std::errc::result_out_of_range : answer.ec;

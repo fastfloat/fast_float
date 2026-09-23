@@ -104,10 +104,9 @@ compute_float(int64_t q, uint64_t w) noexcept {
   adjusted_mantissa answer;
   // One comparison for both ends of the range, then zero vs infinity without
   // a branch: it follows the sign of the exponent, which is unpredictable.
-  bool const q_out_of_range =
-      uint64_t(q - binary::smallest_power_of_ten()) >
-      uint64_t(binary::largest_power_of_ten() -
-               binary::smallest_power_of_ten());
+  bool const q_out_of_range = uint64_t(q - binary::smallest_power_of_ten()) >
+                              uint64_t(binary::largest_power_of_ten() -
+                                       binary::smallest_power_of_ten());
   if ((w == 0) || q_out_of_range) {
     bool const underflow = (w == 0) | (q < binary::smallest_power_of_ten());
     answer.power2 = int32_t(!underflow) * binary::infinite_power();
