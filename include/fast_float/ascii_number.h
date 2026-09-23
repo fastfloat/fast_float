@@ -91,11 +91,6 @@ fastfloat_inline uint64_t simd_read8(__m128i const data) {
 
 #if FASTFLOAT_64BIT
   return static_cast<uint64_t>(_mm_cvtsi128_si64(packed));
-#elif FASTFLOAT_VISUAL_STUDIO
-  // Visual Studio doesn't support _mm_cvtsi128_si64 on 32-bit targets, so we
-  // use the union trick. Let's compiler do it works well, because it is a POD
-  // type.
-  return packed.m128i_u64[0];
 #else
   uint64_t value;
   // Visual Studio + older versions of GCC don't support _mm_storeu_si64
