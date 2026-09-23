@@ -459,8 +459,13 @@ parse_number_string_impl(UC const *p, UC const *pend,
     // for integers with many digits, digit parsing is the primary bottleneck.
     loop_parse_if_eight_digits(p, pend, i);
 
-    while ((p != pend) && is_integer(*p)) {
-      uint8_t digit = uint8_t(*p - UC('0'));
+    // One subtraction serves the digit test and the digit (GCC computes it
+    // twice when written separately); in 64 bits it needs no extension.
+    while (p != pend) {
+      uint64_t const digit = uint64_t(*p) - uint64_t(UC('0'));
+      if (digit > 9) {
+        break;
+      }
       ++p;
       i = i * 10 + digit; // in rare cases, this will overflow, but that's ok
     }
@@ -509,12 +514,27 @@ parse_number_string_impl(UC const *p, UC const *pend,
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
     } else {
-      while ((p != pend) && is_integer(*p)) {
-        uint8_t digit = uint8_t(*p - UC('0'));
-        if (exp_number < 0x10000000) {
-          exp_number = 10 * exp_number + digit;
+      // Same digit test as the fraction tail. No saturation in the loop: it
+      // would add a select per digit on the path to the power of ten, and 18
+      // digits fit in int64_t.
+      UC const *const exp_start = p;
+      uint64_t exp_digits = 0;
+      while (p != pend) {
+        uint64_t const digit = uint64_t(*p) - uint64_t(UC('0'));
+        if (digit > 9) {
+          break;
         }
+        exp_digits = 10 * exp_digits + digit;
         ++p;
+      }
+      exp_number = int64_t(exp_digits);
+      if fastfloat_unlikely (p - exp_start > 18) {
+        exp_number = 0;
+        for (UC const *q = exp_start; q != p; ++q) {
+          if (exp_number < 0x10000000) {
+            exp_number = 10 * exp_number + (*q - UC('0'));
+          }
+        }
       }
       if (neg_exp) {
         exp_number = -exp_number;
