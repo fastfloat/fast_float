@@ -445,8 +445,20 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
     return answer;
   }
 
+#ifdef __clang__
+  // If the exponent passed Clinger's range test, it is well within range. GCC
+  // carries this into compute_float by itself; clang needs the instantiation
+  // without the range check. The mantissa can still be zero when the rounding
+  // mode is not to nearest.
+  adjusted_mantissa am =
+      (binary_format<T>::min_exponent_fast_path() <= pns.exponent &&
+       pns.exponent <= binary_format<T>::max_exponent_fast_path())
+          ? compute_float<binary_format<T>, true>(pns.exponent, pns.mantissa)
+          : compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
+#else
   adjusted_mantissa am =
       compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
+#endif
   // Slow path B (rare): Eisel-Lemire could not resolve; digit_comp needs the
   // integer/fraction spans. Route to the cold helper (clinger there is a
   // dead-effect since it already failed here; the cold re-parse + digit_comp

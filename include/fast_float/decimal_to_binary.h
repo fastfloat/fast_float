@@ -98,7 +98,9 @@ compute_error(int64_t q, uint64_t w) noexcept {
 // packed. However, in some very rare cases, the computation will fail. In such
 // cases, we return an adjusted_mantissa with a negative power of 2: the caller
 // should recompute in such cases.
-template <typename binary>
+// known_in_range: the caller knows that q is within the range of powers of
+// ten, so only w == 0 is checked.
+template <typename binary, bool known_in_range = false>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 adjusted_mantissa
 compute_float(int64_t q, uint64_t w) noexcept {
   adjusted_mantissa answer;
@@ -107,7 +109,7 @@ compute_float(int64_t q, uint64_t w) noexcept {
   bool const q_out_of_range = uint64_t(q - binary::smallest_power_of_ten()) >
                               uint64_t(binary::largest_power_of_ten() -
                                        binary::smallest_power_of_ten());
-  if ((w == 0) || q_out_of_range) {
+  if ((w == 0) || (!known_in_range && q_out_of_range)) {
     bool const underflow = (w == 0) | (q < binary::smallest_power_of_ten());
     answer.power2 = int32_t(!underflow) * binary::infinite_power();
     answer.mantissa = 0;
