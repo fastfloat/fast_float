@@ -491,14 +491,13 @@ parse_number_string_impl(UC const *p, UC const *pend,
         (UC('D') == *p)) {
       ++p;
     }
+    // No branch on the sign: it is as unpredictable as the value (`|`, not
+    // `||`, which GCC turns into a branch).
     bool neg_exp = false;
-    if ((p != pend) && (UC('-') == *p)) {
-      neg_exp = true;
-      ++p;
-    } else if ((p != pend) &&
-               (UC('+') ==
-                *p)) { // '+' on exponent is allowed by C++17 20.19.3.(7.1)
-      ++p;
+    if (p != pend) {
+      neg_exp = (UC('-') == *p);
+      // '+' on exponent is allowed by C++17 20.19.3.(7.1)
+      p += (neg_exp | (UC('+') == *p));
     }
     if ((p == pend) || !is_integer(*p)) {
       if (!uint64_t(fmt & chars_format::fixed)) {

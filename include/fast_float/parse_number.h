@@ -455,14 +455,14 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
   to_float(pns.negative, am, value);
-  // Test for over/underflow. Marked unlikely so that clang keeps it as a
-  // branch instead of folding it into a chain of conditional moves that
-  // every conversion pays for.
-  if fastfloat_clang_unlikely ((pns.mantissa != 0 && am.mantissa == 0 &&
-                                am.power2 == 0) ||
-                               am.power2 ==
-                                   binary_format<T>::infinite_power()) {
-    answer.ec = std::errc::result_out_of_range;
+  // Test for over/underflow. One comparison catches both a zero and an
+  // infinite exponent, so normal values pay a single, never-taken branch. The
+  // result is then selected: which case it is follows the sign of the exponent.
+  if fastfloat_clang_unlikely (uint32_t(am.power2 - 1) >=
+                               uint32_t(binary_format<T>::infinite_power() - 1)) {
+    bool const out_of_range =
+        (am.power2 != 0) | ((am.mantissa == 0) & (pns.mantissa != 0));
+    answer.ec = out_of_range ? std::errc::result_out_of_range : answer.ec;
   }
 #ifdef __clang__
 #pragma clang diagnostic pop
