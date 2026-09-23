@@ -12,17 +12,16 @@
 [![vs18 clang](https://github.com/irainman/fast_float/actions/workflows/vs18-clang-ci.yml/badge.svg)](https://github.com/irainman/fast_float/actions/workflows/vs18-clang-ci.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/irainman/fast_float/badge)](https://www.codefactor.io/repository/github/irainman/fast_float)
 
-## This is a fork of [fast_float](https://github.com/fastfloat/fast_float) made by HedgehogInTheCPP with some additional options, code refactoring and big cleanup to maximize performance, reduce size and improve mainteinability, please give a star to this repo ^^ 
+## This is a fork of [fast_float](https://github.com/fastfloat/fast_float) made by HedgehogInTheCPP with some additional options, code refactoring and big cleanup to maximize performance, reduce size and improve mainteinability, please give a star to this repo ^^
 
 ### 🚀 Performance and Code Size Improvements
 
-* Optimized parsing logic for use as an **internal lightweight parser** (for example, inside other libraries).
+* Optimized parsing logic for use as an **internal lightweight parser** (for example, inside other libraries or in compilers).
 * Reduced binary size by conditionally excluding unneeded parsing features.
-* The `from_chars_result_t` structure is reduced to **4 bytes** for better memory efficiency.
 * Improved the `parsed_number_string_t` layout and increased `constexpr`/`consteval` propagation to enable compile-time optimizations.
-* Reduced register and cache pressure and branching in parsing hot paths.
+* Reduced register and cache pressure and reduce branching especially in parsing hot paths.
 * Improved performance in both 64-bit and 32-bit builds for all supported types.
-* Added more optimized x86 specific code that uses up to SSE4.2 instructions in algorithms and significantly improve speed parsing especially for big numbers.
+* Added more optimized x86 specific code that uses up to SSE4.2 instructions in algorithms and significantly improve speed parsing especially for numbers with many digits.
 
 ---
 
@@ -31,10 +30,10 @@
 Introduced new optional macros to minimize overhead when certain parsing features are not required:
 
 * **`FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`**
-  Restricts parsing to **positive C-style numbers only** — no sign characters, no `INF`, `INFINITY`, or `NaN` and no additional options like skip white spaces or support for Fortran or JSON.
+  Restricts parsing to **positive C-style numbers only** — no sign characters, no `INF`, `INFINITY`, or `NaN` and no additional options like skip white spaces or support for Fortran/JSON/JS.
 
 * **`FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED`**
-  Assumes that only the **IEEE 754 “round-to-nearest”** rounding mode is needed, removing crutches support code for other modes.
+  Assumes that only the **IEEE 754 “round-to-nearest”** rounding mode is needed, removing crutches and support code for other modes.
 
 * **`FASTFLOAT_ISNOT_CHECKED_BOUNDS`**
   Disables bounds checking for input ranges that are assumed to be valid.

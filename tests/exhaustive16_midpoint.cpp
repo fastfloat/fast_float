@@ -163,6 +163,8 @@ int main() {
   if (f16.count != 0 || bf16.count != 0) {
     return EXIT_FAILURE;
   }
+#else
+  std::printf("float16x type unsupported, so this test isn't applied\n");
 #endif
   std::printf("all ok\n");
   return EXIT_SUCCESS;
