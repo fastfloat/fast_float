@@ -187,7 +187,7 @@ template <> struct from_chars_caller<std::float64_t> {
 // whole parser into each caller, where the format is a constant; clang keeps
 // it out of line and would otherwise re-test each format flag per conversion.
 template <typename T, typename UC, chars_format Fmt>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_clang_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
   return from_chars_caller<T>::call(first, last, value,
                                     parse_options_t<UC>(Fmt));
@@ -195,7 +195,7 @@ from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
 #endif
 
 template <typename T, typename UC, typename>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_clang_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
            chars_format fmt /*= chars_format::general*/) noexcept {
 #ifdef __clang__
