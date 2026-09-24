@@ -475,27 +475,32 @@ parse_number_string_impl(UC const *p, UC const *pend,
   // Straight-line unroll of the integer-part scan: most integer parts are
   // 1-5 digits, so peeling the first iterations eliminates the loop back-edge
   // for the common case. Semantics are identical to the original `while` loop:
-  // i = 10*i + digit, advancing p.
-  if ((p != pend) && is_integer(*p)) {
-    i = uint64_t(*p - UC('0'));
+  // i = 10*i + int_digit, advancing p. Each int_digit is tested and used
+  // through one subtraction, as in the fraction tail (clang otherwise computes
+  // it twice).
+  uint64_t int_digit;
+  if ((p != pend) && (int_digit = uint64_t(*p) - uint64_t(UC('0'))) <= 9) {
+    i = int_digit;
     ++p;
-    if ((p != pend) && is_integer(*p)) {
-      i = 10 * i + uint64_t(*p - UC('0'));
+    if ((p != pend) && (int_digit = uint64_t(*p) - uint64_t(UC('0'))) <= 9) {
+      i = 10 * i + int_digit;
       ++p;
-      if ((p != pend) && is_integer(*p)) {
-        i = 10 * i + uint64_t(*p - UC('0'));
+      if ((p != pend) && (int_digit = uint64_t(*p) - uint64_t(UC('0'))) <= 9) {
+        i = 10 * i + int_digit;
         ++p;
-        if ((p != pend) && is_integer(*p)) {
-          i = 10 * i + uint64_t(*p - UC('0'));
+        if ((p != pend) &&
+            (int_digit = uint64_t(*p) - uint64_t(UC('0'))) <= 9) {
+          i = 10 * i + int_digit;
           ++p;
-          if ((p != pend) && is_integer(*p)) {
-            i = 10 * i + uint64_t(*p - UC('0'));
+          if ((p != pend) &&
+              (int_digit = uint64_t(*p) - uint64_t(UC('0'))) <= 9) {
+            i = 10 * i + int_digit;
             ++p;
-            while ((p != pend) && is_integer(*p)) {
+            while ((p != pend) &&
+                   (int_digit = uint64_t(*p) - uint64_t(UC('0'))) <= 9) {
               // a multiplication by 10 is cheaper than an arbitrary integer
               // multiplication
-              i = 10 * i +
-                  uint64_t(*p - UC('0')); // might overflow, handled later
+              i = 10 * i + int_digit; // might overflow, handled later
               ++p;
             }
           }
