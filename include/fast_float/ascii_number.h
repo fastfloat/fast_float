@@ -110,6 +110,28 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
+// Eight digit units to their value, combining digit pairs in the vector unit
+// (pmaddwd by 10,1 then 100,1): parse_eight_digits_unrolled on the packed
+// bytes needs three 64-bit constants in general registers, and GCC 14/15
+// spill a value on the digit chain to make room.
+fastfloat_really_inline uint32_t simd_eight_digits_value(__m128i const data) {
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  __m128i const digits = _mm_sub_epi16(data, _mm_set1_epi16('0'));
+  __m128i const pairs =
+      _mm_madd_epi16(digits, _mm_set_epi16(1, 10, 1, 10, 1, 10, 1, 10));
+  __m128i const quads =
+      _mm_madd_epi16(_mm_packs_epi32(pairs, pairs),
+                     _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
+#ifdef FASTFLOAT_64BIT
+  uint64_t const both = uint64_t(_mm_cvtsi128_si64(quads));
+#else
+  uint64_t both;
+  _mm_storel_epi64(reinterpret_cast<__m128i *>(&both), quads);
+#endif
+  return uint32_t(both) * 10000 + uint32_t(both >> 32);
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+}
+
 #elif defined(FASTFLOAT_NEON)
 
 fastfloat_really_inline uint64_t simd_read8_to_u64(uint16x8_t const data) {
@@ -123,6 +145,21 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   return simd_read8_to_u64(
       vld1q_u16(reinterpret_cast<uint16_t const *>(chars)));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+}
+
+// See the SSE2 version.
+fastfloat_really_inline uint32_t
+simd_eight_digits_value(uint16x8_t const data) {
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  static uint16_t const m10[8] = {10, 1, 10, 1, 10, 1, 10, 1};
+  static uint16_t const m100[4] = {100, 1, 100, 1};
+  uint16x8_t const digits = vsubq_u16(data, vdupq_n_u16('0'));
+  uint32x4_t const pairs = vpaddlq_u16(vmulq_u16(digits, vld1q_u16(m10)));
+  uint32x2_t const quads =
+      vpaddl_u16(vmul_u16(vmovn_u32(pairs), vld1_u16(m100)));
+  uint64_t const both = vget_lane_u64(vreinterpret_u64_u32(quads), 0);
+  return uint32_t(both) * 10000 + uint32_t(both >> 32);
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
@@ -202,7 +239,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   __m128i const t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-32759));
 
   if (_mm_movemask_epi8(t1) == 0) {
-    i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
+    i = i * 100000000 + simd_eight_digits_value(data);
     return true;
   } else
     return false;
@@ -217,7 +254,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   uint16x8_t const mask = vcltq_u16(t0, vmovq_n_u16('9' - '0' + 1));
 
   if (vminvq_u16(mask) == 0xFFFF) {
-    i = i * 100000000 + parse_eight_digits_unrolled(simd_read8_to_u64(data));
+    i = i * 100000000 + simd_eight_digits_value(data);
     return true;
   } else
     return false;
@@ -227,6 +264,38 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   static_cast<void>(i);
   return false;
 #endif // FASTFLOAT_SSE2
+}
+
+// Four units, for a remaining 4-7 digit run: the same test as above on a
+// 64-bit load, so the constants stay in vector registers or memory.
+fastfloat_really_inline bool simd_parse_if_four_digits(char16_t const *chars,
+                                                       uint64_t &i) noexcept {
+#ifdef FASTFLOAT_SSE2
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  __m128i const data =
+      _mm_loadl_epi64(reinterpret_cast<__m128i const *>(chars));
+  __m128i const t0 = _mm_add_epi16(data, _mm_set1_epi16(32720));
+  __m128i const t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-32759));
+  if ((_mm_movemask_epi8(t1) & 0xFF) != 0) {
+    return false;
+  }
+  uint32_t const val =
+      uint32_t(_mm_cvtsi128_si32(_mm_packus_epi16(data, data)));
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+#elif defined(FASTFLOAT_NEON)
+  FASTFLOAT_SIMD_DISABLE_WARNINGS
+  uint16x4_t const data = vld1_u16(reinterpret_cast<uint16_t const *>(chars));
+  uint16x4_t const t0 = vsub_u16(data, vdup_n_u16('0'));
+  uint16x4_t const mask = vclt_u16(t0, vdup_n_u16('9' - '0' + 1));
+  if (vget_lane_u64(vreinterpret_u64_u16(mask), 0) != ~uint64_t(0)) {
+    return false;
+  }
+  uint32_t const val = vget_lane_u32(
+      vreinterpret_u32_u8(vmovn_u16(vcombine_u16(data, data))), 0);
+  FASTFLOAT_SIMD_RESTORE_WARNINGS
+#endif
+  i = i * 10000 + parse_four_digits_unrolled(val);
+  return true;
 }
 
 #endif // FASTFLOAT_HAS_SIMD
@@ -242,6 +311,16 @@ bool simd_parse_if_eight_digits_unrolled(UC const *, uint64_t &) {
   return 0;
 }
 
+#if defined(_MSC_VER) && _MSC_VER <= 1900
+template <typename UC>
+#else
+template <typename UC, FASTFLOAT_ENABLE_IF(!has_simd_opt<UC>()) = 0>
+#endif
+// dummy for compile
+bool simd_parse_if_four_digits(UC const *, uint64_t &) {
+  return false;
+}
+
 template <typename UC, FASTFLOAT_ENABLE_IF(!std::is_same<UC, char>::value) = 0>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
 loop_parse_if_eight_digits(UC const *&p, UC const *const pend, uint64_t &i) {
@@ -252,6 +331,12 @@ loop_parse_if_eight_digits(UC const *&p, UC const *const pend, uint64_t &i) {
          simd_parse_if_eight_digits_unrolled(
              p, i)) { // in rare cases, this will overflow, but that's ok
     p += 8;
+  }
+  // A remaining 4-7 digit run in one step, as for char, so fewer digits go
+  // through the serial scalar loop.
+  if (!cpp20_and_in_constexpr() && (pend - p) >= 4 &&
+      simd_parse_if_four_digits(p, i)) {
+    p += 4;
   }
 }
 
