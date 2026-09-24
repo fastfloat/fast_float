@@ -110,15 +110,18 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
-// Eight digit units to their value, combining digit pairs in the vector unit
+// i followed by eight digit units, combining digit pairs in the vector unit
 // (pmaddwd by 10,1 then 100,1): parse_eight_digits_unrolled on the packed
 // bytes needs three 64-bit constants in general registers, and GCC 14/15
 // spill a value on the digit chain to make room.
-fastfloat_really_inline uint32_t simd_eight_digits_value(__m128i const data) {
+fastfloat_really_inline uint64_t simd_append_eight_digits(uint64_t i,
+                                                          __m128i const data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
-  __m128i const digits = _mm_sub_epi16(data, _mm_set1_epi16('0'));
+  // On the characters rather than the digits, with '0' * 11111111 taken off
+  // at the end: one step less on the digit chain (pairs stay below 628 and
+  // groups of four below 63328, in range for pmaddwd).
   __m128i const pairs =
-      _mm_madd_epi16(digits, _mm_set_epi16(1, 10, 1, 10, 1, 10, 1, 10));
+      _mm_madd_epi16(data, _mm_set_epi16(1, 10, 1, 10, 1, 10, 1, 10));
   __m128i const quads =
       _mm_madd_epi16(_mm_packs_epi32(pairs, pairs),
                      _mm_set_epi16(1, 100, 1, 100, 1, 100, 1, 100));
@@ -128,7 +131,10 @@ fastfloat_really_inline uint32_t simd_eight_digits_value(__m128i const data) {
   uint64_t both;
   _mm_storel_epi64(reinterpret_cast<__m128i *>(&both), quads);
 #endif
-  return uint32_t(both) * 10000 + uint32_t(both >> 32);
+  // The offset goes on the i side, which is ready early (clang otherwise
+  // subtracts it on the digit chain).
+  return (i * 100000000 - uint64_t('0') * 11111111) +
+         (uint32_t(both) * 10000 + uint32_t(both >> 32));
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
@@ -149,17 +155,19 @@ fastfloat_really_inline uint64_t simd_read8_to_u64(char16_t const *chars) {
 }
 
 // See the SSE2 version.
-fastfloat_really_inline uint32_t
-simd_eight_digits_value(uint16x8_t const data) {
+fastfloat_really_inline uint64_t
+simd_append_eight_digits(uint64_t i, uint16x8_t const data) {
   FASTFLOAT_SIMD_DISABLE_WARNINGS
   static uint16_t const m10[8] = {10, 1, 10, 1, 10, 1, 10, 1};
   static uint16_t const m100[4] = {100, 1, 100, 1};
-  uint16x8_t const digits = vsubq_u16(data, vdupq_n_u16('0'));
-  uint32x4_t const pairs = vpaddlq_u16(vmulq_u16(digits, vld1q_u16(m10)));
+  uint32x4_t const pairs = vpaddlq_u16(vmulq_u16(data, vld1q_u16(m10)));
   uint32x2_t const quads =
       vpaddl_u16(vmul_u16(vmovn_u32(pairs), vld1_u16(m100)));
   uint64_t const both = vget_lane_u64(vreinterpret_u64_u32(quads), 0);
-  return uint32_t(both) * 10000 + uint32_t(both >> 32);
+  // The offset goes on the i side, which is ready early (clang otherwise
+  // subtracts it on the digit chain).
+  return (i * 100000000 - uint64_t('0') * 11111111) +
+         (uint32_t(both) * 10000 + uint32_t(both >> 32));
   FASTFLOAT_SIMD_RESTORE_WARNINGS
 }
 
@@ -239,7 +247,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   __m128i const t1 = _mm_cmpgt_epi16(t0, _mm_set1_epi16(-32759));
 
   if (_mm_movemask_epi8(t1) == 0) {
-    i = i * 100000000 + simd_eight_digits_value(data);
+    i = simd_append_eight_digits(i, data);
     return true;
   } else
     return false;
@@ -254,7 +262,7 @@ simd_parse_if_eight_digits_unrolled(char16_t const *chars,
   uint16x8_t const mask = vcltq_u16(t0, vmovq_n_u16('9' - '0' + 1));
 
   if (vminvq_u16(mask) == 0xFFFF) {
-    i = i * 100000000 + simd_eight_digits_value(data);
+    i = simd_append_eight_digits(i, data);
     return true;
   } else
     return false;
