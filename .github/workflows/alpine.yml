@@ -24,7 +24,9 @@ jobs:
         uses: jirutka/setup-alpine@v1
         with:
           arch: ${{ matrix.arch }}
-          branch: ${{ matrix.arch == 'riscv64' && 'edge' || 'latest-stable' }}
+          # v3.22 is the last release with apk-tools v2; setup-alpine v1 bootstraps
+          # with apk.static v2, which cannot set up the apk v3 releases.
+          branch: v3.22
           packages: >
             build-base
             cmake
