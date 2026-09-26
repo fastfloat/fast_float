@@ -49,6 +49,17 @@ target_include_directories(
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_compile_features(fast_float INTERFACE cxx_std_11)
+
+# This focused benchmark has no external dependencies, so it can be built
+# independently of the data-driven benchmark suite below.
+option(FASTFLOAT_TRAILING_ZERO_BENCHMARK
+       "Build the trailing decimal zero slow-path benchmark" OFF)
+if(FASTFLOAT_TRAILING_ZERO_BENCHMARK)
+  add_executable(trailing_zero_benchmark benchmarks/trailing_zero_benchmark.cpp)
+  target_link_libraries(trailing_zero_benchmark PRIVATE fast_float)
+  target_compile_features(trailing_zero_benchmark PRIVATE cxx_std_11)
+endif()
+
 if(FASTFLOAT_SANITIZE)
   target_compile_options(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
   target_link_libraries(fast_float INTERFACE -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=all)
