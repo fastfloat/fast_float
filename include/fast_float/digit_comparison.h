@@ -381,9 +381,6 @@ parse_mantissa(bigint &result, const parsed_number_string_t<UC> &num) noexcept {
     }
   }
 
-  if (counter != 0) {
-    add_native(result, static_cast<limb>(powers_of_ten_uint64[counter]), value);
-  }
   return digits;
 }
 
