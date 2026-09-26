@@ -2,6 +2,9 @@ name: Ubuntu 22.04 CI (GCC 12)
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   ubuntu-build:
     runs-on: ubuntu-22.04

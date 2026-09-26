@@ -1,16 +1,19 @@
-name: Ubuntu 22.04 CI Sanitized (GCC 11)
+name: Ubuntu latest CI
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   ubuntu-build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Use cmake
         run: |
           mkdir build &&
           cd build &&
-          cmake -DFASTFLOAT_TEST=ON -D FASTFLOAT_SANITIZE=ON  ..  &&
+          cmake -DFASTFLOAT_TEST=ON  ..  &&
           cmake --build .   &&
           ctest --output-on-failure

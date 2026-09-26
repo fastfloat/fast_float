@@ -21,10 +21,6 @@
 #endif // #ifndef FASTFLOAT_CONSTEXPR_TESTS
 #endif // FASTFLOAT_IS_CONSTEXPR
 
-#if FASTFLOAT_HAS_BIT_CAST
-#include <bit>
-#endif
-
 #ifndef SUPPLEMENTAL_TEST_DATA_DIR
 #define SUPPLEMENTAL_TEST_DATA_DIR "data/"
 #endif
@@ -69,7 +65,7 @@ template <typename T> std::string fHexAndDec(T v) {
   return ss.str();
 }
 
-char const *round_name(int d) {
+constexpr std::string_view const round_name(int d) {
   switch (d) {
   case FE_UPWARD:
     return "FE_UPWARD";
@@ -969,7 +965,7 @@ constexpr void check_basic_test_result(stringtype str, result_type result,
 
   auto copysign = [](double x, double y) -> double {
 #if FASTFLOAT_HAS_BIT_CAST
-    if (fast_float::cpp20_and_in_constexpr()) {
+    if (fast_float::is_constant_evaluated()) {
       using equiv_int = std::make_signed_t<fast_float::equiv_uint_t<double>>;
       auto const i = std::bit_cast<equiv_int>(y);
       if (i < 0) {
@@ -2358,7 +2354,7 @@ TEST_CASE("integer_times_pow10") {
 
   for (int mode : {FE_UPWARD, FE_DOWNWARD, FE_TOWARDZERO, FE_TONEAREST}) {
     fesetround(mode);
-    INFO("fesetround(): " << std::string{round_name(mode)});
+    INFO("fesetround(): " << round_name(mode));
 
     struct Guard {
       ~Guard() { fesetround(FE_TONEAREST); }

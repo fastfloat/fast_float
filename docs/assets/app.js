@@ -87,7 +87,7 @@
   if (cached && cached.tag) {
     applyVersion(cached.tag, cached.url);
   } else {
-    fetch("https://api.github.com/repos/fastfloat/fast_float/releases/latest", {
+    fetch("https://api.github.com/repos/irainman/fast_float/releases/latest", {
       headers: { Accept: "application/vnd.github+json" },
     })
       .then(function (r) { return r.ok ? r.json() : null; })

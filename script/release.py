@@ -149,8 +149,8 @@ readmefile = f"{maindir}{os.sep}README.md"
 
 for line in fileinput.input(readmefile, inplace=1, backup=".bak"):
     line = re.sub(
-        r"https://github.com/fastfloat/fast_float/releases/download/v(\d+\.\d+\.\d+)/fast_float.h",
-        f"https://github.com/fastfloat/fast_float/releases/download/v{newversionstring}/fast_float.h",
+        r"https://github.com/irainman/fast_float/releases/download/v(\d+\.\d+\.\d+)/fast_float.h",
+        f"https://github.com/irainman/fast_float/releases/download/v{newversionstring}/fast_float.h",
         line.rstrip(),
     )
     line = re.sub(

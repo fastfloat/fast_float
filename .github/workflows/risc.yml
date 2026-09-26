@@ -2,6 +2,9 @@ name: Ubuntu RISC-V rvv VLEN=128 (clang 17)
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-24.04

@@ -1,4 +1,4 @@
-name: VS17-ARM-CI
+name: VS18-ARM-CI
 
 on: [push, pull_request]
 
@@ -7,14 +7,14 @@ permissions:
 
 jobs:
   ci:
-    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
-    runs-on: windows-2022
+    name: vs18/${{matrix.arch}}/${{matrix.cfg}}
+    runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Release}
-          - {gen: Visual Studio 17 2022, arch: ARM64, cfg: Debug}
+          - {gen: Visual Studio 18 2026, arch: ARM64, cfg: Release}
+          - {gen: Visual Studio 18 2026, arch: ARM64, cfg: Debug}
     steps:
       - name: checkout
         uses: actions/checkout@v7
