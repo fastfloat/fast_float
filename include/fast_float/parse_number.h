@@ -187,7 +187,7 @@ template <> struct from_chars_caller<std::float64_t> {
 // whole parser into each caller, where the format is a constant; clang keeps
 // it out of line and would otherwise re-test each format flag per conversion.
 template <typename T, typename UC, chars_format Fmt>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_clang_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
   return from_chars_caller<T>::call(first, last, value,
                                     parse_options_t<UC>(Fmt));
@@ -195,7 +195,7 @@ from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
 #endif
 
 template <typename T, typename UC, typename>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_clang_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value,
            chars_format fmt /*= chars_format::general*/) noexcept {
 #ifdef __clang__
@@ -445,8 +445,20 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
     return answer;
   }
 
+#ifdef __clang__
+  // If the exponent passed Clinger's range test, it is well within range. GCC
+  // carries this into compute_float by itself; clang needs the instantiation
+  // without the range check. The mantissa can still be zero when the rounding
+  // mode is not to nearest.
+  adjusted_mantissa am =
+      (binary_format<T>::min_exponent_fast_path() <= pns.exponent &&
+       pns.exponent <= binary_format<T>::max_exponent_fast_path())
+          ? compute_float<binary_format<T>, true>(pns.exponent, pns.mantissa)
+          : compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
+#else
   adjusted_mantissa am =
       compute_float<binary_format<T>>(pns.exponent, pns.mantissa);
+#endif
   // Slow path B (rare): Eisel-Lemire could not resolve; digit_comp needs the
   // integer/fraction spans. Route to the cold helper (clinger there is a
   // dead-effect since it already failed here; the cold re-parse + digit_comp
@@ -455,14 +467,15 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
     return parse_number_slow_path<T, UC>(first, last, value, options, bjf);
   }
   to_float(pns.negative, am, value);
-  // Test for over/underflow. Marked unlikely so that clang keeps it as a
-  // branch instead of folding it into a chain of conditional moves that
-  // every conversion pays for.
-  if fastfloat_clang_unlikely ((pns.mantissa != 0 && am.mantissa == 0 &&
-                                am.power2 == 0) ||
-                               am.power2 ==
-                                   binary_format<T>::infinite_power()) {
-    answer.ec = std::errc::result_out_of_range;
+  // Test for over/underflow. One comparison catches both a zero and an
+  // infinite exponent, so normal values pay a single, never-taken branch. The
+  // result is then selected: which case it is follows the sign of the exponent.
+  constexpr uint32_t max_power2 =
+      uint32_t(binary_format<T>::infinite_power() - 1);
+  if fastfloat_clang_unlikely (uint32_t(am.power2 - 1) >= max_power2) {
+    bool const out_of_range =
+        (am.power2 != 0) | ((am.mantissa == 0) & (pns.mantissa != 0));
+    answer.ec = out_of_range ? std::errc::result_out_of_range : answer.ec;
   }
 #ifdef __clang__
 #pragma clang diagnostic pop
