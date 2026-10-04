@@ -308,13 +308,16 @@ template <typename UC> struct parsed_number_string_t {
   int64_t exponent{0};
   uint64_t mantissa{0};
   UC const *lastmatch{nullptr};
+  // The field order matters: placing 'error' next to the booleans avoids
+  // padding, keeping the struct at 64 bytes on 64-bit systems instead of 72.
+  // See https://github.com/fastfloat/fast_float/issues/418
+  parse_error error{parse_error::no_error};
   bool negative{false};
   bool valid{false};
   bool too_many_digits{false};
   // contains the range of the significant digits
   span<UC const> integer{};  // non-nullable
   span<UC const> fraction{}; // nullable
-  parse_error error{parse_error::no_error};
 };
 
 using byte_span = span<char const>;
