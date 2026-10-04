@@ -84,6 +84,12 @@ char const *round_name(int d) {
   }
 }
 
+// Guard against padding regressions that hurt performance.
+// See https://github.com/fastfloat/fast_float/issues/418
+static_assert(sizeof(void *) != 8 ||
+                  sizeof(fast_float::parsed_number_string_t<char>) <= 64,
+              "parsed_number_string_t should fit in 64 bytes");
+
 #define FASTFLOAT_STR(x) #x
 #define SHOW_DEFINE(x) printf("%s='%s'\n", #x, FASTFLOAT_STR(x))
 
