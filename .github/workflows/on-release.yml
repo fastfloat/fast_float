@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      
+
       - name: Amalgamate fast_float.h
         run: |
           mkdir build
@@ -29,13 +29,13 @@ jobs:
           cp tests/string_test.cpp build/
           cd build
           g++ string_test.cpp
+          ./a.out
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+        # --clobber replaces an asset that was already attached by hand, which
+        # would otherwise make the upload fail.
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/fast_float/fast_float.h
-          asset_name: fast_float.h
-          asset_content_type: text/plain
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            build/fast_float/fast_float.h --clobber

@@ -1,0 +1,104 @@
+name: Release
+
+# Manually triggered. Bumps the version (patch, minor or major), regenerates
+# the amalgamated fast_float.h, runs the tests, commits the version bump to
+# main, tags it and publishes a GitHub release with fast_float.h attached.
+#
+# Releases created with GITHUB_TOKEN do not trigger other workflows, so
+# on-release.yml does not run for releases made here.
+
+'on':
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Which part of the version to bump'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Compute new version
+        id: version
+        run: |
+          current=$(git describe --abbrev=0 --tags)
+          current=${current#v}
+          IFS=. read -r major minor patch <<< "$current"
+          case "${{ inputs.bump }}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+            *) echo "unknown bump type"; exit 1 ;;
+          esac
+          new="$major.$minor.$patch"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "Releasing $current -> $new (${{ inputs.bump }})"
+
+      - name: Bump version files and amalgamate
+        run: |
+          new="${{ steps.version.outputs.new }}"
+          IFS=. read -r major minor patch <<< "$new"
+          python3 script/release.py "$new"
+          rm -f CMakeLists.txt.bak README.md.bak MODULE.bazel.bak \
+                include/fast_float/float_common.h.bak
+          grep -q "project(fast_float VERSION $new LANGUAGES CXX)" CMakeLists.txt
+          grep -q "#define FASTFLOAT_VERSION_MAJOR $major$" include/fast_float/float_common.h
+          grep -q "#define FASTFLOAT_VERSION_MINOR $minor$" include/fast_float/float_common.h
+          grep -q "#define FASTFLOAT_VERSION_PATCH $patch$" include/fast_float/float_common.h
+          grep -q "version = \"$new\"," MODULE.bazel
+          grep -q "releases/download/v$new/fast_float.h" README.md
+          grep -q "#define FASTFLOAT_VERSION_PATCH $patch$" fast_float.h
+
+      - name: Test amalgamation
+        run: |
+          mkdir -p amalgamation/fast_float
+          cp fast_float.h amalgamation/fast_float/
+          g++ -O2 -std=c++17 -Iamalgamation -o amalgamation/string_test tests/string_test.cpp
+          ./amalgamation/string_test
+
+      - name: Build and test
+        run: |
+          cmake -B build -DFASTFLOAT_TEST=ON -DCMAKE_CXX_FLAGS='-Werror -Wundef'
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
+
+      - name: Commit, tag and push
+        run: |
+          new="${{ steps.version.outputs.new }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CMakeLists.txt README.md MODULE.bazel include/fast_float/float_common.h
+          git commit -m "Version $new"
+          git tag -a "v$new" -m "version $new"
+          git push origin main
+          git push origin "v$new"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          new="${{ steps.version.outputs.new }}"
+          gh release create "v$new" \
+            --title "Version $new" \
+            --generate-notes \
+            --notes-start-tag "v${{ steps.version.outputs.current }}" \
+            fast_float.h
