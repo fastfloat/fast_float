@@ -2485,6 +2485,10 @@ TEST_CASE("integer_times_pow10") {
     all::verify_integer_times_pow10(12345678901234567890ull, -42);
     all::verify_integer_times_pow10(std::numeric_limits<int64_t>::max(), 42);
     all::verify_integer_times_pow10(std::numeric_limits<int64_t>::max(), -42);
+    // the most negative int64_t has no positive counterpart to negate into
+    all::verify_integer_times_pow10(std::numeric_limits<int64_t>::min(), 0);
+    all::verify_integer_times_pow10(std::numeric_limits<int64_t>::min(), 42);
+    all::verify_integer_times_pow10(std::numeric_limits<int64_t>::min(), -42);
     all::verify_integer_times_pow10(std::numeric_limits<uint64_t>::max(), 42);
     all::verify_integer_times_pow10(std::numeric_limits<uint64_t>::max(), -42);
   }

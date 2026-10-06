@@ -503,7 +503,9 @@ FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept {
   const bool is_negative = mantissa < 0;
-  const uint64_t m = static_cast<uint64_t>(is_negative ? -mantissa : mantissa);
+  // Negate as unsigned: -mantissa overflows for the most negative int64_t.
+  const uint64_t m = is_negative ? uint64_t(0) - static_cast<uint64_t>(mantissa)
+                                 : static_cast<uint64_t>(mantissa);
 
   T value;
   if (clinger_fast_path_impl(m, decimal_exponent, is_negative, value))
