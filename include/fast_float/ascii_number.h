@@ -32,7 +32,13 @@ template <typename UC> fastfloat_really_inline constexpr bool has_simd_opt() {
 // able to optimize it well.
 template <typename UC>
 fastfloat_really_inline constexpr bool is_integer(UC c) noexcept {
-  return static_cast<unsigned>(c - UC('0')) <= 9u;
+  // UC can be signed (wchar_t is a signed int on Linux and macOS), and the
+  // subtraction is then promoted to int and overflows for code units near the
+  // bottom of the range. Subtracting in the unsigned type wraps instead, which
+  // selects the same code units, as ch_to_digit already does.
+  using UnsignedUC = typename std::make_unsigned<UC>::type;
+  return static_cast<UnsignedUC>(static_cast<UnsignedUC>(c) -
+                                 static_cast<UnsignedUC>(UC('0'))) <= 9u;
 }
 
 fastfloat_really_inline constexpr uint64_t byteswap(uint64_t val) {

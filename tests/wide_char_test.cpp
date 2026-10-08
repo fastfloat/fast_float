@@ -70,9 +70,34 @@ bool test_non_space_with_space_low_byte() {
   return true;
 }
 
+// is_integer subtracts UC('0') from the code unit. When wchar_t is signed the
+// subtraction is promoted to int and overflows for code units near the bottom
+// of the range, so the sanitized build aborts on input the library is supposed
+// to reject. Such a unit is not a digit, so both entry points must fail.
+bool test_code_unit_below_zero_digit() {
+  if (!std::is_signed<wchar_t>::value) {
+    return true; // only reproducible where wchar_t is signed
+  }
+  wchar_t const input[] = {(std::numeric_limits<wchar_t>::min)(), L'1'};
+  double result;
+  auto answer = fast_float::from_chars(input, input + 2, result);
+  if (answer.ec != std::errc::invalid_argument) {
+    std::cerr << "a code unit below L'0' must not start a number\n";
+    return false;
+  }
+  unsigned long long integer;
+  auto int_answer = fast_float::from_chars(input, input + 2, integer, 10);
+  if (int_answer.ec != std::errc::invalid_argument) {
+    std::cerr << "a code unit below L'0' must not start an integer\n";
+    return false;
+  }
+  return true;
+}
+
 int main() {
   if (test_minus() && test_plus() && test_space() && test_nan() &&
-      test_non_space_with_space_low_byte()) {
+      test_non_space_with_space_low_byte() &&
+      test_code_unit_below_zero_digit()) {
     std::cout << "all ok" << std::endl;
     return EXIT_SUCCESS;
   }
