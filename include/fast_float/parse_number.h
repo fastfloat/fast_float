@@ -588,7 +588,9 @@ FASTFLOAT_CONSTEXPR20
                         int const decimal_exponent) noexcept {
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   const auto is_negative = mantissa < 0;
-  const auto m = static_cast<am_mant_t>(is_negative ? -mantissa : mantissa);
+  // Negate as unsigned: -mantissa overflows for the most negative int64_t.
+  const auto m = is_negative ? am_mant_t(0) - static_cast<am_mant_t>(mantissa)
+                                 : static_cast<am_mant_t>(mantissa);
 #else
   FASTFLOAT_ASSUME(mantissa >= 0);
   const auto m = static_cast<am_mant_t>(mantissa);

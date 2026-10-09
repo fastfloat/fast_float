@@ -80,6 +80,12 @@ constexpr std::string_view const round_name(int d) {
   }
 }
 
+// Guard against padding regressions that hurt performance.
+// See https://github.com/fastfloat/fast_float/issues/418
+static_assert(sizeof(void *) != 8 ||
+                  sizeof(fast_float::parsed_number_string_t<char>) <= 64,
+              "parsed_number_string_t should fit in 64 bytes");
+
 #define FASTFLOAT_STR(x) #x
 #define SHOW_DEFINE(x) printf("%s='%s'\n", #x, FASTFLOAT_STR(x))
 
@@ -2475,6 +2481,10 @@ TEST_CASE("integer_times_pow10") {
     all::verify_integer_times_pow10(12345678901234567890ull, -42);
     all::verify_integer_times_pow10(std::numeric_limits<int64_t>::max(), 42);
     all::verify_integer_times_pow10(std::numeric_limits<int64_t>::max(), -42);
+    // the most negative int64_t has no positive counterpart to negate into
+    all::verify_integer_times_pow10(std::numeric_limits<int64_t>::min(), 0);
+    all::verify_integer_times_pow10(std::numeric_limits<int64_t>::min(), 42);
+    all::verify_integer_times_pow10(std::numeric_limits<int64_t>::min(), -42);
     all::verify_integer_times_pow10(std::numeric_limits<uint64_t>::max(), 42);
     all::verify_integer_times_pow10(std::numeric_limits<uint64_t>::max(), -42);
   }

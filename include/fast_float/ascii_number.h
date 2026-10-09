@@ -30,10 +30,14 @@ fastfloat_inline FASTFLOAT_CONSTEVAL bool has_simd_opt() noexcept {
 // Next function can be micro-optimized, but compilers are entirely
 // able to optimize it well.
 template <typename UC>
-fastfloat_inline FASTFLOAT_CONSTEXPR14 bool is_integer(UC c) noexcept {
-  const auto d = c - UC('0');
-  // UC may be signed.
-  return d >= 0 && d <= 9;
+fastfloat_inline constexpr bool is_integer(UC c) noexcept {
+  // UC can be signed (wchar_t is a signed int on Linux and macOS), and the
+  // subtraction is then promoted to int and overflows for code units near the
+  // bottom of the range. Subtracting in the unsigned type wraps instead, which
+  // selects the same code units, as ch_to_digit already does.
+  using UnsignedUC = typename std::make_unsigned<UC>::type;
+  return static_cast<UnsignedUC>(static_cast<UnsignedUC>(c) -
+                                 static_cast<UnsignedUC>(UC('0'))) <= 9u;
 }
 
 #if FASTFLOAT_IS_BIG_ENDIAN
@@ -470,9 +474,12 @@ enum class parse_error : uint_fast8_t {
 
 template <typename UC> struct parsed_number_string_t {
   FASTFLOAT_NO_UNIQUE_ADDRESS am_mant_t mantissa;
-  FASTFLOAT_NO_UNIQUE_ADDRESS UC const *lastmatch;
   FASTFLOAT_NO_UNIQUE_ADDRESS am_pow_t exponent;
+  FASTFLOAT_NO_UNIQUE_ADDRESS UC const *lastmatch;
 
+  // The field order matters: placing 'error' next to the booleans avoids
+  // padding, keeping the struct at 64 bytes on 64-bit systems instead of 72.
+  // See https://github.com/fastfloat/fast_float/issues/418
   FASTFLOAT_NO_UNIQUE_ADDRESS parse_error error;
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
   FASTFLOAT_NO_UNIQUE_ADDRESS bool negative;

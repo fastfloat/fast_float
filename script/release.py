@@ -145,6 +145,18 @@ for line in fileinput.input(versionfile, inplace=1, backup=".bak"):
 
 print(f"{versionfile} modified")
 
+bazelfile = f"{maindir}{os.sep}MODULE.bazel"
+
+for line in fileinput.input(bazelfile, inplace=1, backup=".bak"):
+    line = re.sub(
+        r'^(\s*version = )"\d+\.\d+\.\d+",',
+        rf'\g<1>"{newversionstring}",',
+        line.rstrip(),
+    )
+    print(line)
+
+print(f"modified {bazelfile}, a backup was made")
+
 readmefile = f"{maindir}{os.sep}README.md"
 
 for line in fileinput.input(readmefile, inplace=1, backup=".bak"):
@@ -173,6 +185,7 @@ with open(f"{maindir}{os.sep}fast_float.h", "w") as outfile:
 
 if cp.returncode != 0:
     print("Failed to run amalgamate")
+    sys.exit(cp.returncode)
 else:
     print("amalgamate.py ran successfully")
     print(f"You should upload {maindir}{os.sep}fast_float.h")
