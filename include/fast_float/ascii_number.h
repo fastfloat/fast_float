@@ -474,8 +474,8 @@ enum class parse_error : uint_fast8_t {
 
 template <typename UC> struct parsed_number_string_t {
   FASTFLOAT_NO_UNIQUE_ADDRESS am_mant_t mantissa;
-  FASTFLOAT_NO_UNIQUE_ADDRESS am_pow_t exponent;
   FASTFLOAT_NO_UNIQUE_ADDRESS UC const *lastmatch;
+  FASTFLOAT_NO_UNIQUE_ADDRESS am_pow_t exponent;
 
   // The field order matters: placing 'error' next to the booleans avoids
   // padding, keeping the struct at 64 bytes on 64-bit systems instead of 72.
