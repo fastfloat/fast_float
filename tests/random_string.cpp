@@ -54,7 +54,8 @@ float cygwin_strtof_l(char const *start, char **end) {
 class RandomEngine {
 public:
   RandomEngine() = delete;
-  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed){};
+
+  RandomEngine(uint64_t new_seed) : wyhash64_x_(new_seed) {}
 
   uint64_t next() {
     // Adapted from https://github.com/wangyi-fudan/wyhash/blob/master/wyhash.h
@@ -198,7 +199,7 @@ bool tester(uint64_t seed, size_t volume) {
   char buffer[4096]; // large buffer (can't overflow)
   RandomEngine rand(seed);
   for (size_t i = 0; i < volume; i++) {
-    if ((i % 100000) == 0) {
+    if ((i % 1000000) == 0) {
       std::cout << ".";
       std::cout.flush();
     }
@@ -256,10 +257,12 @@ bool tester(uint64_t seed, size_t volume) {
 }
 
 int main() {
-
 #if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) ||     \
     defined(sun) || defined(__sun)
-  std::cout << "Warning: msys/cygwin or solaris detected." << std::endl;
+  std::cout << "Warning: msys/cygwin or solaris detected. This particular test "
+               "is likely to generate false failures due to our reliance on "
+               "the underlying runtime library."
+            << std::endl;
   return EXIT_SUCCESS;
 #else
   if (tester(1234344, 100000000)) {

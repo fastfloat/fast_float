@@ -37,8 +37,7 @@ void uint32_to_ipv4_string(uint32_t ip, char *buffer) {
   *ptr = '\0';
 }
 
-fastfloat_really_inline uint32_t ipv4_string_to_uint32(const char *str,
-                                                       const char *end) {
+uint32_t ipv4_string_to_uint32(const char *str, const char *end) {
   uint32_t ip = 0;
   const char *current = str;
 

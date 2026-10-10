@@ -1,4 +1,4 @@
-name: VS17-CI
+name: VS18-CI
 
 on: [push, pull_request]
 
@@ -7,22 +7,22 @@ permissions:
 
 jobs:
   ci:
-    name: vs17/${{matrix.arch}}/${{matrix.cfg}}
-    runs-on: windows-2022
+    name: vs18/${{matrix.arch}}/${{matrix.cfg}}
+    runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Release}
-          - {gen: Visual Studio 17 2022, arch: Win32, cfg: Debug}
-          - {gen: Visual Studio 17 2022, arch: x64, cfg: Release}
-          - {gen: Visual Studio 17 2022, arch: x64, cfg: Debug}
+          - {gen: Visual Studio 18 2026, arch: Win32, cfg: Release}
+          - {gen: Visual Studio 18 2026, arch: Win32, cfg: Debug}
+          - {gen: Visual Studio 18 2026, arch: x64, cfg: Release}
+          - {gen: Visual Studio 18 2026, arch: x64, cfg: Debug}
     steps:
       - name: checkout
         uses: actions/checkout@v7
       - name: configure
         run: |
-          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_CXX_STANDARD=14 -DFASTFLOAT_BENCHMARKS=ON -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_CXX_STANDARD=14 -DFASTFLOAT_BENCHMARKS=OFF -DFASTFLOAT_TEST=ON -DCMAKE_INSTALL_PREFIX:PATH=destination
       - name: build
         run: |
           cmake --build build --verbose --config ${{matrix.cfg}} --parallel
