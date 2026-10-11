@@ -47,10 +47,10 @@ Introduced new optional macros to minimize overhead when certain parsing feature
 
 * **`FASTFLOAT_HAS_BIT_CAST`**
   Automatically uses std::bit_cast if available to reduce code size and speed up.
-  
+
 * **`FASTFLOAT_X86_SIMD`**
   Automatically uses reworking SSE parsing algorithms to improve performance on x86 machines. And hardware level also can be set manually by user.
-  
+
 * **`FASTFLOAT_USE_SIMD`**
   Can be set to 0 for completely disable manually optimized SIMD paths and use compiler + linker to give the best possible result automatically
 
@@ -702,7 +702,7 @@ sufficiently recent version of CMake (3.11 or better at least):
 FetchContent_Declare(
   fast_float
   GIT_REPOSITORY https://github.com/irainman/fast_float.git
-  GIT_TAG tags/v8.3.2
+  GIT_TAG tags/v8.3.3
   GIT_SHALLOW TRUE)
 
 FetchContent_MakeAvailable(fast_float)
@@ -718,7 +718,7 @@ You may also use [CPM](https://github.com/cpm-cmake/CPM.cmake), like so:
 CPMAddPackage(
   NAME fast_float
   GITHUB_REPOSITORY "irainman/fast_float"
-  GIT_TAG v8.3.2)
+  GIT_TAG v8.3.3)
 ```
 
 ## Using as single header
@@ -730,7 +730,7 @@ if desired as described in the command line help.
 
 You may directly download automatically generated single-header files:
 
-<https://github.com/irainman/fast_float/releases/download/v8.3.2/fast_float.h>
+<https://github.com/irainman/fast_float/releases/download/v8.3.3/fast_float.h>
 
 ## Benchmarking
 
