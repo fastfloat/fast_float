@@ -2,12 +2,47 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <limits>
+#include <string_view>
 #include "fast_float/fast_float.h"
 #include <cstdint>
 
 #if __cplusplus >= 202300L
 #include <stdfloat>
 #endif
+
+// If no characters match the pattern, value must be left unmodified
+// (see https://github.com/fastfloat/fast_float/issues/424).
+template <typename T> bool check_invalid_input_preserves_value() {
+  std::vector<std::string_view> const invalid_inputs{"x", "", "-", ".", "e1",
+                                                     "-x", "na", "+"};
+  for (auto const &f : invalid_inputs) {
+    T result = T(42);
+    auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
+    if (answer.ec != std::errc::invalid_argument || answer.ptr != f.data()) {
+      std::cerr << "Expected invalid_argument for input: \"" << f << "\""
+                << std::endl;
+      return false;
+    }
+    if (result != T(42)) {
+      std::cerr << "Value modified on invalid input: \"" << f << "\" got "
+                << result << std::endl;
+      return false;
+    }
+  }
+  // Out-of-range input must still store the documented value.
+  std::string_view const too_large = "1e999";
+  T result = T(42);
+  auto answer = fast_float::from_chars(
+      too_large.data(), too_large.data() + too_large.size(), result);
+  if (answer.ec != std::errc::result_out_of_range ||
+      result != std::numeric_limits<T>::infinity()) {
+    std::cerr << "Expected infinity and result_out_of_range for \"1e999\""
+              << std::endl;
+    return false;
+  }
+  return true;
+}
 
 int main() {
   // Write some testcases for the parsing of floating point numbers in the
@@ -32,6 +67,9 @@ int main() {
                 << float32_test_expected[i] << " got " << result << std::endl;
       return EXIT_FAILURE;
     }
+  }
+  if (!check_invalid_input_preserves_value<std::float32_t>()) {
+    return EXIT_FAILURE;
   }
 #else
   std::cout << "No std::float32_t type available." << std::endl;
@@ -59,6 +97,9 @@ int main() {
                 << float64_test_expected[i] << " got " << result << std::endl;
       return EXIT_FAILURE;
     }
+  }
+  if (!check_invalid_input_preserves_value<std::float64_t>()) {
+    return EXIT_FAILURE;
   }
 #else
   std::cout << "No std::float64_t type available." << std::endl;
