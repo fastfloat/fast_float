@@ -158,7 +158,10 @@ template <> struct from_chars_caller<std::float32_t> {
     // float32_t
     float val = 0.0f;
     auto ret = from_chars_advanced(first, last, val, options);
-    value = val;
+    // If no characters match the pattern, value must be left unmodified.
+    if (ret.ec != std::errc::invalid_argument) {
+      value = val;
+    }
     return ret;
   }
 };
@@ -175,7 +178,10 @@ template <> struct from_chars_caller<std::float64_t> {
     // float64_t
     double val = 0.0;
     auto ret = from_chars_advanced(first, last, val, options);
-    value = val;
+    // If no characters match the pattern, value must be left unmodified.
+    if (ret.ec != std::errc::invalid_argument) {
+      value = val;
+    }
     return ret;
   }
 };
