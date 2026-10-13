@@ -1122,13 +1122,13 @@ inline constexpr am_digits binary_format<std::bfloat16_t>::max_digits() {
 }
 #endif // __STDCPP_BFLOAT16_T__
 
-// Whether Clinger's fast path can overflow: only for std::float16_t, where
-// 2^11 * 10^4 > 65504.
+// Whether Clinger's fast path can overflow: only for std::float16_t or smaller,
+// where 2^11 * 10^4 > 65504.
 template <typename T>
 inline constexpr bool binary_format<T>::fast_path_can_overflow() {
-  return double(max_mantissa_fast_path()) *
-             double(exact_power_of_ten(max_exponent_fast_path())) >
-         double((std::numeric_limits<T>::max)());
+  return static_cast<double>(max_mantissa_fast_path()) *
+             static_cast<double>(exact_power_of_ten(max_exponent_fast_path())) >
+         static_cast<double>(std::numeric_limits<T>::max());
 }
 
 // A subnormal needs w * 10^q < 2^(minimum_exponent() + 1), so q is at most
