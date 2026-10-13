@@ -14,8 +14,8 @@
 // If no characters match the pattern, value must be left unmodified
 // (see https://github.com/fastfloat/fast_float/issues/424).
 template <typename T> bool check_invalid_input_preserves_value() {
-  std::vector<std::string_view> const invalid_inputs{"x", "", "-", ".", "e1",
-                                                     "-x", "na", "+"};
+  std::vector<std::string_view> const invalid_inputs{"x",  "",   "-",  ".",
+                                                     "e1", "-x", "na", "+"};
   for (auto const &f : invalid_inputs) {
     T result = T(42);
     auto answer = fast_float::from_chars(f.data(), f.data() + f.size(), result);
