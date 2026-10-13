@@ -248,7 +248,7 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
         // Only std::float16_t can overflow here (e.g., "656e2"); let the
         // slow path report result_out_of_range.
         if (binary_format<T>::fast_path_can_overflow() &&
-            value > (std::numeric_limits<T>::max)()) {
+            value > std::numeric_limits<T>::max()) {
           return false;
         }
       }
@@ -590,7 +590,7 @@ FASTFLOAT_CONSTEXPR20
   const auto is_negative = mantissa < 0;
   // Negate as unsigned: -mantissa overflows for the most negative int64_t.
   const auto m = is_negative ? am_mant_t(0) - static_cast<am_mant_t>(mantissa)
-                                 : static_cast<am_mant_t>(mantissa);
+                             : static_cast<am_mant_t>(mantissa);
 #else
   FASTFLOAT_ASSUME(mantissa >= 0);
   const auto m = static_cast<am_mant_t>(mantissa);
