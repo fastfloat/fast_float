@@ -213,8 +213,13 @@ using parse_options = parse_options_t<char>;
 
 #ifdef FASTFLOAT_VISUAL_STUDIO
 #define fastfloat_really_inline __forceinline
-#else
+#define fastfloat_noinline __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
 #define fastfloat_really_inline inline __attribute__((always_inline))
+#define fastfloat_noinline __attribute__((noinline))
+#else
+#define fastfloat_really_inline inline
+#define fastfloat_noinline
 #endif
 
 // Opposite of fastfloat_really_inline. Used for a rare, format-specific variant
