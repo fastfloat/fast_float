@@ -257,12 +257,14 @@ using parse_options = parse_options_t<char>;
 // (the macro supplies the parentheses). It expands to the standard [[unlikely]]
 // attribute when supported, otherwise to __builtin_expect on GCC/Clang, or
 // to a no-op elsewhere (e.g. pre-C++20 MSVC, which has no equivalent hint).
+#if (defined(__cplusplus) && __cplusplus >= 202002L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
 #ifdef __has_cpp_attribute
 #if __has_cpp_attribute(unlikely) >= 201803L
 // g++-9 hits hits this branch, but then fails to compile
 // [[unlikely]]. This happens only with g++-9.
 #if !defined(__GNUC__) || (__GNUC__ != 9)
 #define FASTFLOAT_USE_UNLIKELY_ATTR
+#endif
 #endif
 #endif
 #endif
