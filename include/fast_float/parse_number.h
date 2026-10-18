@@ -61,8 +61,13 @@ from_chars_result_t<UC>
       } else {
         answer.ptr = first + 3;
       }
+#if defined(__FAST_MATH__) || defined(FASTFLOAT_FAST_MATH)
+      value = minusSign ? -std::numeric_limits<T>::max()
+                        : std::numeric_limits<T>::max();
+#else
       value = minusSign ? -std::numeric_limits<T>::infinity()
                         : std::numeric_limits<T>::infinity();
+#endif
       return answer;
     }
   }
