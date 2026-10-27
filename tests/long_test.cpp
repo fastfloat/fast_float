@@ -51,7 +51,6 @@ template <typename T> bool test() {
 }
 
 int main() {
-
   std::cout << "32 bits checks" << std::endl;
   Assert(test<float>());
 
