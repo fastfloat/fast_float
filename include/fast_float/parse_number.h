@@ -391,9 +391,19 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // Leave for the javascript conversion before anything else is live, so this
   // compiles to a tail call and the common path keeps its registers. The cold
   // function repeats the leading-whitespace and empty-input handling below.
+  // See the comment on -Wc++20-extensions further down in this function.
+#ifdef __clang__
+#pragma clang diagnostic push
+#if (!defined(__APPLE_CC__) && __clang_major__ >= 10) || (__clang_major__ >= 13)
+#pragma clang diagnostic ignored "-Wc++20-extensions"
+#endif
+#endif
   if fastfloat_unlikely (uint64_t(fmt & detail::basic_javascript_fmt)) {
     return from_chars_float_javascript<T, UC>(first, last, value, options);
   }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
   from_chars_result_t<UC> answer;
   if (uint64_t(fmt & chars_format::skip_white_space)) {
