@@ -535,38 +535,42 @@ integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept {
 // the following overloads are here to avoid surprising ambiguity for int,
 // unsigned, etc.
 template <typename T, typename Int>
-FASTFLOAT_CONSTEXPR20
-    typename std::enable_if<is_supported_float_type<T>::value &&
-                                std::is_integral<Int>::value &&
-                                !std::is_signed<Int>::value,
-                            T>::type
-    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20 typename std::enable_if<
+    is_supported_float_type<T>::value && std::is_integral<Int>::value &&
+        sizeof(Int) <= sizeof(uint64_t) && !std::is_signed<Int>::value,
+    T>::type
+integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10<T>(static_cast<uint64_t>(mantissa),
                                 decimal_exponent);
 }
 
 template <typename T, typename Int>
-FASTFLOAT_CONSTEXPR20
-    typename std::enable_if<is_supported_float_type<T>::value &&
-                                std::is_integral<Int>::value &&
-                                std::is_signed<Int>::value,
-                            T>::type
-    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20 typename std::enable_if<
+    is_supported_float_type<T>::value && std::is_integral<Int>::value &&
+        sizeof(Int) <= sizeof(int64_t) && std::is_signed<Int>::value,
+    T>::type
+integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10<T>(static_cast<int64_t>(mantissa),
                                 decimal_exponent);
 }
 
 template <typename Int>
-FASTFLOAT_CONSTEXPR20 typename std::enable_if<
-    std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(uint64_t) &&
+                                !std::is_signed<Int>::value,
+                            double>::type
+    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
 }
 
 template <typename Int>
-FASTFLOAT_CONSTEXPR20 typename std::enable_if<
-    std::is_integral<Int>::value && std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(int64_t) &&
+                                std::is_signed<Int>::value,
+                            double>::type
+    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
 }
 

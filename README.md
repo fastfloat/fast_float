@@ -482,7 +482,7 @@ float: 12345678 * 10^23 = 1.23456782e+30 (==expected)
 ```
 
 Overloads of `fast_float::integer_times_pow10()` are provided for
-signed and unsigned integer types: `int64_t`, `uint64_t`, etc.
+signed and unsigned integer types up to 64 bits: `int64_t`, `uint64_t`, etc.
 
 
 ## Users and Related Work

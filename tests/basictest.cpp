@@ -2283,6 +2283,38 @@ void verify_integer_times_pow10(Int mantissa, int decimal_exponent) {
 }
 } // namespace all_supported_types
 
+#if defined(__SIZEOF_INT128__)
+template <typename Int, typename = void>
+struct has_integer_times_pow10 : std::false_type {};
+
+template <typename Int>
+struct has_integer_times_pow10<
+    Int, std::void_t<decltype(fast_float::integer_times_pow10(Int{}, 0))>>
+    : std::true_type {};
+
+template <typename Float, typename Int, typename = void>
+struct has_typed_integer_times_pow10 : std::false_type {};
+
+template <typename Float, typename Int>
+struct has_typed_integer_times_pow10<
+    Float, Int,
+    std::void_t<decltype(fast_float::integer_times_pow10<Float>(Int{}, 0))>>
+    : std::true_type {};
+
+TEST_CASE("integer_times_pow10 rejects integers wider than 64 bits") {
+  CHECK(has_integer_times_pow10<int64_t>::value);
+  CHECK(has_integer_times_pow10<uint64_t>::value);
+  CHECK(has_typed_integer_times_pow10<float, int64_t>::value);
+  CHECK(has_typed_integer_times_pow10<double, uint64_t>::value);
+  CHECK_FALSE(has_integer_times_pow10<__int128_t>::value);
+  CHECK_FALSE(has_integer_times_pow10<__uint128_t>::value);
+  CHECK_FALSE(has_typed_integer_times_pow10<float, __int128_t>::value);
+  CHECK_FALSE(has_typed_integer_times_pow10<float, __uint128_t>::value);
+  CHECK_FALSE(has_typed_integer_times_pow10<double, __int128_t>::value);
+  CHECK_FALSE(has_typed_integer_times_pow10<double, __uint128_t>::value);
+}
+#endif
+
 TEST_CASE("integer_times_pow10") {
   /* explicitly verifying API with different types of integers */
   // double (the "default" overload)
