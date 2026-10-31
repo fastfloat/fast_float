@@ -9,6 +9,14 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install clang++-14
         run: sudo apt-get install -y clang++-14
+      - name: Check for pedantic warnings in pre-C++20 modes (issue 427)
+        run: |
+          set -xe
+          printf '#include "fast_float/fast_float.h"\nint main() { return 0; }\n' > pedantic_check.cpp
+          for std in c++11 c++14 c++17 c++20; do
+            clang++-14 -std=$std -Wall -Wextra -pedantic-errors -Werror \
+              -Iinclude -fsyntax-only pedantic_check.cpp
+          done
       - name: Use cmake
         run: |
           mkdir build &&
