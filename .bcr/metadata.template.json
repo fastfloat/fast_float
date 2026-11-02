@@ -1,0 +1,16 @@
+{
+    "homepage": "https://github.com/fastfloat/fast_float",
+    "maintainers": [
+        {
+            "email": "daniel@lemire.me",
+            "github": "lemire",
+            "name": "Daniel Lemire",
+            "github_user_id": 391987
+        }
+    ],
+    "repository": [
+        "github:fastfloat/fast_float"
+    ],
+    "versions": [],
+    "yanked_versions": {}
+}
