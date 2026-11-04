@@ -3,7 +3,7 @@ name: Alpine Linux
 on:
   push:
   pull_request:
-  
+
 permissions:
   contents: read
 
@@ -29,15 +29,12 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install Alpine Linux for ${{ matrix.arch }}
+        env:
+          INPUT_APK_TOOLS_URL: ""
         uses: jirutka/setup-alpine@v1
         with:
           arch: ${{ matrix.arch }}
-
-          # Keep CI reproducible.
-          # riscv64 currently uses edge because stable Alpine support
-          # for this architecture can lag behind the other architectures.
           branch: ${{ matrix.arch == 'riscv64' && 'edge' || 'v3.23' }}
-
           packages: >
             build-base
             cmake
