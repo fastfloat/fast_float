@@ -350,7 +350,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 // and the am.power2<0 digit_comp recompute, so both slow branches collapse to
 // one helper call.
 template <typename T, typename UC>
-static fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_number_slow_path(UC const *first, UC const *last, T &value,
                        parse_options_t<UC> const options
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
@@ -648,17 +648,25 @@ integer_times_pow10(Int const mantissa, int const decimal_exponent) noexcept {
                                 decimal_exponent);
 }
 
-template <typename Int>
-FASTFLOAT_CONSTEXPR20 typename std::enable_if<
-    std::is_integral<Int>::value && !std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int const mantissa, int const decimal_exponent) noexcept {
+template <typename UInt>
+FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<std::is_integral<UInt>::value &&
+                                sizeof(UInt) <= sizeof(uint64_t) &&
+                                !std::is_signed<UInt>::value,
+                            double>::type
+    integer_times_pow10(UInt const mantissa,
+                        int const decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<uint64_t>(mantissa), decimal_exponent);
 }
 
 template <typename Int>
-FASTFLOAT_CONSTEXPR20 typename std::enable_if<
-    std::is_integral<Int>::value && std::is_signed<Int>::value, double>::type
-integer_times_pow10(Int const mantissa, int const decimal_exponent) noexcept {
+FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(int64_t) &&
+                                std::is_signed<Int>::value,
+                            double>::type
+    integer_times_pow10(Int const mantissa,
+                        int const decimal_exponent) noexcept {
   return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
 }
 
