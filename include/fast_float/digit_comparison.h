@@ -232,6 +232,11 @@ parse_sixteen_digits(char const *&p, limb &value, am_digits &counter,
 
 template <typename UC>
 fastfloat_inline FASTFLOAT_CONSTEXPR20 void
+parse_sixteen_digits(UC const *&, limb &, am_digits &,
+                     am_digits &) noexcept { /* dummy for compile */ }
+
+template <typename UC>
+fastfloat_inline FASTFLOAT_CONSTEXPR20 void
 parse_eight_digits(UC const *&p, limb &value, am_digits &counter,
                    am_digits &count) noexcept {
   value = value * 100000000 + parse_8_digits(p);
