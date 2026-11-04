@@ -1,13 +1,20 @@
 name: Alpine Linux
+
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     name: Build on Alpine ${{ matrix.arch }}
+
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: true
       matrix:
         arch:
           - x86_64
@@ -16,6 +23,7 @@ jobs:
           - armv7
           - ppc64le
           - riscv64
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -37,13 +45,20 @@ jobs:
             build-base
       - name: Prepare
         run: |
-          cmake -DFASTFLOAT_TEST=ON -B build
+          cmake \
+            -DFASTFLOAT_TEST=ON \
+            -B build
         shell: alpine.sh {0}
+
       - name: Build
         run: |
           cmake --build build
         shell: alpine.sh {0}
+
       - name: Test
         run: |
-          ctest --test-dir build -R basictest
+          ctest \
+            --test-dir build \
+            -R basictest \
+            --output-on-failure
         shell: alpine.sh {0}

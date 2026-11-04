@@ -2,6 +2,9 @@ name: Ubuntu 24.04 CI
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   ubuntu-build:
     runs-on: ubuntu-24.04

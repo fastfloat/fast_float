@@ -114,7 +114,7 @@ int main() {
       {"nan", {fast_float::parse_error::no_digits_in_mantissa, 0}},
   };
 
-  for (std::size_t i = 0; i < accept.size(); ++i) {
+  for (std::size_t i = 0; i != accept.size(); ++i) {
     auto const &s = accept[i].input;
     auto const &expected = accept[i].expected;
     double result;
@@ -138,7 +138,7 @@ int main() {
     }
   }
 
-  for (std::size_t i = 0; i < reject.size(); ++i) {
+  for (std::size_t i = 0; i != reject.size(); ++i) {
     auto const &s = reject[i].input;
     double result;
     auto answer = fast_float::from_chars(s.data(), s.data() + s.size(), result,
@@ -150,13 +150,13 @@ int main() {
     }
   }
 
-  for (std::size_t i = 0; i < reject.size(); ++i) {
+  for (std::size_t i = 0; i != reject.size(); ++i) {
     auto const &f = reject[i].input;
     auto const &expected_reason = reject[i].reason;
     auto answer = fast_float::parse_number_string<false>(
         f.data(), f.data() + f.size(),
         fast_float::parse_options(fast_float::chars_format::javascript));
-    if (answer.valid) {
+    if (!answer.invalid) {
       std::cerr << "javascript parse accepted invalid javascript " << f
                 << std::endl;
       return EXIT_FAILURE;
@@ -176,7 +176,7 @@ int main() {
   }
 
   // Sloppy mode accepts everything strict mode accepts...
-  for (std::size_t i = 0; i < accept.size(); ++i) {
+  for (std::size_t i = 0; i != accept.size(); ++i) {
     auto const &s = accept[i].input;
     auto const &expected = accept[i].expected;
     double result;
@@ -200,7 +200,7 @@ int main() {
       {"09e+1", {90., ""}},  {"08.5e1", {85., ""}}, {"0009", {9., ""}},
       {"08n", {8., "n"}},
   };
-  for (std::size_t i = 0; i < accept_sloppy.size(); ++i) {
+  for (std::size_t i = 0; i != accept_sloppy.size(); ++i) {
     auto const &s = accept_sloppy[i].input;
     auto const &expected = accept_sloppy[i].expected;
     double result;
@@ -228,7 +228,7 @@ int main() {
     auto strict = fast_float::parse_number_string<false>(
         s.data(), s.data() + s.size(),
         fast_float::parse_options(fast_float::chars_format::javascript));
-    if (strict.valid ||
+    if (!strict.invalid ||
         strict.error !=
             fast_float::parse_error::leading_zeros_in_integer_part) {
       std::cerr << "javascript fmt should have rejected " << s
@@ -255,7 +255,7 @@ int main() {
       {"+1", {fast_float::parse_error::no_digits_in_mantissa, 0}},
       {"inf", {fast_float::parse_error::no_digits_in_mantissa, 0}},
   };
-  for (std::size_t i = 0; i < reject_sloppy.size(); ++i) {
+  for (std::size_t i = 0; i != reject_sloppy.size(); ++i) {
     auto const &f = reject_sloppy[i].input;
     auto const &expected_reason = reject_sloppy[i].reason;
     double result;
@@ -270,7 +270,7 @@ int main() {
     auto parsed = fast_float::parse_number_string<false>(
         f.data(), f.data() + f.size(),
         fast_float::parse_options(fast_float::chars_format::javascript_sloppy));
-    if (parsed.valid) {
+    if (!parsed.invalid) {
       std::cerr << "javascript_sloppy parse accepted invalid javascript " << f
                 << std::endl;
       return EXIT_FAILURE;
@@ -297,7 +297,7 @@ int main() {
     fast_float::parse_options const options{
         fast_float::chars_format::javascript |
         fast_float::chars_format::allow_leading_plus};
-    for (std::size_t i = 0; i < plus.size(); ++i) {
+    for (std::size_t i = 0; i != plus.size(); ++i) {
       auto const &s = plus[i];
       double result;
       auto answer = fast_float::from_chars_advanced(
