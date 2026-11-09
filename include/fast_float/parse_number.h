@@ -74,12 +74,20 @@ from_chars_result_t<UC>
  * Returns true if the floating-pointing rounding mode is to 'nearest'.
  * It is the default on most system. This function is meant to be inexpensive.
  * Credit : @mwalcott3
+ *
+ * If FASTFLOAT_ROUNDS_TO_NEAREST is defined, we trust the user that the
+ * rounding mode is always 'nearest' and we skip the check (see README).
  */
 fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // https://lemire.me/blog/2020/06/26/gcc-not-nearest/
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
+  // The arithmetic may be carried out with excess precision (e.g., x87):
+  // Clinger's fast path could then round twice. FASTFLOAT_ROUNDS_TO_NEAREST
+  // does not change this.
   return false;
-#endif
+#elif defined(FASTFLOAT_ROUNDS_TO_NEAREST)
+  return true;
+#else
   // See
   // A fast function to check your floating-point rounding mode
   // https://lemire.me/blog/2022/11/16/a-fast-function-to-check-your-floating-point-rounding-mode/
@@ -133,6 +141,7 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 #elif defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
+#endif // FASTFLOAT_ROUNDS_TO_NEAREST
 }
 
 } // namespace detail
