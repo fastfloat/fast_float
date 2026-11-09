@@ -50,6 +50,12 @@ double findmax_fastfloat32(std::vector<std::basic_string<CharT>> &s) {
   return answer;
 }
 
+// Defined in benchmark_rtn.cpp, with FASTFLOAT_ROUNDS_TO_NEAREST.
+template <typename CharT>
+double findmax_fastfloat64_rtn(std::vector<std::basic_string<CharT>> &s);
+template <typename CharT>
+double findmax_fastfloat32_rtn(std::vector<std::basic_string<CharT>> &s);
+
 counters::event_collector collector{};
 
 #ifdef USING_COUNTERS
@@ -193,8 +199,12 @@ void process(std::vector<std::string> &lines, size_t volume) {
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
                time_it_ns(lines, findmax_fastfloat64<char>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (64, assume nearest)",
+               time_it_ns(lines, findmax_fastfloat64_rtn<char>, repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
                time_it_ns(lines, findmax_fastfloat32<char>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (32, assume nearest)",
+               time_it_ns(lines, findmax_fastfloat32_rtn<char>, repeat));
 
   std::vector<std::u16string> lines16 = widen(lines);
   volume = 2 * volume;
@@ -202,8 +212,12 @@ void process(std::vector<std::string> &lines, size_t volume) {
   std::cout << "UTF-16 volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
                time_it_ns(lines16, findmax_fastfloat64<char16_t>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (64, assume nearest)",
+               time_it_ns(lines16, findmax_fastfloat64_rtn<char16_t>, repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
                time_it_ns(lines16, findmax_fastfloat32<char16_t>, repeat));
+  pretty_print(volume, lines.size(), "fastfloat (32, assume nearest)",
+               time_it_ns(lines16, findmax_fastfloat32_rtn<char16_t>, repeat));
 }
 
 void fileload(std::string filename) {

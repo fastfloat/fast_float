@@ -681,6 +681,10 @@ cmake --build build
 
 Importantly, by default, the benchmark is built in Release mode.
 
+The lines marked `assume nearest` time the same code compiled with
+`FASTFLOAT_ROUNDS_TO_NEAREST` (see [Assuming the default rounding
+mode](#assuming-the-default-rounding-mode)).
+
 The instructions are similar under Windows.
 
 Under Linux and macOS, it is recommended to run the benchmarks in a privileged manner to get access
