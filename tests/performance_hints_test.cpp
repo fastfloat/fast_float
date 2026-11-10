@@ -323,10 +323,10 @@ int main() {
   char const alphabet[] = "0123456789000.-+e ,xn";
   std::mt19937_64 gen(1234);
   for (size_t i = 0; i < 100000; i++) {
-    size_t const length = 1 + gen() % 10;
+    size_t const length = 1 + size_t(gen() % 10);
     std::string s;
     for (size_t k = 0; k < length; k++) {
-      s += alphabet[gen() % (sizeof(alphabet) - 1)];
+      s += alphabet[size_t(gen() % (sizeof(alphabet) - 1))];
     }
     if (!check_all(s)) {
       return EXIT_FAILURE;
