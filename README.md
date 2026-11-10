@@ -485,8 +485,136 @@ float: 12345678 * 10^23 = 1.23456782e+30 (==expected)
 Overloads of `fast_float::integer_times_pow10()` are provided for
 signed and unsigned integer types up to 64 bits: `int64_t`, `uint64_t`, etc.
 
+### Parsing formatted numbers in one pass
 
-## Assuming the default rounding mode
+`fast_float::from_chars()` does not accept formatted numbers such as
+`$1,234.56` or `-12.5%`. You could remove the extra characters and then call
+`fast_float::from_chars()`, but that takes two passes over the input. Instead,
+you can accumulate the digits yourself as you skip the extra characters, and
+let `fast_float::integer_times_pow10()` produce the correctly rounded result:
+
+```C++
+bool parse_formatted(std::string const &s, double &out) {
+  uint64_t mantissa = 0;
+  int significant_digits = 0; // leading zeros excluded
+  int exponent = 0;           // minus the number of digits after the point
+  bool negative = false, seen_dot = false, seen_digit = false, started = false;
+  for (char c : s) {
+    if (c >= '0' && c <= '9') {
+      seen_digit = started = true;
+      if (mantissa != 0 || c != '0') {
+        significant_digits++;
+      }
+      // overflows beyond 19 significant digits, handled below
+      mantissa = 10 * mantissa + uint64_t(c - '0');
+      exponent -= seen_dot;
+    } else if (c == ',' || c == '$' || c == '%') {
+      continue;
+    } else if (c == '.' && !seen_dot) {
+      seen_dot = started = true;
+    } else if (c == '-' && !started) {
+      negative = started = true;
+    } else {
+      return false;
+    }
+  }
+  if (!seen_digit) {
+    return false;
+  }
+  if (significant_digits > 19) {
+    // Rare: the mantissa does not fit in 64 bits, let from_chars do it.
+    std::string clean;
+    for (char c : s) {
+      if ((c >= '0' && c <= '9') || c == '.' || c == '-') {
+        clean += c;
+      }
+    }
+    return fast_float::from_chars(clean.data(), clean.data() + clean.size(),
+                                  out)
+               .ec == std::errc();
+  }
+  out = fast_float::integer_times_pow10(mantissa, exponent);
+  if (negative) {
+    out = -out;
+  }
+  return true;
+}
+```
+
+See [tests/example_formatted.cpp](tests/example_formatted.cpp) for a complete
+example.
+
+
+## Performance hints
+
+You may tell fast_float what to expect, from your input or from your program,
+so that it parses faster. Pass one or more `fast_float::performance_hints` as a
+template argument; everything else stays the same:
+
+```C++
+using fast_float::performance_hints;
+
+double result;
+auto answer = fast_float::from_chars<performance_hints::unpredictable_sign>(
+    input.data(), input.data() + input.size(), result);
+
+// combine them with |
+constexpr auto hints = performance_hints::unpredictable_sign |
+                       performance_hints::assume_round_to_nearest;
+answer = fast_float::from_chars<hints>(
+    input.data(), input.data() + input.size(), result,
+    fast_float::chars_format::fixed);
+
+// from_chars_advanced and integer_times_pow10 take them too
+fast_float::parse_options options{fast_float::chars_format::general, ','};
+answer = fast_float::from_chars_advanced<hints>(
+    input.data(), input.data() + input.size(), result, options);
+double d = fast_float::integer_times_pow10<hints>(int64_t(-123456), -2);
+float f = fast_float::integer_times_pow10<float, hints>(uint64_t(123456), -2);
+```
+
+The hints apply to floating-point types. Use them only when they hold: a wrong
+`unpredictable_sign` or `short_numbers` only makes parsing slower, but a wrong
+`assume_round_to_nearest` gives wrong results (see below).
+
+### Signs that are hard to predict
+
+By default, the parser checks for a sign with a branch. The branch is nearly
+free when the processor predicts its outcome: when all numbers are positive, or
+when the signs follow a pattern. When positive and negative numbers come in
+random order (e.g., gains and losses), the processor mispredicts it often. Then
+you may pass `fast_float::performance_hints::unpredictable_sign`: the parser
+handles the sign without a branch.
+
+The results do not change. Do not use it when the signs are predictable, since
+parsing is then slower. The JSON and JavaScript formats ignore it.
+
+### Short numbers of varying shapes
+
+When you parse short numbers whose shapes vary unpredictably, such as `7`,
+`-12.5`, `0.375` and `1042` in random order, the parser mispredicts its
+branches on the number of digits and the position of the decimal point. If
+most of your numbers have at most 8 characters (sign and decimal point
+included) and you pass each number alone (the range `[first, last)` holds just
+the number, as when you parse fields already split from a CSV line), you may
+pass `fast_float::performance_hints::short_numbers`: such numbers are then
+parsed with a few bitwise operations, without branches that depend on their
+shape.
+
+```C++
+double result;
+auto answer = fast_float::from_chars<fast_float::performance_hints::short_numbers>(
+    field.data(), field.data() + field.size(), result);
+```
+
+The results do not change. Other inputs (longer numbers, exponents, a range
+holding more than the number, etc.) are parsed as usual, only a bit more
+slowly. Do not use it when the shapes are predictable (e.g., mostly `0`, `1.0`
+and `0.75` in a regular pattern): the usual parser is then faster, since the
+processor predicts its branches. It only applies to `char` inputs and to the
+`float` and `double` types; the JSON and JavaScript formats ignore it.
+
+### Assuming the default rounding mode
 
 The C and C++ languages let a program change the floating-point rounding
 mode of a thread with `std::fesetround` (e.g., `FE_UPWARD`). fast_float
@@ -503,18 +631,18 @@ loop, it can be a noticeable fraction of the time, depending on your compiler
 and processor.
 
 If your program never changes the rounding mode, you can skip the check by
-defining the `FASTFLOAT_ROUNDS_TO_NEAREST` macro:
+passing `fast_float::performance_hints::assume_round_to_nearest`:
 
 ```C++
-#define FASTFLOAT_ROUNDS_TO_NEAREST
-#include "fast_float/fast_float.h"
+double result;
+auto answer = fast_float::from_chars<
+    fast_float::performance_hints::assume_round_to_nearest>(
+    input.data(), input.data() + input.size(), result);
 ```
 
-It affects `from_chars`, `from_chars_advanced` and `integer_times_pow10`.
+Before you use it, consider the tradeoff:
 
-Before you define it, consider the tradeoff:
-
-* **You make a promise.** With the macro, fast_float trusts that the rounding
+* **You make a promise.** With the hint, fast_float trusts that the rounding
   mode is `FE_TONEAREST`. If some code in your process (yours, or a library
   you call) sets another mode, the numbers that take the fast path are
   rounded according to that mode, while the other numbers are still rounded
@@ -522,19 +650,15 @@ Before you define it, consider the tradeoff:
   even consistent with one another. For example, with `FE_UPWARD`, `0.3`
   becomes `0.30000000000000004` but `0.30000000000000000000001` becomes
   `0.29999999999999999`: the larger input gives the smaller value. Nothing
-  crashes and nothing warns you. Without the macro, fast_float is correct in
+  crashes and nothing warns you. Without the hint, fast_float is correct in
   every rounding mode.
 * **It is only a speedup on short inputs.** Long numbers (more than about 15
   significant digits, or large exponents) never take the fast path, so they
   gain nothing.
-* **Define it the same way everywhere.** The macro changes inline functions,
-  so every translation unit that includes fast_float should see the same
-  definition. The simplest is to set it for the whole build
-  (`-DFASTFLOAT_ROUNDS_TO_NEAREST`, or
-  `target_compile_definitions(myapp PRIVATE FASTFLOAT_ROUNDS_TO_NEAREST)` in
-  CMake) rather than in a source file.
+* **It applies call by call.** Only the calls with the hint skip the check:
+  the other calls in your program keep it.
 
-If in doubt, leave the macro undefined: the default is always correct.
+If in doubt, leave the hint out: the default is always correct.
 
 ## Users and Related Work
 
@@ -681,9 +805,10 @@ cmake --build build
 
 Importantly, by default, the benchmark is built in Release mode.
 
-The lines marked `assume nearest` time the same code compiled with
-`FASTFLOAT_ROUNDS_TO_NEAREST` (see [Assuming the default rounding
-mode](#assuming-the-default-rounding-mode)).
+The lines marked `assume nearest` and `unpredictable sign` time the same code
+with the performance hints `fast_float::performance_hints::assume_round_to_nearest`
+and `fast_float::performance_hints::unpredictable_sign` (see [Performance
+hints](#performance-hints)).
 
 The instructions are similar under Windows.
 

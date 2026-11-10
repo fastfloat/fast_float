@@ -76,6 +76,35 @@ enum class chars_format : uint64_t {
                       scientific | no_infnan,
 };
 
+// Performance hints, passed as a template argument, e.g.,
+//   fast_float::from_chars<fast_float::performance_hints::short_numbers>(
+//       first, last, value);
+// They tell the parser what to expect from the input, or from the program, so
+// that it can parse faster. Combine them with |.
+enum class performance_hints : uint64_t {
+  none = 0,
+  // The sign is hard to predict (e.g., gains and losses), so it is handled
+  // without a branch. The results do not change. Without the hint,
+  // predictable signs (e.g., all positive) are parsed faster. The JSON and
+  // JavaScript formats ignore it.
+  unpredictable_sign = 1 << 0,
+  // The floating-point rounding mode is always the default (round to
+  // nearest), so it is not checked. The results are wrong if the program
+  // parses while another rounding mode is set (see fesetround).
+  assume_round_to_nearest = 1 << 1,
+  // The numbers are short, at most 8 characters (sign and decimal point
+  // included), such as 12.5 or -3.75, and their shapes vary unpredictably
+  // (length, position of the decimal point). Each number must be given alone:
+  // the range [first, last) holds just the number. Such numbers are then
+  // parsed with a few bitwise operations, without branches that depend on
+  // their shape. Do not use it when the numbers have predictable shapes (e.g.,
+  // mostly 0, 1.0 and 0.75 in a regular pattern): the usual parser is then
+  // faster. Other inputs are parsed as usual, only a bit more slowly. The
+  // results do not change. Only for char inputs and the float and double
+  // types; the JSON and JavaScript formats ignore it.
+  short_numbers = 1 << 2,
+};
+
 template <typename UC> struct from_chars_result_t {
   UC const *ptr;
   std::errc ec;
@@ -593,6 +622,10 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
   static constexpr int largest_power_of_ten();
   static constexpr int smallest_power_of_ten();
   static constexpr T exact_power_of_ten(int64_t power);
+  // Returns -10^power if negative is true, and 10^power otherwise, for
+  // 0 <= power <= max_exponent_fast_path(). Selecting the sign by indexing
+  // avoids a branch on the sign, which is often unpredictable.
+  static constexpr T signed_exact_power_of_ten(int64_t power, bool negative);
   static constexpr size_t max_digits();
   static constexpr equiv_uint exponent_mask();
   static constexpr equiv_uint mantissa_mask();
@@ -600,9 +633,14 @@ template <typename T> struct binary_format : binary_format_lookup_tables<T> {
 };
 
 template <typename U> struct binary_format_lookup_tables<double, U> {
+  // The exact powers of ten, then their negations (see
+  // signed_exact_power_of_ten).
   static constexpr double powers_of_ten[] = {
-      1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,  1e10, 1e11,
-      1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+      1e0,   1e1,   1e2,   1e3,   1e4,   1e5,   1e6,   1e7,   1e8,   1e9,
+      1e10,  1e11,  1e12,  1e13,  1e14,  1e15,  1e16,  1e17,  1e18,  1e19,
+      1e20,  1e21,  1e22,  -1e0,  -1e1,  -1e2,  -1e3,  -1e4,  -1e5,  -1e6,
+      -1e7,  -1e8,  -1e9,  -1e10, -1e11, -1e12, -1e13, -1e14, -1e15, -1e16,
+      -1e17, -1e18, -1e19, -1e20, -1e21, -1e22};
 
   // Largest integer value v so that (5**index * v) <= 1<<53.
   // 0x20000000000000 == 1 << 53
@@ -651,8 +689,10 @@ constexpr uint64_t binary_format_lookup_tables<double, U>::max_mantissa[];
 #endif
 
 template <typename U> struct binary_format_lookup_tables<float, U> {
-  static constexpr float powers_of_ten[] = {1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f,
-                                            1e6f, 1e7f, 1e8f, 1e9f, 1e10f};
+  static constexpr float powers_of_ten[] = {
+      1e0f,  1e1f,  1e2f,  1e3f,  1e4f,  1e5f,  1e6f,  1e7f,
+      1e8f,  1e9f,  1e10f, -1e0f, -1e1f, -1e2f, -1e3f, -1e4f,
+      -1e5f, -1e6f, -1e7f, -1e8f, -1e9f, -1e10f};
 
   // Largest integer value v so that (5**index * v) <= 1<<24.
   // 0x1000000 == 1<<24
@@ -776,8 +816,9 @@ inline constexpr uint64_t binary_format<float>::max_mantissa_fast_path() {
 // credit: Jakub Jelínek
 #ifdef __STDCPP_FLOAT16_T__
 template <typename U> struct binary_format_lookup_tables<std::float16_t, U> {
-  static constexpr std::float16_t powers_of_ten[] = {1e0f16, 1e1f16, 1e2f16,
-                                                     1e3f16, 1e4f16};
+  static constexpr std::float16_t powers_of_ten[] = {
+      1e0f16,  1e1f16,  1e2f16,  1e3f16,  1e4f16,
+      -1e0f16, -1e1f16, -1e2f16, -1e3f16, -1e4f16};
 
   // Largest integer value v so that (5**index * v) <= 1<<11.
   // 0x800 == 1<<11
@@ -829,6 +870,15 @@ binary_format<std::float16_t>::hidden_bit_mask() {
 template <>
 inline constexpr int binary_format<std::float16_t>::max_exponent_fast_path() {
   return 4;
+}
+
+template <>
+inline constexpr std::float16_t
+binary_format<std::float16_t>::signed_exact_power_of_ten(int64_t power,
+                                                         bool negative) {
+  // Work around clang bug https://godbolt.org/z/zedh7rrhc
+  return static_cast<void>(powers_of_ten[0]),
+         powers_of_ten[power + (negative ? max_exponent_fast_path() + 1 : 0)];
 }
 
 template <>
@@ -907,8 +957,9 @@ inline constexpr size_t binary_format<std::float16_t>::max_digits() {
 // credit: Jakub Jelínek
 #ifdef __STDCPP_BFLOAT16_T__
 template <typename U> struct binary_format_lookup_tables<std::bfloat16_t, U> {
-  static constexpr std::bfloat16_t powers_of_ten[] = {1e0bf16, 1e1bf16, 1e2bf16,
-                                                      1e3bf16};
+  static constexpr std::bfloat16_t powers_of_ten[] = {
+      1e0bf16,  1e1bf16,  1e2bf16,  1e3bf16,
+      -1e0bf16, -1e1bf16, -1e2bf16, -1e3bf16};
 
   // Largest integer value v so that (5**index * v) <= 1<<8.
   // 0x100 == 1<<8
@@ -939,6 +990,15 @@ binary_format<std::bfloat16_t>::exact_power_of_ten(int64_t power) {
 template <>
 inline constexpr int binary_format<std::bfloat16_t>::max_exponent_fast_path() {
   return 3;
+}
+
+template <>
+inline constexpr std::bfloat16_t
+binary_format<std::bfloat16_t>::signed_exact_power_of_ten(int64_t power,
+                                                          bool negative) {
+  // Work around clang bug https://godbolt.org/z/zedh7rrhc
+  return static_cast<void>(powers_of_ten[0]),
+         powers_of_ten[power + (negative ? max_exponent_fast_path() + 1 : 0)];
 }
 
 template <>
@@ -1076,9 +1136,25 @@ binary_format<double>::exact_power_of_ten(int64_t power) {
 }
 
 template <>
+inline constexpr double
+binary_format<double>::signed_exact_power_of_ten(int64_t power, bool negative) {
+  // Work around clang bug https://godbolt.org/z/zedh7rrhc
+  return static_cast<void>(powers_of_ten[0]),
+         powers_of_ten[power + (negative ? max_exponent_fast_path() + 1 : 0)];
+}
+
+template <>
 inline constexpr float binary_format<float>::exact_power_of_ten(int64_t power) {
   // Work around clang bug https://godbolt.org/z/zedh7rrhc
   return static_cast<void>(powers_of_ten[0]), powers_of_ten[power];
+}
+
+template <>
+inline constexpr float
+binary_format<float>::signed_exact_power_of_ten(int64_t power, bool negative) {
+  // Work around clang bug https://godbolt.org/z/zedh7rrhc
+  return static_cast<void>(powers_of_ten[0]),
+         powers_of_ten[power + (negative ? max_exponent_fast_path() + 1 : 0)];
 }
 
 template <> inline constexpr int binary_format<double>::largest_power_of_ten() {
@@ -1395,6 +1471,28 @@ fastfloat_really_inline FASTFLOAT_CONSTEXPR14 chars_format &
 operator|=(chars_format &lhs, chars_format rhs) noexcept {
   return lhs = (lhs | rhs);
 }
+
+constexpr performance_hints operator&(performance_hints lhs,
+                                      performance_hints rhs) noexcept {
+  using int_type = std::underlying_type<performance_hints>::type;
+  return static_cast<performance_hints>(static_cast<int_type>(lhs) &
+                                        static_cast<int_type>(rhs));
+}
+
+constexpr performance_hints operator|(performance_hints lhs,
+                                      performance_hints rhs) noexcept {
+  using int_type = std::underlying_type<performance_hints>::type;
+  return static_cast<performance_hints>(static_cast<int_type>(lhs) |
+                                        static_cast<int_type>(rhs));
+}
+
+namespace detail {
+// Whether hints include hint.
+constexpr bool has_hint(performance_hints hints,
+                        performance_hints hint) noexcept {
+  return uint64_t(hints & hint) != 0;
+}
+} // namespace detail
 
 fastfloat_really_inline FASTFLOAT_CONSTEXPR14 chars_format &
 operator^=(chars_format &lhs, chars_format rhs) noexcept {
