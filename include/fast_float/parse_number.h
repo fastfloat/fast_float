@@ -75,19 +75,21 @@ from_chars_result_t<UC>
  * It is the default on most system. This function is meant to be inexpensive.
  * Credit : @mwalcott3
  *
- * If FASTFLOAT_ROUNDS_TO_NEAREST is defined, we trust the user that the
- * rounding mode is always 'nearest' and we skip the check (see README).
+ * With assume_nearest (performance_hints::assume_round_to_nearest), we trust
+ * the user that the rounding mode is always 'nearest' and we skip the check.
  */
+template <bool assume_nearest = false>
 fastfloat_really_inline bool rounds_to_nearest() noexcept {
   // https://lemire.me/blog/2020/06/26/gcc-not-nearest/
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   // The arithmetic may be carried out with excess precision (e.g., x87):
-  // Clinger's fast path could then round twice. FASTFLOAT_ROUNDS_TO_NEAREST
-  // does not change this.
+  // Clinger's fast path could then round twice. assume_nearest does not
+  // change this.
   return false;
-#elif defined(FASTFLOAT_ROUNDS_TO_NEAREST)
-  return true;
 #else
+  if (assume_nearest) {
+    return true;
+  }
   // See
   // A fast function to check your floating-point rounding mode
   // https://lemire.me/blog/2022/11/16/a-fast-function-to-check-your-floating-point-rounding-mode/
@@ -141,10 +143,17 @@ fastfloat_really_inline bool rounds_to_nearest() noexcept {
 #elif defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
-#endif // FASTFLOAT_ROUNDS_TO_NEAREST
+#endif
 }
 
 } // namespace detail
+
+// Hints holds the performance hints (see performance_hints).
+template <typename T, typename UC,
+          performance_hints Hints = performance_hints::none>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_float_advanced(UC const *first, UC const *last, T &value,
+                          parse_options_t<UC> options) noexcept;
 
 template <typename T> struct from_chars_caller {
   template <typename UC>
@@ -153,6 +162,17 @@ template <typename T> struct from_chars_caller {
       call(UC const *first, UC const *last, T &value,
            parse_options_t<UC> options) noexcept {
     return from_chars_advanced(first, last, value, options);
+  }
+
+  // Like call, for floating-point types, with performance hints. As with
+  // call, GCC inlines it on its own, folding the format when it is a
+  // constant.
+  template <performance_hints Hints, typename UC>
+  fastfloat_clang_really_inline
+      FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+      call_hinted(UC const *first, UC const *last, T &value,
+                  parse_options_t<UC> options) noexcept {
+    return from_chars_float_advanced<T, UC, Hints>(first, last, value, options);
   }
 };
 
@@ -167,6 +187,20 @@ template <> struct from_chars_caller<std::float32_t> {
     // float32_t
     float val = 0.0f;
     auto ret = from_chars_advanced(first, last, val, options);
+    // If no characters match the pattern, value must be left unmodified.
+    if (ret.ec != std::errc::invalid_argument) {
+      value = val;
+    }
+    return ret;
+  }
+
+  template <performance_hints Hints, typename UC>
+  FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  call_hinted(UC const *first, UC const *last, std::float32_t &value,
+              parse_options_t<UC> options) noexcept {
+    float val = 0.0f;
+    auto ret =
+        from_chars_float_advanced<float, UC, Hints>(first, last, val, options);
     // If no characters match the pattern, value must be left unmodified.
     if (ret.ec != std::errc::invalid_argument) {
       value = val;
@@ -193,6 +227,20 @@ template <> struct from_chars_caller<std::float64_t> {
     }
     return ret;
   }
+
+  template <performance_hints Hints, typename UC>
+  FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
+  call_hinted(UC const *first, UC const *last, std::float64_t &value,
+              parse_options_t<UC> options) noexcept {
+    double val = 0.0;
+    auto ret =
+        from_chars_float_advanced<double, UC, Hints>(first, last, val, options);
+    // If no characters match the pattern, value must be left unmodified.
+    if (ret.ec != std::errc::invalid_argument) {
+      value = val;
+    }
+    return ret;
+  }
 };
 #endif
 
@@ -206,6 +254,15 @@ FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_fixed_format(UC const *first, UC const *last, T &value) noexcept {
   return from_chars_caller<T>::call(first, last, value,
                                     parse_options_t<UC>(Fmt));
+}
+
+// Same, with performance hints.
+template <typename T, typename UC, chars_format Fmt, performance_hints Hints>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_fixed_format_hinted(UC const *first, UC const *last,
+                               T &value) noexcept {
+  return from_chars_caller<T>::template call_hinted<Hints>(
+      first, last, value, parse_options_t<UC>(Fmt));
 }
 #endif
 
@@ -223,7 +280,8 @@ from_chars(UC const *first, UC const *last, T &value,
                                     parse_options_t<UC>(fmt));
 }
 
-template <typename T>
+// Hints holds the performance hints (see performance_hints).
+template <typename T, performance_hints Hints = performance_hints::none>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
 clinger_fast_path_impl(uint64_t mantissa, int64_t exponent, bool is_negative,
                        T &value) noexcept {
@@ -248,9 +306,34 @@ clinger_fast_path_impl(uint64_t mantissa, int64_t exponent, bool is_negative,
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
-    if (!cpp20_and_in_constexpr() && detail::rounds_to_nearest()) {
+    constexpr bool assume_nearest =
+        detail::has_hint(Hints, performance_hints::assume_round_to_nearest);
+    if (!cpp20_and_in_constexpr() &&
+        detail::rounds_to_nearest<assume_nearest>()) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
+      FASTFLOAT_IF_CONSTEXPR17(
+          detail::has_hint(Hints, performance_hints::unpredictable_sign)) {
+        // The sign comes with the power of ten: (-10^k) * m and m / (-10^k)
+        // are exactly -(10^k * m) and -(m / 10^k), including -0 when m = 0.
+        // Thus no branch on the sign.
+        value = T(mantissa);
+        if (exponent < 0) {
+          value = value / binary_format<T>::signed_exact_power_of_ten(
+                              -exponent, is_negative);
+        } else {
+          value = value * binary_format<T>::signed_exact_power_of_ten(
+                              exponent, is_negative);
+          // Only std::float16_t can overflow here (e.g., "656e2"); let the
+          // slow path report result_out_of_range.
+          if (binary_format<T>::fast_path_can_overflow() &&
+              (value > (std::numeric_limits<T>::max)() ||
+               value < std::numeric_limits<T>::lowest())) {
+            return false;
+          }
+        }
+        return true;
+      }
       value = T(mantissa);
       if (exponent < 0) {
         value = value / binary_format<T>::exact_power_of_ten(-exponent);
@@ -289,6 +372,86 @@ clinger_fast_path_impl(uint64_t mantissa, int64_t exponent, bool is_negative,
     }
   }
   return false;
+}
+
+namespace detail {
+// performance_hints::short_numbers. Returns false if the input does not fit.
+template <typename T, typename UC, performance_hints Hints>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+from_chars_short(UC const *first, UC const *last, T &value, chars_format fmt,
+                 UC decimal_point, from_chars_result_t<UC> &answer) noexcept {
+  if (!(std::is_same<T, double>::value || std::is_same<T, float>::value) ||
+      !std::is_same<UC, char>::value || cpp20_and_in_constexpr()) {
+    return false;
+  }
+  fmt = adjust_for_feature_macros(fmt);
+  // JSON and JavaScript have stricter rules (e.g., no "01" or "5.").
+  if (!uint64_t(fmt & chars_format::fixed) ||
+      uint64_t(fmt & (basic_json_fmt | basic_javascript_fmt)) ||
+      (last - first) > 8 || first == last) {
+    return false;
+  }
+  uint64_t mantissa;
+  int64_t exponent;
+  bool negative;
+  if (!parse_short_number(first, last, decimal_point,
+                          uint64_t(fmt & chars_format::allow_leading_plus) != 0,
+                          mantissa, exponent, negative) ||
+      !clinger_fast_path_impl<T, Hints>(mantissa, exponent, negative, value)) {
+    return false;
+  }
+  answer.ec = std::errc();
+  answer.ptr = last;
+  return true;
+}
+
+template <performance_hints Hints, typename T, typename UC>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_hinted(UC const *first, UC const *last, T &value,
+                  chars_format fmt) noexcept {
+#ifdef __clang__
+  if (fmt == chars_format::general) {
+    return from_chars_fixed_format_hinted<T, UC, chars_format::general, Hints>(
+        first, last, value);
+  }
+#endif
+  return from_chars_caller<T>::template call_hinted<Hints>(
+      first, last, value, parse_options_t<UC>(fmt));
+}
+} // namespace detail
+
+// With performance hints. Only the short path (short_numbers) is inlined in
+// the caller; the rest is the usual parser.
+template <performance_hints Hints, typename T, typename UC, typename>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars(UC const *first, UC const *last, T &value,
+           chars_format fmt /*= chars_format::general*/) noexcept {
+  FASTFLOAT_IF_CONSTEXPR17(
+      detail::has_hint(Hints, performance_hints::short_numbers)) {
+    from_chars_result_t<UC> answer;
+    if (detail::from_chars_short<T, UC, Hints>(first, last, value, fmt, UC('.'),
+                                               answer)) {
+      return answer;
+    }
+  }
+  return detail::from_chars_hinted<Hints>(first, last, value, fmt);
+}
+
+template <performance_hints Hints, typename T, typename UC, typename>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_advanced(UC const *first, UC const *last, T &value,
+                    parse_options_t<UC> options) noexcept {
+  FASTFLOAT_IF_CONSTEXPR17(
+      detail::has_hint(Hints, performance_hints::short_numbers)) {
+    from_chars_result_t<UC> answer;
+    if (detail::from_chars_short<T, UC, Hints>(first, last, value,
+                                               options.format,
+                                               options.decimal_point, answer)) {
+      return answer;
+    }
+  }
+  return from_chars_caller<T>::template call_hinted<Hints>(first, last, value,
+                                                           options);
 }
 
 /**
@@ -385,7 +548,7 @@ from_chars_float_javascript(UC const *first, UC const *last, T &value,
   return from_chars_advanced(pns, value);
 }
 
-template <typename T, typename UC>
+template <typename T, typename UC, performance_hints Hints>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
                           parse_options_t<UC> options) noexcept {
@@ -431,11 +594,13 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // only by the rare slow paths). Skipping their stores keeps the fat
   // parsed_number_string_t off the hot path. store_spans is a runtime argument,
   // so this reuses the single parse_number_string_impl instantiation.
+  constexpr bool branchless_sign =
+      detail::has_hint(Hints, performance_hints::unpredictable_sign);
   parsed_number_string_t<UC> pns =
       bjf ? parse_number_string_impl<true, false, UC>(first, last, options,
                                                       false)
-          : parse_number_string_impl<false, false, UC>(first, last, options,
-                                                       false);
+          : parse_number_string_impl<false, false, UC, branchless_sign>(
+                first, last, options, false);
   if (!pns.valid) {
     if (uint64_t(fmt & chars_format::no_infnan)) {
       answer.ec = std::errc::invalid_argument;
@@ -466,7 +631,8 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   answer.ec = std::errc(); // be optimistic
   answer.ptr = pns.lastmatch;
 
-  if (clinger_fast_path_impl(pns.mantissa, pns.exponent, pns.negative, value)) {
+  if (clinger_fast_path_impl<T, Hints>(pns.mantissa, pns.exponent, pns.negative,
+                                       value)) {
     return answer;
   }
 
@@ -509,22 +675,36 @@ from_chars(UC const *first, UC const *last, T &value, int base) noexcept {
   return from_chars_advanced(first, last, value, options);
 }
 
+namespace detail {
+// The part of integer_times_pow10 that does not fit Clinger's fast path.
 template <typename T>
-FASTFLOAT_CONSTEXPR20
+FASTFLOAT_CONSTEXPR20 T integer_times_pow10_slow(uint64_t mantissa,
+                                                 int decimal_exponent,
+                                                 bool is_negative) noexcept {
+  T value;
+  adjusted_mantissa am =
+      compute_float<binary_format<T>>(decimal_exponent, mantissa);
+  to_float(is_negative, am, value);
+  return value;
+}
+} // namespace detail
+
+// integer_times_pow10 is meant to be called in the loop of a hand-written
+// parser: we force the inlining of Clinger's fast path, which is short, so that
+// the common case does not pay for a function call.
+template <typename T>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(uint64_t mantissa, int decimal_exponent) noexcept {
   T value;
-  if (clinger_fast_path_impl(mantissa, decimal_exponent, false, value))
+  if (clinger_fast_path_impl(mantissa, decimal_exponent, false, value)) {
     return value;
-
-  adjusted_mantissa am =
-      compute_float<binary_format<T>>(decimal_exponent, mantissa);
-  to_float(false, am, value);
-  return value;
+  }
+  return detail::integer_times_pow10_slow<T>(mantissa, decimal_exponent, false);
 }
 
 template <typename T>
-FASTFLOAT_CONSTEXPR20
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept {
   const bool is_negative = mantissa < 0;
@@ -533,22 +713,68 @@ FASTFLOAT_CONSTEXPR20
                                  : static_cast<uint64_t>(mantissa);
 
   T value;
-  if (clinger_fast_path_impl(m, decimal_exponent, is_negative, value))
+  if (clinger_fast_path_impl(m, decimal_exponent, is_negative, value)) {
     return value;
-
-  adjusted_mantissa am = compute_float<binary_format<T>>(decimal_exponent, m);
-  to_float(is_negative, am, value);
-  return value;
+  }
+  return detail::integer_times_pow10_slow<T>(m, decimal_exponent, is_negative);
 }
 
-FASTFLOAT_CONSTEXPR20 inline double
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 double
 integer_times_pow10(uint64_t mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10<double>(mantissa, decimal_exponent);
 }
 
-FASTFLOAT_CONSTEXPR20 inline double
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 double
 integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept {
   return integer_times_pow10<double>(mantissa, decimal_exponent);
+}
+
+namespace detail {
+// Whether an integer is negative, without comparing an unsigned value to 0.
+template <typename Int>
+constexpr typename std::enable_if<std::is_signed<Int>::value, bool>::type
+is_negative_integer(Int value) noexcept {
+  return value < 0;
+}
+
+template <typename Int>
+constexpr typename std::enable_if<!std::is_signed<Int>::value, bool>::type
+is_negative_integer(Int) noexcept {
+  return false;
+}
+} // namespace detail
+
+// integer_times_pow10 with performance hints, for any integer type up to 64
+// bits: integer_times_pow10<T, Hints>(mantissa, exponent) returns a T, and
+// integer_times_pow10<Hints>(mantissa, exponent) returns a double.
+template <typename T, performance_hints Hints, typename Int>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<is_supported_float_type<T>::value &&
+                                std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(uint64_t),
+                            T>::type
+    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+  bool const is_negative = detail::is_negative_integer(mantissa);
+  // Negate as unsigned: -mantissa overflows for the most negative value.
+  uint64_t const m =
+      is_negative
+          ? uint64_t(0) - static_cast<uint64_t>(static_cast<int64_t>(mantissa))
+          : static_cast<uint64_t>(mantissa);
+  T value;
+  if (clinger_fast_path_impl<T, Hints>(m, decimal_exponent, is_negative,
+                                       value)) {
+    return value;
+  }
+  return detail::integer_times_pow10_slow<T>(m, decimal_exponent, is_negative);
+}
+
+template <performance_hints Hints, typename Int>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(uint64_t),
+                            double>::type
+    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept {
+  return integer_times_pow10<double, Hints>(mantissa, decimal_exponent);
 }
 
 // the following overloads are here to avoid surprising ambiguity for int,
