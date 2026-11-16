@@ -27,7 +27,7 @@ from_chars_result_t<UC>
                                        const chars_format fmt) noexcept {
   from_chars_result_t<UC> answer;
   answer.ptr = first;
-
+  answer.ec = std::errc();        // be optimistic
   FASTFLOAT_ASSUME(first < last); // so dereference without checks
 
   bool const minusSign = (*first == UC('-'));
@@ -37,7 +37,7 @@ from_chars_result_t<UC>
     ++first;
   }
 
-  if (last - first >= 3) {
+  if fastfloat_likely (last - first >= 3) {
     if (fastfloat_strncasecmp(first, str_const_nan<UC>(), 3)) {
       answer.ptr = (first += 3);
       value = minusSign ? -std::numeric_limits<T>::quiet_NaN()
@@ -55,7 +55,6 @@ from_chars_result_t<UC>
             break; // forbidden char, not nan(n-char-seq-opt)
         }
       }
-      answer.ec = std::errc();
       return answer;
     }
     if (fastfloat_strncasecmp(first, str_const_inf<UC>(), 3)) {
@@ -67,7 +66,6 @@ from_chars_result_t<UC>
       }
       value = minusSign ? -std::numeric_limits<T>::infinity()
                         : std::numeric_limits<T>::infinity();
-      answer.ec = std::errc();
       return answer;
     }
   }
@@ -149,7 +147,6 @@ fastfloat_inline bool rounds_to_nearest() noexcept {
 #endif
 #endif // FASTFLOAT_ROUNDS_TO_NEAREST
 }
-#endif
 
 } // namespace detail
 
@@ -241,7 +238,8 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
-    if (!is_constant_evaluated() && detail::rounds_to_nearest()) {
+    if fastfloat_likely (!is_constant_evaluated() &&
+                         detail::rounds_to_nearest()) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
       value = static_cast<T>(mantissa);
@@ -337,8 +335,9 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 #endif
       am, value);
   // Test for over/underflow.
-  if ((pns.mantissa != 0 && am.mantissa == 0 && am.power2 == 0) ||
-      am.power2 == binary_format<T>::infinite_power()) {
+  if fastfloat_unlikely ((pns.mantissa != 0 && am.mantissa == 0 &&
+                          am.power2 == 0) ||
+                         am.power2 == binary_format<T>::infinite_power()) {
     answer.ec = std::errc::result_out_of_range;
   }
   return answer;
@@ -352,7 +351,7 @@ from_chars_advanced(parsed_number_string_t<UC> const &pns, T &value) noexcept {
 // and the am.power2<0 digit_comp recompute, so both slow branches collapse to
 // one helper call.
 template <typename T, typename UC>
-fastfloat_noinline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_number_slow_path(UC const *first, UC const *last, T &value,
                        parse_options_t<UC> const options
 #ifndef FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
