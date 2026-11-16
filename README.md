@@ -32,7 +32,7 @@ Introduced new optional macros to minimize overhead when certain parsing feature
 * **`FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`**
   Restricts parsing to **positive C-style numbers only** — no sign characters, no `INF`, `INFINITY`, or `NaN` and no additional options like skip white spaces or support for Fortran/JSON/JS.
 
-* **`FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED`**
+* **`FASTFLOAT_ROUNDS_TO_NEAREST`**
   Assumes that only the **IEEE 754 “round-to-nearest”** rounding mode is needed, removing crutches and support code for other modes.
 
 * **`FASTFLOAT_ISNOT_CHECKED_BOUNDS`**
@@ -91,7 +91,7 @@ the sign and all other symbols before any number by itself. In this case you can
 in all supported formats with macros `FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN`, which significantly reduce the code size
 and improve performance. You also can use macros `FASTFLOAT_ISNOT_CHECKED_BOUNDS` if your code already checks bounds;
 it's very likely because all parsers need to check the first character by itself before parsing. Additionally, you can use
-macros `FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
+macros `FASTFLOAT_ROUNDS_TO_NEAREST` if you only need `FE_TONEAREST` rounding mode in the parsing; this option
 also improves performance a bit and reduces code size. In the high-performance example, I also use the [fmt library](https://github.com/fmtlib/fmt), which also
 supports all C++ standards since C++11. I also recommend using `string_view` everywhere if it's possible; it's available
 since C++17, and if you want maximum performance, use the latest compiler with the latest C++ with maximum optimization (I use C++23 and some from C++26):
@@ -101,7 +101,7 @@ since C++17, and if you want maximum performance, use the latest compiler with t
 ```C++
 #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
 #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
-#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+#define FASTFLOAT_ROUNDS_TO_NEAREST
 #include "fast_float/fast_float.h"
 #include "fmt/core.h"
 #include <string_view>
@@ -270,8 +270,9 @@ Furthermore, we have the following restrictions:
 We support Visual Studio, macOS, Linux, freeBSD. We support big and little
 endian. We support 32-bit and 64-bit systems.
 
-We assume that the rounding mode is set to nearest (`std::fegetround() ==
-FE_TONEAREST`).
+The results are rounded to the nearest floating-point value, whatever the
+rounding mode of the thread (`std::fegetround()`). See
+[Assuming the default rounding mode](#assuming-the-default-rounding-mode).
 
 ## Integer types
 
@@ -600,6 +601,56 @@ Overloads of `fast_float::integer_times_pow10()` are provided for
 signed and unsigned integer types up to 64 bits: `int64_t`, `uint64_t`, etc.
 
 
+## Assuming the default rounding mode
+
+The C and C++ languages let a program change the floating-point rounding
+mode of a thread with `std::fesetround` (e.g., `FE_UPWARD`). fast_float
+returns the value rounded to the nearest floating-point number (ties to
+even) whatever the current rounding mode.
+
+Most numbers that people write, such as `1234.56` or `-0.25`, are converted
+with a single multiplication or division by an exact power of ten (Clinger's
+fast path). That operation is correctly rounded only in the default mode
+(`FE_TONEAREST`), so fast_float checks the rounding mode before it takes the
+fast path, every time. The check is cheap (a load from a `volatile` variable,
+two additions and a comparison), but when you parse short numbers in a tight
+loop, it can be a noticeable fraction of the time, depending on your compiler
+and processor.
+
+If your program never changes the rounding mode, you can skip the check by
+defining the `FASTFLOAT_ROUNDS_TO_NEAREST` macro:
+
+```C++
+#define FASTFLOAT_ROUNDS_TO_NEAREST
+#include "fast_float/fast_float.h"
+```
+
+It affects `from_chars`, `from_chars_advanced` and `integer_times_pow10`.
+
+Before you define it, consider the tradeoff:
+
+* **You make a promise.** With the macro, fast_float trusts that the rounding
+  mode is `FE_TONEAREST`. If some code in your process (yours, or a library
+  you call) sets another mode, the numbers that take the fast path are
+  rounded according to that mode, while the other numbers are still rounded
+  to the nearest value. The results are then not correctly rounded, and not
+  even consistent with one another. For example, with `FE_UPWARD`, `0.3`
+  becomes `0.30000000000000004` but `0.30000000000000000000001` becomes
+  `0.29999999999999999`: the larger input gives the smaller value. Nothing
+  crashes and nothing warns you. Without the macro, fast_float is correct in
+  every rounding mode.
+* **It is only a speedup on short inputs.** Long numbers (more than about 15
+  significant digits, or large exponents) never take the fast path, so they
+  gain nothing.
+* **Define it the same way everywhere.** The macro changes inline functions,
+  so every translation unit that includes fast_float should see the same
+  definition. The simplest is to set it for the whole build
+  (`-DFASTFLOAT_ROUNDS_TO_NEAREST`, or
+  `target_compile_definitions(myapp PRIVATE FASTFLOAT_ROUNDS_TO_NEAREST)` in
+  CMake) rather than in a source file.
+
+If in doubt, leave the macro undefined: the default is always correct.
+
 ## Users and Related Work
 
 The fast_float library is part of:
@@ -744,6 +795,10 @@ cmake --build build
 ```
 
 Importantly, by default, the benchmark is built in Release mode.
+
+The lines marked `assume nearest` time the same code compiled with
+`FASTFLOAT_ROUNDS_TO_NEAREST` (see [Assuming the default rounding
+mode](#assuming-the-default-rounding-mode)).
 
 The instructions are similar under Windows.
 

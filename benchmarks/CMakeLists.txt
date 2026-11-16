@@ -8,7 +8,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(counters)
 
-add_executable(realbenchmark benchmark.cpp)
+add_executable(realbenchmark benchmark.cpp benchmark_rtn.cpp)
 target_link_libraries(realbenchmark PRIVATE counters::counters)
 add_executable(bench_ip bench_ip.cpp)
 add_executable(bench_uint16 bench_uint16.cpp)

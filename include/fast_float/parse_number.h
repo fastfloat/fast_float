@@ -76,17 +76,24 @@ from_chars_result_t<UC>
 }
 #endif
 
-#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
 /**
  * Returns true if the floating-pointing rounding mode is to 'nearest'.
  * It is the default on most system. This function is meant to be inexpensive.
  * Credit : @mwalcott3
+ *
+ * If FASTFLOAT_ROUNDS_TO_NEAREST is defined, we trust the user that the
+ * rounding mode is always 'nearest' and we skip the check (see README).
  */
 fastfloat_inline bool rounds_to_nearest() noexcept {
   // https://lemire.me/blog/2020/06/26/gcc-not-nearest/
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
+  // The arithmetic may be carried out with excess precision (e.g., x87):
+  // Clinger's fast path could then round twice. FASTFLOAT_ROUNDS_TO_NEAREST
+  // does not change this.
   return false;
-#endif
+#elif defined(FASTFLOAT_ROUNDS_TO_NEAREST)
+  return true;
+#else
   // See
   // A fast function to check your floating-point rounding mode
   // https://lemire.me/blog/2022/11/16/a-fast-function-to-check-your-floating-point-rounding-mode/
@@ -140,6 +147,7 @@ fastfloat_inline bool rounds_to_nearest() noexcept {
 #elif defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
+#endif // FASTFLOAT_ROUNDS_TO_NEAREST
 }
 #endif
 
@@ -233,11 +241,7 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
     // We could check it first (before the previous branch), but
     // there might be performance advantages at having the check
     // be last.
-    if (!is_constant_evaluated()
-#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
-        && detail::rounds_to_nearest()
-#endif
-    ) {
+    if (!is_constant_evaluated() && detail::rounds_to_nearest()) {
       // We have that fegetround() == FE_TONEAREST.
       // Next is Clinger's fast path.
       value = static_cast<T>(mantissa);
@@ -258,7 +262,6 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
       }
 #endif
       return true;
-#ifndef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
     } else {
       // We do not have that fegetround() == FE_TONEAREST.
       // Next is a modified Clinger's fast path, inspired by Jakub Jelínek's
@@ -285,7 +288,6 @@ clinger_fast_path_impl(am_mant_t const mantissa, am_pow_t const exponent,
 #endif
         return true;
       }
-#endif
     }
   }
   return false;

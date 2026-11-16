@@ -1,6 +1,6 @@
 
 #define FASTFLOAT_ONLY_POSITIVE_C_NUMBER_WO_INF_NAN
-#define FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
+#define FASTFLOAT_ROUNDS_TO_NEAREST
 #define FASTFLOAT_ISNOT_CHECKED_BOUNDS
 
 #if defined(__linux__) || (__APPLE__ && __aarch64__)
@@ -237,8 +237,8 @@ int main(int argc, char **argv) {
   std::cout << "# FASTFLOAT_TABLE_HACK_CHAR_DIGIT_LUT_DISABLED is enabled"
             << std::endl;
 #endif
-#ifdef FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED
-  std::cout << "# FASTFLOAT_ONLY_ROUNDS_TO_NEAREST_SUPPORTED is enabled"
+#ifdef FASTFLOAT_ROUNDS_TO_NEAREST
+  std::cout << "# FASTFLOAT_ROUNDS_TO_NEAREST is enabled"
             << std::endl;
 #endif
 #ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
