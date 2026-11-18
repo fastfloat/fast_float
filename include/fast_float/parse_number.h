@@ -385,10 +385,12 @@ from_chars_short(UC const *first, UC const *last, T &value, chars_format fmt,
     return false;
   }
   fmt = adjust_for_feature_macros(fmt);
-  // JSON and JavaScript have stricter rules (e.g., no "01" or "5.").
+  // JSON and JavaScript have stricter rules (e.g., no "01" or "5."). The
+  // short parser cannot tell a decimal point that is a digit (e.g., V8 passes
+  // '0' so that parseInt stops after the integer part) from the digit itself.
   if (!uint64_t(fmt & chars_format::fixed) ||
       uint64_t(fmt & (basic_json_fmt | basic_javascript_fmt)) ||
-      first == last) {
+      is_integer(decimal_point) || first == last) {
     return false;
   }
   // A number starts with a digit, a sign or the decimal point. Other inputs,

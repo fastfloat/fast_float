@@ -79,12 +79,19 @@ bool same_result(std::basic_string<UC> const &s, chars_format fmt) {
   if (!same(s, r1, expected, r2, actual, "from_chars", fmt)) {
     return false;
   }
-  fast_float::parse_options_t<UC> const options(fmt, UC(','));
-  expected = T(-12345);
-  actual = T(-12345);
-  r1 = fast_float::from_chars_advanced(first, last, expected, options);
-  r2 = fast_float::from_chars_advanced<Hints>(first, last, actual, options);
-  return same(s, r1, expected, r2, actual, "from_chars_advanced", fmt);
+  // A comma as decimal point, and a digit: V8 passes '0' so that parseInt
+  // stops after the integer part.
+  for (UC const decimal_point : {UC(','), UC('0'), UC('5')}) {
+    fast_float::parse_options_t<UC> const options(fmt, decimal_point);
+    expected = T(-12345);
+    actual = T(-12345);
+    r1 = fast_float::from_chars_advanced(first, last, expected, options);
+    r2 = fast_float::from_chars_advanced<Hints>(first, last, actual, options);
+    if (!same(s, r1, expected, r2, actual, "from_chars_advanced", fmt)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // The parser's own result also tells which error it found, and where.
