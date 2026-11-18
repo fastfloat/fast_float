@@ -519,7 +519,7 @@ report_parse_error(parsed_number_string_t<UC> &answer, UC const *p,
 template <bool json_fmt, bool javascript_fmt, typename UC>
 fastfloat_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string_impl(UC const *p, UC const *pend,
-                         parse_options_t<UC> const options,
+                         parse_options_t<UC> const &options,
                          bool const store_spans) noexcept {
   parsed_number_string_t<UC> answer{};
   FASTFLOAT_ASSUME(p < pend); // so dereference without checks
@@ -804,7 +804,7 @@ parse_number_string(UC const *p, UC const *pend,
 template <typename T, typename UC>
 fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 parse_int_string(UC const *p, UC const *pend, T &value,
-                 parse_options_t<UC> const options) noexcept {
+                 parse_options_t<UC> const &options) noexcept {
   FASTFLOAT_ASSUME(p < pend); // so dereference without checks
   from_chars_result_t<UC> answer;
 
