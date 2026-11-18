@@ -30,6 +30,12 @@ chars_format const formats[] = {
     chars_format::general,
     chars_format::general | chars_format::allow_leading_plus,
     chars_format::general | chars_format::skip_white_space,
+    chars_format::general | chars_format::no_infnan,
+    chars_format::general | chars_format::no_infnan |
+        chars_format::allow_leading_plus,
+    chars_format::general | chars_format::no_infnan |
+        chars_format::skip_white_space,
+    chars_format::fixed | chars_format::no_infnan,
     chars_format::scientific,
     chars_format::fixed,
     chars_format::json,
@@ -313,14 +319,18 @@ int main() {
       // around 8 characters
       "12345678", "123456789", "-1234567", "-12345678", "+1234567", "1234.567",
       "1234.5678", "-123.456", ".1234567", "1234567.", "0000000.", "-0000000",
-      "99999999", "9.999999", "1.2.3", "12..3", "1,234", "12 34"};
+      "99999999", "9.999999", "1.2.3", "12..3", "1,234", "12 34",
+      // not numbers
+      "auto", "none", "px", "x", "a1", "e5", "E5", "true", "undefined",
+      "inherit", "Infinity", "infinity", "INF", "inf", "NaN", "nan", "nan(1)",
+      "i", "n", "Nope", "infx", " 1", "\t1", "_1", "(1)", "#1"};
   for (std::string const &s : cases) {
     if (!check_all(s)) {
       return EXIT_FAILURE;
     }
   }
   // Short random strings over an alphabet rich in signs, digits and dots.
-  char const alphabet[] = "0123456789000.-+e ,xn";
+  char const alphabet[] = "0123456789000.-+e ,xniaf";
   std::mt19937_64 gen(1234);
   for (size_t i = 0; i < 100000; i++) {
     size_t const length = 1 + size_t(gen() % 10);
