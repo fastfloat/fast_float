@@ -30,6 +30,12 @@ chars_format const formats[] = {
     chars_format::general,
     chars_format::general | chars_format::allow_leading_plus,
     chars_format::general | chars_format::skip_white_space,
+    chars_format::general | chars_format::no_infnan,
+    chars_format::general | chars_format::no_infnan |
+        chars_format::allow_leading_plus,
+    chars_format::general | chars_format::no_infnan |
+        chars_format::skip_white_space,
+    chars_format::fixed | chars_format::no_infnan,
     chars_format::scientific,
     chars_format::fixed,
     chars_format::json,
@@ -73,12 +79,19 @@ bool same_result(std::basic_string<UC> const &s, chars_format fmt) {
   if (!same(s, r1, expected, r2, actual, "from_chars", fmt)) {
     return false;
   }
-  fast_float::parse_options_t<UC> const options(fmt, UC(','));
-  expected = T(-12345);
-  actual = T(-12345);
-  r1 = fast_float::from_chars_advanced(first, last, expected, options);
-  r2 = fast_float::from_chars_advanced<Hints>(first, last, actual, options);
-  return same(s, r1, expected, r2, actual, "from_chars_advanced", fmt);
+  // A comma as decimal point, and a digit: V8 passes '0' so that parseInt
+  // stops after the integer part.
+  for (UC const decimal_point : {UC(','), UC('0'), UC('5')}) {
+    fast_float::parse_options_t<UC> const options(fmt, decimal_point);
+    expected = T(-12345);
+    actual = T(-12345);
+    r1 = fast_float::from_chars_advanced(first, last, expected, options);
+    r2 = fast_float::from_chars_advanced<Hints>(first, last, actual, options);
+    if (!same(s, r1, expected, r2, actual, "from_chars_advanced", fmt)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // The parser's own result also tells which error it found, and where.
@@ -313,14 +326,18 @@ int main() {
       // around 8 characters
       "12345678", "123456789", "-1234567", "-12345678", "+1234567", "1234.567",
       "1234.5678", "-123.456", ".1234567", "1234567.", "0000000.", "-0000000",
-      "99999999", "9.999999", "1.2.3", "12..3", "1,234", "12 34"};
+      "99999999", "9.999999", "1.2.3", "12..3", "1,234", "12 34",
+      // not numbers
+      "auto", "none", "px", "x", "a1", "e5", "E5", "true", "undefined",
+      "inherit", "Infinity", "infinity", "INF", "inf", "NaN", "nan", "nan(1)",
+      "i", "n", "Nope", "infx", " 1", "\t1", "_1", "(1)", "#1"};
   for (std::string const &s : cases) {
     if (!check_all(s)) {
       return EXIT_FAILURE;
     }
   }
   // Short random strings over an alphabet rich in signs, digits and dots.
-  char const alphabet[] = "0123456789000.-+e ,xn";
+  char const alphabet[] = "0123456789000.-+e ,xniaf";
   std::mt19937_64 gen(1234);
   for (size_t i = 0; i < 100000; i++) {
     size_t const length = 1 + size_t(gen() % 10);

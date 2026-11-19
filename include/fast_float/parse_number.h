@@ -385,10 +385,34 @@ from_chars_short(UC const *first, UC const *last, T &value, chars_format fmt,
     return false;
   }
   fmt = adjust_for_feature_macros(fmt);
-  // JSON and JavaScript have stricter rules (e.g., no "01" or "5.").
+  // JSON and JavaScript have stricter rules (e.g., no "01" or "5."). The
+  // short parser cannot tell a decimal point that is a digit (e.g., V8 passes
+  // '0' so that parseInt stops after the integer part) from the digit itself.
   if (!uint64_t(fmt & chars_format::fixed) ||
       uint64_t(fmt & (basic_json_fmt | basic_javascript_fmt)) ||
-      (last - first) > 8 || first == last) {
+      is_integer(decimal_point) || first == last) {
+    return false;
+  }
+  // A number starts with a digit, a sign or the decimal point. Other inputs,
+  // such as "auto", are rejected here as the usual parser would reject them:
+  // falling back would cost them a full parse, and such inputs can be common
+  // (e.g., in a JavaScript engine, most strings converted to numbers are not
+  // numbers). We test before the length so that long words (e.g., "undefined")
+  // take the same branch.
+  UC const c = *first;
+  if (!is_integer(c) && c != UC('-') && c != decimal_point &&
+      !(uint64_t(fmt & chars_format::allow_leading_plus) && c == UC('+'))) {
+    // Leading spaces, infinity and NaN are left to the usual parser.
+    bool const maybe_infnan = !uint64_t(fmt & chars_format::no_infnan) &&
+                              ((c | 0x20) == 'i' || (c | 0x20) == 'n');
+    if (uint64_t(fmt & chars_format::skip_white_space) || maybe_infnan) {
+      return false;
+    }
+    answer.ec = std::errc::invalid_argument;
+    answer.ptr = first;
+    return true;
+  }
+  if ((last - first) > 8) {
     return false;
   }
   uint64_t mantissa;

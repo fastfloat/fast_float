@@ -99,7 +99,8 @@ enum class performance_hints : uint64_t {
   // parsed with a few bitwise operations, without branches that depend on
   // their shape. Do not use it when the numbers have predictable shapes (e.g.,
   // mostly 0, 1.0 and 0.75 in a regular pattern): the usual parser is then
-  // faster. Other inputs are parsed as usual, only a bit more slowly. The
+  // faster. Inputs that cannot start a number (e.g., "auto") are rejected at
+  // once; other inputs are parsed as usual, only a bit more slowly. The
   // results do not change. Only for char inputs and the float and double
   // types; the JSON and JavaScript formats ignore it.
   short_numbers = 1 << 2,
