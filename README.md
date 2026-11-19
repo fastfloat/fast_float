@@ -441,6 +441,62 @@ int main() {
 }
 ```
 
+### Resuming after a prefix you have already read
+
+Some parsers read small integers by themselves, because most numbers in their
+inputs are small integers, and call fast_float only for the other numbers. For
+example, V8 (the JavaScript engine in Chrome) parses `JSON.parse` input this
+way. When the number goes on (`1700000000000` or `12.5`), fast_float would read
+again the digits that the parser has already read. The function
+`from_chars_resume` avoids this work:
+
+```C++
+from_chars_result_t<UC> from_chars_resume(UC const *first, UC const *cursor, UC const *last,
+                                          uint64_t prefix, T &value, parse_options_t<UC> options);
+```
+
+It works as follows.
+
+1. The number starts at `first` and the input ends at `last`, as with
+   `from_chars_advanced`.
+2. You read an optional sign (`-`, or `+` if the options allow it), followed by
+   some digits. You stop at `cursor`, the first character you did not read.
+3. You compute `prefix`, the value of the digits you read (ignoring the sign).
+   E.g., if you read `-170`, then `prefix` is 170.
+4. If the number ends at `cursor`, you have its value and you are done.
+   Otherwise, you call `from_chars_resume(first, cursor, last, prefix, value, options)`.
+   It continues parsing from `cursor`.
+
+The result (`value`, `ec` and `ptr`) is the same as with
+`from_chars_advanced(first, last, value, options)`. If you have read nothing,
+pass `cursor == first` and `prefix == 0`.
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "-1700000000000.25";
+  char const *first = input.data();
+  char const *last = input.data() + input.size();
+  // Step 2: read the sign and up to 9 digits.
+  char const *cursor = first;
+  if (*cursor == '-') { cursor++; }
+  // Step 3: compute the value of the digits.
+  uint64_t prefix = 0;
+  for (int n = 0; cursor != last && n < 9 && *cursor >= '0' && *cursor <= '9'; n++, cursor++) {
+    prefix = 10 * prefix + uint64_t(*cursor - '0');
+  }
+  // Here, cursor points at the tenth digit and prefix is 170000000.
+  // Step 4: the number goes on, so let fast_float finish the work.
+  double result;
+  fast_float::parse_options options{fast_float::chars_format::json};
+  auto answer = fast_float::from_chars_resume(first, cursor, last, prefix, result, options);
+  if (answer.ec != std::errc() || result != -1700000000000.25) { std::cerr << "parsing failure\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
 ## Multiplication of an integer by a power of 10
 An integer `W` can be multiplied by a power of ten `10^Q` and
 converted to `double` with correctly rounded value
