@@ -46,6 +46,24 @@ from_chars_advanced(UC const *first, UC const *last, T &value,
                     parse_options_t<UC> options) noexcept;
 
 /**
+ * Like from_chars_advanced for floating-point types, but for callers that have
+ * already read the start of the number: [first, cursor) must hold an optional
+ * sign followed by zero or more digits, and `prefix` must be the value of these
+ * digits (modulo 2^64). The sign is '-', or '+' when the options allow it
+ * (chars_format::allow_leading_plus, outside of JSON). The parsing continues
+ * from `cursor`, and the result is the same as from_chars_advanced(first, last,
+ * value, options). Passing cursor == first and prefix == 0 is always allowed.
+ *
+ * For example, a JSON parser may read short integers by itself and fall back to
+ * from_chars_resume when the number does not end after the digits.
+ */
+template <typename T, typename UC = char>
+FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_resume(UC const *first, UC const *cursor, UC const *last,
+                  uint64_t prefix, T &value,
+                  parse_options_t<UC> options = parse_options_t<UC>()) noexcept;
+
+/**
  * This function multiplies an integer number by a power of 10 and returns
  * the result as a double precision floating-point value that is correctly
  * rounded. The resulting floating-point value is the closest floating-point

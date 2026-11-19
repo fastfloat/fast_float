@@ -348,11 +348,17 @@ report_parse_error(UC const *p, parse_error error) {
 // spans (read only by the rare digit_comp slow path) are not materialized,
 // which keeps the fat parsed_number_string_t off the hot path. The caller
 // re-parses with store_spans=true if the slow path is actually reached.
-template <bool basic_json_fmt, bool basic_javascript_fmt, typename UC>
+//
+// With resume (see from_chars_resume), the caller has already read the digits
+// in [start of the integer part, resume_p), and their value is resume_i (modulo
+// 2^64): the scan of the integer part continues from resume_p.
+template <bool basic_json_fmt, bool basic_javascript_fmt, typename UC,
+          bool resume = false>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string_impl(UC const *p, UC const *pend,
-                         parse_options_t<UC> options,
-                         bool store_spans) noexcept {
+                         parse_options_t<UC> options, bool store_spans,
+                         UC const *resume_p = nullptr,
+                         uint64_t resume_i = 0) noexcept {
   chars_format const fmt = detail::adjust_for_feature_macros(options.format);
   UC const decimal_point = options.decimal_point;
 
@@ -388,6 +394,19 @@ parse_number_string_impl(UC const *p, UC const *pend,
 
   uint64_t i = 0; // an unsigned int avoids signed overflows (which are bad)
 
+  FASTFLOAT_IF_CONSTEXPR17(resume) {
+    // resume_p may be before p when the caller has read no digit (e.g., it
+    // passed the start of the input, and we skipped a sign or spaces).
+    if (resume_p > p) {
+      p = resume_p;
+      i = resume_i;
+    }
+    while ((p != pend) && is_integer(*p)) {
+      i = 10 * i + uint64_t(*p - UC('0')); // might overflow, handled later
+      ++p;
+    }
+    // The scan below then finds no digit and leaves p and i as they are.
+  }
   // Straight-line unroll of the integer-part scan: most integer parts are
   // 1-5 digits, so peeling the first iterations eliminates the loop back-edge
   // for the common case. Semantics are identical to the original `while` loop:

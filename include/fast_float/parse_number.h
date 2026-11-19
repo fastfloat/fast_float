@@ -385,10 +385,14 @@ from_chars_float_javascript(UC const *first, UC const *last, T &value,
   return from_chars_advanced(pns, value);
 }
 
-template <typename T, typename UC>
+// With resume, the caller has already read [first, cursor): see
+// from_chars_resume.
+template <typename T, typename UC, bool resume = false>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
-                          parse_options_t<UC> options) noexcept {
+                          parse_options_t<UC> options,
+                          UC const *cursor = nullptr,
+                          uint64_t prefix = 0) noexcept {
 
   static_assert(is_supported_float_type<T>::value,
                 "only some floating-point types are supported");
@@ -432,10 +436,10 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
   // parsed_number_string_t off the hot path. store_spans is a runtime argument,
   // so this reuses the single parse_number_string_impl instantiation.
   parsed_number_string_t<UC> pns =
-      bjf ? parse_number_string_impl<true, false, UC>(first, last, options,
-                                                      false)
-          : parse_number_string_impl<false, false, UC>(first, last, options,
-                                                       false);
+      bjf ? parse_number_string_impl<true, false, UC, resume>(
+                first, last, options, false, cursor, prefix)
+          : parse_number_string_impl<false, false, UC, resume>(
+                first, last, options, false, cursor, prefix);
   if (!pns.valid) {
     if (uint64_t(fmt & chars_format::no_infnan)) {
       answer.ec = std::errc::invalid_argument;
@@ -493,6 +497,15 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 #pragma clang diagnostic pop
 #endif
   return answer;
+}
+
+template <typename T, typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_resume(UC const *first, UC const *cursor, UC const *last,
+                  uint64_t prefix, T &value,
+                  parse_options_t<UC> options) noexcept {
+  return from_chars_float_advanced<T, UC, true>(first, last, value, options,
+                                                cursor, prefix);
 }
 
 template <typename T, typename UC, typename>
