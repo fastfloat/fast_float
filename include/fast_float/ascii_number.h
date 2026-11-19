@@ -339,6 +339,81 @@ report_parse_error(UC const *p, parse_error error) {
   return answer;
 }
 
+// Parses short inputs such as "-12.5" or "731" in a few bitwise operations,
+// without any branch that depends on the content: the sign, the position of
+// the decimal point and the number of digits are often unpredictable. The input
+// [p, pend) must have between 1 and 8 characters. It must be made only of
+// digits, with at most one decimal point and an optional leading sign, and have
+// at least one digit; otherwise we return false and the caller falls back to
+// the general parser (which handles exponents, errors, infinity, etc.).
+template <typename UC>
+fastfloat_really_inline bool
+parse_short_number(UC const *p, UC const *pend, UC decimal_point,
+                   bool allow_plus, uint64_t &mantissa, int64_t &exponent,
+                   bool &negative) noexcept {
+  if (!std::is_same<UC, char>::value) {
+    return false;
+  }
+  uint64_t const ones = 0x0101010101010101;
+  uint64_t const high = 0x8080808080808080;
+  uint32_t const n = uint32_t(pend - p); // in [1, 8]
+  // We load the n characters in w (first character in the least significant
+  // byte), padded with zeros, using at most three loads and no loop.
+  uint64_t w;
+  if (n >= 4) {
+    uint32_t lo, hi;
+    ::memcpy(&lo, p, 4);
+    ::memcpy(&hi, pend - 4, 4); // overlaps lo when n < 8
+#if FASTFLOAT_IS_BIG_ENDIAN == 1
+    lo = byteswap_32(lo);
+    hi = byteswap_32(hi);
+#endif
+    w = uint64_t(lo) | (uint64_t(hi) << (8 * (n - 4)));
+  } else {
+    w = uint64_t(uint8_t(p[0])) |
+        (uint64_t(uint8_t(p[n / 2])) << (8 * (n / 2))) |
+        (uint64_t(uint8_t(p[n - 1])) << (8 * (n - 1)));
+  }
+  // Per byte, the high bit tells us whether it is one of our n characters.
+  uint64_t const in_range = (~uint64_t(0) >> (64 - 8 * n)) & high;
+  // Setting the high bit of each byte prevents borrows between bytes.
+  uint64_t const x = w | high;
+  uint64_t const digits =
+      ((x - 0x30 * ones) & ~(x - 0x3a * ones) & high) & in_range;
+  uint64_t const z = w ^ (uint64_t(uint8_t(decimal_point)) * ones);
+  uint64_t const dot = ~(((z & ~high) + ~high) | z) & high & in_range;
+  uint8_t const first = uint8_t(w);
+  bool const has_sign =
+      (first == uint8_t('-')) || (allow_plus && first == uint8_t('+'));
+  // the high bit of the last decimal point (or 0 if there is none)
+  int const lz = leading_zeroes(dot | 1);
+  int const last_dot_bit = 63 - lz;
+  // We need at least one digit, at most one decimal point (once the last
+  // one is shifted to the top bit, no other remains), and nothing else.
+  if (((digits | dot | (uint64_t(has_sign) << 7)) ^ in_range) |
+      ((dot << lz) & 0x7fffffffffffffff) | uint64_t(digits == 0)) {
+    return false;
+  }
+  negative = (first == uint8_t('-'));
+  // We remove the decimal point: the bytes after it move down by one.
+  uint64_t const before_dot = (dot >> 7) - 1; // all ones if there is no dot
+  uint64_t c = (w & before_dot) | ((w >> 8) & ~before_dot);
+  // The sign becomes a leading zero.
+  c ^= uint64_t(has_sign) * (first ^ uint8_t('0'));
+  uint32_t const length = n - uint32_t(dot != 0); // in [1, 8]
+  // The digit values, right-aligned so that the missing leading digits are
+  // zeros: the bytes after the last digit are shifted out.
+  uint64_t d = (c ^ 0x3030303030303030) << (8 * (8 - length));
+  // as in parse_eight_digits_unrolled, after the subtraction of '0'
+  d = (d * 10) + (d >> 8);
+  mantissa = (((d & 0x000000FF000000FF) * (100 + (1000000ULL << 32))) +
+              (((d >> 16) & 0x000000FF000000FF) * (1 + (10000ULL << 32)))) >>
+             32;
+  // minus the number of digits after the decimal point
+  exponent = (dot != 0) ? -int64_t(n - 1 - uint32_t(last_dot_bit) / 8) : 0;
+  return true;
+}
+
 // Assuming that you use no more than 19 digits, this will
 // parse an ASCII string.
 //
@@ -348,7 +423,12 @@ report_parse_error(UC const *p, parse_error error) {
 // spans (read only by the rare digit_comp slow path) are not materialized,
 // which keeps the fat parsed_number_string_t off the hot path. The caller
 // re-parses with store_spans=true if the slow path is actually reached.
-template <bool basic_json_fmt, bool basic_javascript_fmt, typename UC>
+//
+// branchless_sign is set with performance_hints::unpredictable_sign. It is a
+// template parameter so that the sign skip is chosen at compile time: given an
+// ordinary if, GCC turns the skip back into a branch on the sign.
+template <bool basic_json_fmt, bool basic_javascript_fmt, typename UC,
+          bool branchless_sign = false>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 parsed_number_string_t<UC>
 parse_number_string_impl(UC const *p, UC const *pend,
                          parse_options_t<UC> options,
@@ -362,8 +442,20 @@ parse_number_string_impl(UC const *p, UC const *pend,
   // assume p < pend, so dereference without checks;
   answer.negative = (*p == UC('-'));
   // C++17 20.19.3.(7.1) explicitly forbids '+' sign here
-  if ((*p == UC('-')) || (uint64_t(fmt & chars_format::allow_leading_plus) &&
-                          !basic_json_fmt && *p == UC('+'))) {
+  bool const has_sign =
+      (*p == UC('-')) || (uint64_t(fmt & chars_format::allow_leading_plus) &&
+                          !basic_json_fmt && *p == UC('+'));
+  FASTFLOAT_IF_CONSTEXPR17(branchless_sign && !basic_json_fmt &&
+                           !basic_javascript_fmt) {
+    uint64_t const c =
+        uint64_t(static_cast<typename std::make_unsigned<UC>::type>(*p));
+    uint64_t skip = (((c ^ uint64_t('-')) - 1) >> 63);
+    if (uint64_t(fmt & chars_format::allow_leading_plus)) {
+      skip |= (((c ^ uint64_t('+')) - 1) >> 63);
+    }
+    p += skip;
+  }
+  else if (has_sign) {
     ++p;
     if (p == pend) {
       return report_parse_error<UC>(
@@ -487,6 +579,11 @@ parse_number_string_impl(UC const *p, UC const *pend,
     }
   }
   else if (digit_count == 0) { // we must have encountered at least one integer!
+    // Without a digit or a dot after the sign, we report the sign.
+    if (has_sign && !has_decimal_point) {
+      return report_parse_error<UC>(
+          start_digits, parse_error::missing_integer_or_dot_after_sign);
+    }
     return report_parse_error<UC>(p, parse_error::no_digits_in_mantissa);
   }
   int64_t exp_number = 0; // explicit exponential part

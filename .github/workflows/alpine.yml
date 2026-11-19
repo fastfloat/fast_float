@@ -6,7 +6,9 @@ on:
 jobs:
   build:
     name: Build on Alpine ${{ matrix.arch }}
-    runs-on: ubuntu-latest
+    # setup-alpine v1 runs its script with "sudo -E", and the sudo of Ubuntu 26.04
+    # ignores -E, so the action loses its inputs.
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch:

@@ -50,11 +50,17 @@ double findmax_fastfloat32(std::vector<std::basic_string<CharT>> &s) {
   return answer;
 }
 
-// Defined in benchmark_rtn.cpp, with FASTFLOAT_ROUNDS_TO_NEAREST.
-template <typename CharT>
-double findmax_fastfloat64_rtn(std::vector<std::basic_string<CharT>> &s);
-template <typename CharT>
-double findmax_fastfloat32_rtn(std::vector<std::basic_string<CharT>> &s);
+// Defined in benchmark_hints.cpp: the same loops, with performance hints. They
+// are in their own translation unit: with them, this file would hold many more
+// instantiations of the parser, and GCC would stop inlining it into the loops
+// above.
+template <fast_float::performance_hints Hints, typename T, typename CharT>
+double findmax_fastfloat_hints(std::vector<std::basic_string<CharT>> &s);
+
+constexpr fast_float::performance_hints unpredictable_sign =
+    fast_float::performance_hints::unpredictable_sign;
+constexpr fast_float::performance_hints assume_nearest =
+    fast_float::performance_hints::assume_round_to_nearest;
 
 counters::event_collector collector{};
 
@@ -199,12 +205,21 @@ void process(std::vector<std::string> &lines, size_t volume) {
   std::cout << "ASCII volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
                time_it_ns(lines, findmax_fastfloat64<char>, repeat));
+  pretty_print(
+      volume, lines.size(), "fastfloat (64, unpredictable sign)",
+      time_it_ns(lines,
+                 findmax_fastfloat_hints<unpredictable_sign, double, char>,
+                 repeat));
   pretty_print(volume, lines.size(), "fastfloat (64, assume nearest)",
-               time_it_ns(lines, findmax_fastfloat64_rtn<char>, repeat));
+               time_it_ns(lines,
+                          findmax_fastfloat_hints<assume_nearest, double, char>,
+                          repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
                time_it_ns(lines, findmax_fastfloat32<char>, repeat));
   pretty_print(volume, lines.size(), "fastfloat (32, assume nearest)",
-               time_it_ns(lines, findmax_fastfloat32_rtn<char>, repeat));
+               time_it_ns(lines,
+                          findmax_fastfloat_hints<assume_nearest, float, char>,
+                          repeat));
 
   std::vector<std::u16string> lines16 = widen(lines);
   volume = 2 * volume;
@@ -212,12 +227,23 @@ void process(std::vector<std::string> &lines, size_t volume) {
   std::cout << "UTF-16 volume = " << volumeMB << " MB " << std::endl;
   pretty_print(volume, lines.size(), "fastfloat (64)",
                time_it_ns(lines16, findmax_fastfloat64<char16_t>, repeat));
-  pretty_print(volume, lines.size(), "fastfloat (64, assume nearest)",
-               time_it_ns(lines16, findmax_fastfloat64_rtn<char16_t>, repeat));
+  pretty_print(
+      volume, lines.size(), "fastfloat (64, unpredictable sign)",
+      time_it_ns(lines16,
+                 findmax_fastfloat_hints<unpredictable_sign, double, char16_t>,
+                 repeat));
+  pretty_print(
+      volume, lines.size(), "fastfloat (64, assume nearest)",
+      time_it_ns(lines16,
+                 findmax_fastfloat_hints<assume_nearest, double, char16_t>,
+                 repeat));
   pretty_print(volume, lines.size(), "fastfloat (32)",
                time_it_ns(lines16, findmax_fastfloat32<char16_t>, repeat));
-  pretty_print(volume, lines.size(), "fastfloat (32, assume nearest)",
-               time_it_ns(lines16, findmax_fastfloat32_rtn<char16_t>, repeat));
+  pretty_print(
+      volume, lines.size(), "fastfloat (32, assume nearest)",
+      time_it_ns(lines16,
+                 findmax_fastfloat_hints<assume_nearest, float, char16_t>,
+                 repeat));
 }
 
 void fileload(std::string filename) {
@@ -241,6 +267,29 @@ void fileload(std::string filename) {
   process(lines, volume);
 }
 
+// Prices with two decimals and a random sign, e.g., "-731271.51", as in a
+// column of gains and losses. The sign is unpredictable, unlike in canada.txt
+// (where it alternates) or mesh.txt (where there is none). Inspired by
+// https://simonwillison.net/2026/Nov/8/sqlite-parse-number-c-vs-rust/
+void process_prices(size_t count) {
+  std::mt19937_64 gen(1234); // fixed seed: the same data on every run
+  std::uniform_real_distribution<double> dis(-1e6, 1e6);
+  std::vector<std::string> lines;
+  lines.reserve(count);
+  size_t volume = 0;
+  char buffer[64];
+  for (size_t i = 0; i < count; i++) {
+    int len = std::snprintf(buffer, sizeof(buffer), "%.2f", dis(gen));
+    lines.emplace_back(buffer, size_t(len));
+    volume += size_t(len);
+  }
+  std::cout << "#### " << std::endl;
+  std::cout << "# " << count << " prices (random sign, two decimals)"
+            << std::endl;
+  std::cout << "#### " << std::endl;
+  process(lines, volume);
+}
+
 int main(int argc, char **argv) {
   if (collector.has_events()) {
     std::cout << "# Using hardware counters" << std::endl;
@@ -257,5 +306,6 @@ int main(int argc, char **argv) {
   }
   fileload(std::string(BENCHMARK_DATA_DIR) + "/canada.txt");
   fileload(std::string(BENCHMARK_DATA_DIR) + "/mesh.txt");
+  process_prices(100000);
   return EXIT_SUCCESS;
 }

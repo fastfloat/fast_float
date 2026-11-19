@@ -37,11 +37,35 @@ from_chars(UC const *first, UC const *last, T &value,
            chars_format fmt = chars_format::general) noexcept;
 
 /**
+ * Like from_chars, with performance hints (see `fast_float::performance_hints`)
+ * as a template argument:
+ *
+ *   fast_float::from_chars<fast_float::performance_hints::unpredictable_sign>(
+ *       first, last, value);
+ */
+template <performance_hints Hints, typename T, typename UC = char,
+          typename = FASTFLOAT_ENABLE_IF(is_supported_float_type<T>::value)>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars(UC const *first, UC const *last, T &value,
+           chars_format fmt = chars_format::general) noexcept;
+
+/**
  * Like from_chars, but accepts an `options` argument to govern number parsing.
  * Both for floating-point types and integer types.
  */
 template <typename T, typename UC = char>
 FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_advanced(UC const *first, UC const *last, T &value,
+                    parse_options_t<UC> options) noexcept;
+
+/**
+ * Like from_chars_advanced, with performance hints (see
+ * `fast_float::performance_hints`) as a template argument. For floating-point
+ * types only.
+ */
+template <performance_hints Hints, typename T, typename UC = char,
+          typename = FASTFLOAT_ENABLE_IF(is_supported_float_type<T>::value)>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
                     parse_options_t<UC> options) noexcept;
 
@@ -76,6 +100,35 @@ template <typename T>
 FASTFLOAT_CONSTEXPR20
     typename std::enable_if<is_supported_float_type<T>::value, T>::type
     integer_times_pow10(int64_t mantissa, int decimal_exponent) noexcept;
+
+/**
+ * integer_times_pow10 with performance hints (see
+ * `fast_float::performance_hints`) as a template argument, for any integer
+ * type up to 64 bits. This one returns a value of type `T`:
+ *
+ *   fast_float::integer_times_pow10<float,
+ *       fast_float::performance_hints::assume_round_to_nearest>(m, e);
+ */
+template <typename T, performance_hints Hints, typename Int>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<is_supported_float_type<T>::value &&
+                                std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(uint64_t),
+                            T>::type
+    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept;
+
+/**
+ * Same, returning a double:
+ *
+ *   fast_float::integer_times_pow10<
+ *       fast_float::performance_hints::assume_round_to_nearest>(m, e);
+ */
+template <performance_hints Hints, typename Int>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20
+    typename std::enable_if<std::is_integral<Int>::value &&
+                                sizeof(Int) <= sizeof(uint64_t),
+                            double>::type
+    integer_times_pow10(Int mantissa, int decimal_exponent) noexcept;
 
 /**
  * from_chars for integer types.
