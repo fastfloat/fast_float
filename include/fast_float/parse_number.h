@@ -496,7 +496,7 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 }
 
 template <typename T, typename UC, typename>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_clang_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars(UC const *first, UC const *last, T &value, int base) noexcept {
 
   static_assert(is_supported_integer_type<T>::value,
@@ -593,8 +593,12 @@ FASTFLOAT_CONSTEXPR20
   return integer_times_pow10(static_cast<int64_t>(mantissa), decimal_exponent);
 }
 
+// Clang declines to inline the integer parser once it carries the SWAR
+// short-integer path, which leaves base and format as runtime values. This
+// and from_chars(..., int base) are forced inline under clang only; see
+// fastfloat_clang_really_inline.
 template <typename T, typename UC>
-FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+fastfloat_clang_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_int_advanced(UC const *first, UC const *last, T &value,
                         parse_options_t<UC> options) noexcept {
 
