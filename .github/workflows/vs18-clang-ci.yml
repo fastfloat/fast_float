@@ -1,0 +1,31 @@
+name: VS18-CLANG-CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: vs18/${{matrix.arch}}/${{matrix.cfg}}
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {gen: Visual Studio 18 2026, arch: Win32, cfg: Release}
+          - {gen: Visual Studio 18 2026, arch: Win32, cfg: Debug}
+          - {gen: Visual Studio 18 2026, arch: x64, cfg: Release}
+          - {gen: Visual Studio 18 2026, arch: x64, cfg: Debug}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+      - name: Configure
+        run: |
+          cmake -S . -B build -G "${{matrix.gen}}" -A ${{matrix.arch}} -DFASTFLOAT_BENCHMARKS=ON -T ClangCL -DFASTFLOAT_TEST=ON
+      - name: Build
+        run: cmake --build build --config ${{matrix.cfg}} --parallel --verbose
+      - name: Run basic tests
+        run: |
+          cd build
+          ctest -C ${{matrix.cfg}} --output-on-failure -R basictest
