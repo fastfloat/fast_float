@@ -6,7 +6,9 @@ on:
 jobs:
   build:
     name: Build on Alpine ${{ matrix.arch }}
-    runs-on: ubuntu-latest
+    # ubuntu-latest (26.04) ships a sudo that ignores -E, so setup-alpine v1
+    # loses its INPUT_* variables ("INPUT_APK_TOOLS_URL: unbound variable").
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch:
