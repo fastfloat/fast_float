@@ -238,8 +238,7 @@ int main(int argc, char **argv) {
             << std::endl;
 #endif
 #ifdef FASTFLOAT_ROUNDS_TO_NEAREST
-  std::cout << "# FASTFLOAT_ROUNDS_TO_NEAREST is enabled"
-            << std::endl;
+  std::cout << "# FASTFLOAT_ROUNDS_TO_NEAREST is enabled" << std::endl;
 #endif
 #ifdef FASTFLOAT_ISNOT_CHECKED_BOUNDS
   std::cout << "# FASTFLOAT_ISNOT_CHECKED_BOUNDS is enabled" << std::endl;
