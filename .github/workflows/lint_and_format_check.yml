@@ -29,5 +29,5 @@ jobs:
       - name: Run clang-format
         uses: jidicula/clang-format-action@654a770daa28443dd111d133e4083e21c1075674 # v4.18.0
         with:
-          clang-format-version: '17'
+          clang-format-version: '18'
 
