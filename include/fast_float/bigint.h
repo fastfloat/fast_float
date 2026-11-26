@@ -46,6 +46,7 @@ template <limb_t size> struct stackvec {
   // user-provided, so that value-initialization (stackvec()) does not zero
   // data: only the first length limbs are ever read.
   FASTFLOAT_CONSTEXPR20 stackvec() noexcept {}
+
   stackvec(stackvec const &) = delete;
   stackvec &operator=(stackvec const &) = delete;
   stackvec(stackvec &&) = delete;
