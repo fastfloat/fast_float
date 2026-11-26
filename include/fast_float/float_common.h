@@ -17,7 +17,7 @@
 #include "constexpr_feature_detect.h"
 
 #define FASTFLOAT_VERSION_MAJOR 8
-#define FASTFLOAT_VERSION_MINOR 5
+#define FASTFLOAT_VERSION_MINOR 6
 #define FASTFLOAT_VERSION_PATCH 0
 
 #define FASTFLOAT_STRINGIZE_IMPL(x) #x
