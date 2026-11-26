@@ -154,7 +154,7 @@ template <typename T> struct from_chars_caller {
   template <typename UC>
   fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const /*&*/options) noexcept {
+       parse_options_t<UC> const /*&*/ options) noexcept {
     return from_chars_advanced(first, last, value, options);
   }
 };
@@ -714,7 +714,7 @@ template <> struct from_chars_advanced_caller<1> {
   template <typename T, typename UC>
   fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const /*&*/options) noexcept {
+       parse_options_t<UC> const /*&*/ options) noexcept {
     return from_chars_float_advanced(first, last, value, options);
   }
 };
@@ -723,7 +723,7 @@ template <> struct from_chars_advanced_caller<2> {
   template <typename T, typename UC>
   fastfloat_inline FASTFLOAT_CONSTEXPR20 static from_chars_result_t<UC>
   call(UC const *first, UC const *last, T &value,
-       parse_options_t<UC> const /*&*/options) noexcept {
+       parse_options_t<UC> const /*&*/ options) noexcept {
     return from_chars_int_advanced(first, last, value, options);
   }
 };
@@ -731,7 +731,7 @@ template <> struct from_chars_advanced_caller<2> {
 template <typename T, typename UC>
 fastfloat_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_advanced(UC const *first, UC const *last, T &value,
-                    parse_options_t<UC> const /*&*/options) noexcept {
+                    parse_options_t<UC> const /*&*/ options) noexcept {
   return from_chars_advanced_caller<
       size_t(is_supported_float_type<T>::value) +
       2 * size_t(is_supported_integer_type<T>::value)>::call(first, last, value,

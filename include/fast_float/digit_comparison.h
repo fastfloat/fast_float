@@ -487,8 +487,6 @@ fastfloat_noinline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
     parsed_number_string_t<UC> const &num, adjusted_mantissa am) noexcept {
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
-
-<<<<<<< HEAD
   am_pow_t const sci_exp = scientific_exponent(num.mantissa, num.exponent);
   FASTFLOAT_INDETERMINATE bigint bigmant;
   am_digits const digits = parse_mantissa<T, UC>(bigmant, num);
