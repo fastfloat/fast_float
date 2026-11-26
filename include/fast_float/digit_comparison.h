@@ -434,7 +434,7 @@ negative_digit_comp(bigint &real_digits, adjusted_mantissa am,
 #endif
       am_b, b);
   adjusted_mantissa const theor = to_extended_halfway(b);
-  bigint theor_digits(theor.mantissa);
+  FASTFLOAT_INDETERMINATE bigint theor_digits(theor.mantissa);
   am_pow_t const theor_exp = theor.power2;
 
   // scale real digits and theor digits to be same power.
@@ -488,8 +488,9 @@ fastfloat_noinline FASTFLOAT_CONSTEXPR20 adjusted_mantissa digit_comp(
   // remove the invalid exponent bias
   am.power2 -= invalid_am_bias;
 
+<<<<<<< HEAD
   am_pow_t const sci_exp = scientific_exponent(num.mantissa, num.exponent);
-  bigint bigmant;
+  FASTFLOAT_INDETERMINATE bigint bigmant;
   am_digits const digits = parse_mantissa<T, UC>(bigmant, num);
   // can't underflow, since digits is at most max_digits.
   am_pow_t const exponent = sci_exp + 1 - static_cast<am_pow_t>(digits);

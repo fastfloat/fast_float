@@ -264,6 +264,23 @@ static_assert(FASTFLOAT_X86_SIMD == 20 || FASTFLOAT_X86_SIMD == 42 ||
 #define fastfloat_noinline
 #endif
 
+// C++26 (P2795R5) and -ftrivial-auto-var-init zero-fill local variables that
+// have no initializer. FASTFLOAT_INDETERMINATE opts a local out of that. Use
+// it only on buffers that the code writes before it reads them.
+#if defined(__has_cpp_attribute) && __cplusplus > 202302L
+#if __has_cpp_attribute(indeterminate)
+#define FASTFLOAT_INDETERMINATE [[indeterminate]]
+#endif
+#endif
+#if !defined(FASTFLOAT_INDETERMINATE) && defined(__has_attribute)
+#if __has_attribute(uninitialized)
+#define FASTFLOAT_INDETERMINATE __attribute__((uninitialized))
+#endif
+#endif
+#ifndef FASTFLOAT_INDETERMINATE
+#define FASTFLOAT_INDETERMINATE
+#endif
+
 // Branch-probability hint marking the rare slow-path branches as cold, so the
 // optimizer keeps the out-of-line slow-path re-parse off the hot path (and does
 // not duplicate the force-inlined hot scanner into the caller, which bloated
