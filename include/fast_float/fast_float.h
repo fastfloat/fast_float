@@ -28,7 +28,9 @@ namespace fast_float {
  * fast_float::chars_format::scientific` are set to determine whether we allow
  * the fixed point and scientific notation respectively. The default is
  * `fast_float::chars_format::general` which allows both `fixed` and
- * `scientific`.
+ * `scientific`. With `fast_float::chars_format::hex`, we parse hexadecimal
+ * floating-point numbers (e.g., "1.8p1" for 3.0) as std::from_chars does: the
+ * "0x" prefix is assumed and must not appear.
  */
 template <typename T, typename UC = char,
           typename = FASTFLOAT_ENABLE_IF(is_supported_float_type<T>::value)>

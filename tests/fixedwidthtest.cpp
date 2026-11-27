@@ -6,6 +6,9 @@
 #include <string_view>
 #include "fast_float/fast_float.h"
 #include <cstdint>
+#include <cmath>
+#include <cstdio>
+#include <string>
 
 #if __cplusplus >= 202300L
 #include <stdfloat>
@@ -40,6 +43,57 @@ template <typename T> bool check_invalid_input_preserves_value() {
     std::cerr << "Expected infinity and result_out_of_range for \"1e999\""
               << std::endl;
     return false;
+  }
+  return true;
+}
+
+// Hexadecimal inputs (chars_format::hex) for a 16-bit type: every finite
+// value, and every midpoint between consecutive positive values (ties to
+// even), printed exactly with %a.
+template <typename T> bool check_hex_16bit(uint16_t infinity_bits) {
+  for (uint32_t b = 0; b < 65536; b++) {
+    uint16_t const bits = uint16_t(b);
+    T x;
+    std::memcpy(&x, &bits, sizeof(x));
+    double const d = double(x);
+    if (!std::isfinite(d)) {
+      continue;
+    }
+    for (int midpoint = 0; midpoint < 2; midpoint++) {
+      double target = d;
+      uint16_t expected = bits;
+      if (midpoint) {
+        uint16_t const next_bits = uint16_t(bits + 1);
+        T next;
+        std::memcpy(&next, &next_bits, sizeof(next));
+        if (std::signbit(d) || !std::isfinite(double(next))) {
+          continue; // negative values are symmetric
+        }
+        target = (d + double(next)) / 2; // exact in double
+        expected = (bits & 1) ? next_bits : bits;
+      }
+      char buffer[64];
+      std::snprintf(buffer, sizeof(buffer), "%a", target);
+      std::string s = buffer;
+      size_t const x_at = s.find('x');
+      s = s.substr(0, x_at - 1) + s.substr(x_at + 1); // drop the "0x"
+      T result;
+      auto answer = fast_float::from_chars(
+          s.data(), s.data() + s.size(), result, fast_float::chars_format::hex);
+      uint16_t result_bits;
+      std::memcpy(&result_bits, &result, sizeof(result));
+      // Overflow to infinity, or a midpoint that rounds to zero, is out of
+      // range.
+      bool const out_of_range = ((expected & 0x7fff) == infinity_bits) ||
+                                (target != 0 && (expected & 0x7fff) == 0);
+      std::errc const ec =
+          out_of_range ? std::errc::result_out_of_range : std::errc();
+      if (result_bits != expected || answer.ptr != s.data() + s.size() ||
+          answer.ec != ec) {
+        std::cerr << "hex parsing failed for \"" << s << "\"" << std::endl;
+        return false;
+      }
+    }
   }
   return true;
 }
@@ -103,6 +157,18 @@ int main() {
   }
 #else
   std::cout << "No std::float64_t type available." << std::endl;
+#endif
+#ifdef __STDCPP_FLOAT16_T__
+  std::cout << "runing float16 hex test" << std::endl;
+  if (!check_hex_16bit<std::float16_t>(0x7c00)) {
+    return EXIT_FAILURE;
+  }
+#endif
+#ifdef __STDCPP_BFLOAT16_T__
+  std::cout << "runing bfloat16 hex test" << std::endl;
+  if (!check_hex_16bit<std::bfloat16_t>(0x7f80)) {
+    return EXIT_FAILURE;
+  }
 #endif
   std::cout << "All tests passed successfully." << std::endl;
   return EXIT_SUCCESS;
