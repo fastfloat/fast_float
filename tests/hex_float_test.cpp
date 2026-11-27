@@ -1,8 +1,10 @@
 /*
  * Exercise chars_format::hex (hexadecimal floating-point numbers).
  *
- * We check hand-written cases, then compare against std::strtod/std::strtof
- * (which take the same form, with a "0x" prefix) on random inputs.
+ * We check hand-written cases, then compare against an exact reference on
+ * random inputs. We do not use std::strtod as the reference for values: some
+ * C libraries misround hexadecimal subnormals (glibc 2.35 and 2.39 on Ubuntu,
+ * the Windows UCRT). We still use it for the number of characters consumed.
  */
 #include <cerrno>
 #include <cinttypes>
@@ -37,14 +39,97 @@ template <typename T> typename bits_of<T>::type to_bits(T x) {
   return b;
 }
 
-template <typename T> T reference_parse(std::string const &s);
-
-template <> double reference_parse<double>(std::string const &s) {
-  return std::strtod(s.c_str(), nullptr);
+int hex_value(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  }
+  if (c >= 'a' && c <= 'f') {
+    return c - 'a' + 10;
+  }
+  if (c >= 'A' && c <= 'F') {
+    return c - 'A' + 10;
+  }
+  return -1;
 }
 
-template <> float reference_parse<float>(std::string const &s) {
-  return std::strtof(s.c_str(), nullptr);
+// Exact reference: we expand every digit into bits and round to nearest, ties
+// to even, by looking at the bits. The input has no "0x" prefix.
+template <typename T> T reference_parse(std::string const &s) {
+  constexpr int precision = std::numeric_limits<T>::digits;         // 53 or 24
+  constexpr int min_exp = std::numeric_limits<T>::min_exponent - 1; // -1022
+  constexpr int max_exp = std::numeric_limits<T>::max_exponent - 1; // 1023
+  size_t i = 0;
+  bool negative = false;
+  if (i < s.size() && (s[i] == '-' || s[i] == '+')) {
+    negative = (s[i] == '-');
+    i++;
+  }
+  std::vector<int> bits;  // most significant first
+  long long exponent = 0; // the value is bits * 2^exponent
+  bool seen_point = false;
+  for (; i < s.size(); i++) {
+    if (s[i] == '.' && !seen_point) {
+      seen_point = true;
+      continue;
+    }
+    int const d = hex_value(s[i]);
+    if (d < 0) {
+      break;
+    }
+    for (int k = 3; k >= 0; k--) {
+      bits.push_back((d >> k) & 1);
+    }
+    if (seen_point) {
+      exponent -= 4;
+    }
+  }
+  if (i + 1 < s.size() && (s[i] == 'p' || s[i] == 'P')) {
+    size_t j = i + 1;
+    bool neg_exp = false;
+    if (s[j] == '-' || s[j] == '+') {
+      neg_exp = (s[j] == '-');
+      j++;
+    }
+    long long e = 0;
+    for (; j < s.size() && s[j] >= '0' && s[j] <= '9'; j++) {
+      if (e < 1000000000) {
+        e = 10 * e + (s[j] - '0');
+      }
+    }
+    exponent += neg_exp ? -e : e;
+  }
+  T const sign = negative ? T(-1) : T(1);
+  size_t first = 0;
+  while (first < bits.size() && bits[first] == 0) {
+    first++;
+  }
+  long long const n = static_cast<long long>(bits.size() - first);
+  if (n == 0) {
+    return sign * T(0);
+  }
+  long long const top = exponent + n - 1; // the value is 1.xxx * 2^top
+  if (top > max_exp) {
+    return sign * std::numeric_limits<T>::infinity();
+  }
+  long long keep = precision; // bits kept, fewer when subnormal
+  if (top < min_exp) {
+    keep -= min_exp - top;
+  }
+  uint64_t kept = 0;
+  for (long long k = 0; k < keep; k++) {
+    kept = 2 * kept + uint64_t(k < n ? bits[first + size_t(k)] : 0);
+  }
+  int const round_bit =
+      (keep >= 0 && keep < n) ? bits[first + size_t(keep)] : 0;
+  bool sticky = false;
+  for (long long k = (keep + 1 > 0 ? keep + 1 : 0); k < n; k++) {
+    sticky |= (bits[first + size_t(k)] != 0);
+  }
+  if (round_bit && (sticky || (kept & 1))) {
+    kept++;
+  }
+  // Exact, or infinity when rounding carries past the largest value.
+  return sign * std::ldexp(T(kept), int(top - keep + 1));
 }
 
 template <typename T> bool same(T a, T b) {
@@ -113,6 +198,11 @@ void check_cases() {
        std::errc(), hex},
       {"1.8p-1075", 4.9406564584124654e-324, 9, std::errc(), hex},
       {"1p-99999999999999999999", 0.0, 23, std::errc::result_out_of_range, hex},
+      // glibc 2.35 and 2.39 round this subnormal down; the Windows UCRT
+      // returns 2^-1020 for the second one.
+      {"682c27c.7e61b22p-1052", 2.263588539952014e-309, 21, std::errc(), hex},
+      {"fffffffffffff.fffffp-1074", 2.2250738585072014e-308, 25, std::errc(),
+       hex},
       // Ties to even on normal numbers.
       {"1.00000000000008p0", 1.0, 18, std::errc(), hex},
       {"1.00000000000018p0", 1.0000000000000004, 18, std::errc(), hex},
@@ -319,10 +409,7 @@ std::string random_hex_string(std::mt19937_64 &rng) {
 template <typename T> void check_random(std::mt19937_64 &rng, size_t n) {
   for (size_t i = 0; i < n; i++) {
     std::string const s = random_hex_string(rng);
-    std::string prefixed = s;
-    size_t const sign = (s[0] == '-') ? 1 : 0;
-    prefixed.insert(sign, "0x");
-    T const expected = reference_parse<T>(prefixed);
+    T const expected = reference_parse<T>(s);
     T result;
     auto answer =
         fast_float::from_chars(s.data(), s.data() + s.size(), result, hex);
@@ -348,7 +435,8 @@ template <typename T> void check_random(std::mt19937_64 &rng, size_t n) {
 
 // Put every byte value at every position of a run of digits, so that the
 // blocks of 8 digits see every kind of non-digit byte, and compare the value
-// and the number of characters consumed with strtod.
+// and the number of characters consumed with strtod (the value with our
+// reference).
 void check_all_bytes() {
   std::string const base = "1234567890abcdefABCDEF0123456789";
   for (int b = 0; b < 256; b++) {
@@ -367,7 +455,7 @@ void check_all_bytes() {
             fast_float::from_chars(s.data(), s.data() + s.size(), result, hex);
         std::string prefixed = "0x" + s;
         char *end = nullptr;
-        double const expected = std::strtod(prefixed.c_str(), &end);
+        (void)std::strtod(prefixed.c_str(), &end);
         size_t const consumed =
             (end == prefixed.c_str()) ? 0 : size_t(end - prefixed.c_str()) - 2;
         // strtod reads "0x" as the number 0 when no digit follows.
@@ -376,6 +464,8 @@ void check_all_bytes() {
         if (strtod_parsed_zero || consumed == 0) {
           ok = (answer.ec == std::errc::invalid_argument);
         } else {
+          double const expected =
+              reference_parse<double>(s.substr(0, consumed));
           // An exponent can follow the first digits ("1p345...").
           std::errc const ec = (std::isinf(expected) || expected == 0)
                                    ? std::errc::result_out_of_range
@@ -398,11 +488,13 @@ void check_all_bytes() {
 // it: 4 * 67108864 = 2^28, so 0.(67108863 zeros)1 is 2^-268435456.
 void check_long_exponent() {
   std::string const zeros(67108863, '0');
+
   struct long_case {
     std::string input;
     double expected;
     std::errc ec;
   };
+
   long_case const cases[] = {
       {"0." + zeros + "1p268435456", 1.0, std::errc()},
       {"0." + zeros + "1p268435457", 2.0, std::errc()},
@@ -424,8 +516,8 @@ void check_long_exponent() {
         !same(result, c.expected)) {
       std::printf("FAIL: long input ending in %s -> %a (ec %d), expected %a "
                   "(ec %d)\n",
-                  c.input.c_str() + c.input.size() - 16, result,
-                  int(answer.ec), c.expected, int(c.ec));
+                  c.input.c_str() + c.input.size() - 16, result, int(answer.ec),
+                  c.expected, int(c.ec));
       failures++;
     }
   }
