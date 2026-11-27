@@ -1167,11 +1167,13 @@ TEST_CASE("double.long_exponent") {
     return; // the inputs take 256 MB each
   }
   std::string const zeros(268435455, '0');
+
   struct long_case {
     std::string input;
     double expected;
     std::errc ec;
   };
+
   long_case const cases[] = {
       {"0." + zeros + "1e268435456", 1.0, std::errc()},
       {"0." + zeros + "1e268435457", 10.0, std::errc()},
