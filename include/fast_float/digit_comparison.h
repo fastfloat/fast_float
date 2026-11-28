@@ -445,6 +445,123 @@ digit_comp(parsed_number_string_t<UC> &num, adjusted_mantissa am) noexcept {
   }
 }
 
+// A fixed-width confirmation is cheaper than rebuilding the corresponding
+// bigint limbs once a coefficient has this many terminal zeroes.
+constexpr size_t minimum_trailing_zeroes = 16;
+
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+trim_at_least_zeros_from_end(UC const *first, UC const *&last,
+                             size_t zeroes) noexcept {
+  if (size_t(last - first) < zeroes) {
+    return false;
+  }
+  while (!cpp20_and_in_constexpr() &&
+         zeroes >= size_t(int_cmp_len<UC>())) {
+    uint64_t value;
+    last -= int_cmp_len<UC>();
+    ::memcpy(&value, last, sizeof(value));
+    if (value != int_cmp_zeros<UC>()) {
+      return false;
+    }
+    zeroes -= size_t(int_cmp_len<UC>());
+  }
+  while (zeroes != 0) {
+    --last;
+    if (*last != UC('0')) {
+      return false;
+    }
+    --zeroes;
+  }
+  return true;
+}
+
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+trim_zeros_from_end(UC const *first, UC const *&last) noexcept {
+  while (!cpp20_and_in_constexpr() &&
+         std::distance(first, last) >= int_cmp_len<UC>()) {
+    uint64_t value;
+    ::memcpy(&value, last - int_cmp_len<UC>(), sizeof(value));
+    if (value != int_cmp_zeros<UC>()) {
+      break;
+    }
+    last -= int_cmp_len<UC>();
+  }
+  while (last != first && last[-1] == UC('0')) {
+    --last;
+  }
+}
+
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+ends_in_sixteen_zeroes(UC const *first, UC const *last) noexcept {
+  if (size_t(last - first) < minimum_trailing_zeroes) {
+    return false;
+  }
+  if (!cpp20_and_in_constexpr() && sizeof(UC) == 1) {
+    return ::memcmp(last - minimum_trailing_zeroes,
+                    "0000000000000000", minimum_trailing_zeroes) == 0;
+  }
+  return trim_at_least_zeros_from_end(first, last,
+                                      minimum_trailing_zeroes);
+}
+
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+has_minimum_trailing_zeroes(parsed_number_string_t<UC> const &num) noexcept {
+  if (num.fraction.ptr == nullptr) {
+    return ends_in_sixteen_zeroes(num.integer.ptr,
+                                  num.integer.ptr + num.integer.len());
+  }
+  UC const *fraction_end = num.fraction.ptr + num.fraction.len();
+  if (num.fraction.len() >= minimum_trailing_zeroes) {
+    return ends_in_sixteen_zeroes(num.fraction.ptr, fraction_end);
+  }
+  if (!trim_at_least_zeros_from_end(num.fraction.ptr, fraction_end,
+                                    num.fraction.len())) {
+    return false;
+  }
+  UC const *integer_end = num.integer.ptr + num.integer.len();
+  return trim_at_least_zeros_from_end(
+      num.integer.ptr, integer_end,
+      minimum_trailing_zeroes - num.fraction.len());
+}
+
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 bool
+trim_trailing_zeros(parsed_number_string_t<UC> const &num,
+                    parsed_number_string_t<UC> &trimmed) noexcept {
+  UC const *integer_end = num.integer.ptr + num.integer.len();
+  UC const *fraction_end = num.fraction.ptr;
+  if (fraction_end != nullptr) {
+    fraction_end += num.fraction.len();
+    trim_zeros_from_end(num.fraction.ptr, fraction_end);
+  }
+  if (fraction_end == nullptr || fraction_end == num.fraction.ptr) {
+    trim_zeros_from_end(num.integer.ptr, integer_end);
+  }
+  if (integer_end == num.integer.ptr &&
+      (fraction_end == nullptr || fraction_end == num.fraction.ptr)) {
+    return false;
+  }
+  trimmed = num;
+  trimmed.integer =
+      span<UC const>(num.integer.ptr, size_t(integer_end - num.integer.ptr));
+  if (fraction_end != nullptr) {
+    trimmed.fraction = span<UC const>(
+        num.fraction.ptr, size_t(fraction_end - num.fraction.ptr));
+  }
+  return true;
+}
+
+template <typename UC>
+static fastfloat_noinline FASTFLOAT_CONSTEXPR20 bool
+trim_confirmed_trailing_zeroes(parsed_number_string_t<UC> const &num,
+                               parsed_number_string_t<UC> &trimmed) noexcept {
+  return trim_trailing_zeros(num, trimmed);
+}
+
 } // namespace fast_float
 
 #endif
