@@ -438,22 +438,24 @@ template <typename T> void check_random(std::mt19937_64 &rng, size_t n) {
 // and the number of characters consumed with strtod (the value with our
 // reference).
 void check_all_bytes() {
-  std::string const base = "1234567890abcdefABCDEF0123456789";
+  // With the point first, after 3 digits, or absent. (Spelled out: GCC 12
+  // warns falsely about std::string::insert in C++20, see GCC bug 105651.)
+  char const *const bases[] = {".1234567890abcdefABCDEF0123456789",
+                               "123.4567890abcdefABCDEF0123456789",
+                               "1234567890abcdefABCDEF0123456789"};
   for (int b = 0; b < 256; b++) {
     for (size_t k = 0; k < 18; k++) {
       if (k == 0 && (b == '-' || b == '+')) {
         continue; // a sign, which strtod does not take after "0x"
       }
-      for (size_t point : {size_t(0), size_t(3), size_t(100)}) {
-        std::string s = base;
-        if (point < s.size()) {
-          s.insert(point, ".");
-        }
+      for (size_t which = 0; which < 3; which++) {
+        std::string s = bases[which];
         s[k] = char(b);
         double result = 0;
         auto answer =
             fast_float::from_chars(s.data(), s.data() + s.size(), result, hex);
-        std::string prefixed = "0x" + s;
+        std::string prefixed = "0x";
+        prefixed += s;
         char *end = nullptr;
         (void)std::strtod(prefixed.c_str(), &end);
         size_t const consumed =
@@ -475,7 +477,7 @@ void check_all_bytes() {
                same(result, expected);
         }
         if (!ok) {
-          std::printf("FAIL: byte %d at %zu (point %zu)\n", b, k, point);
+          std::printf("FAIL: byte %d at %zu in %s\n", b, k, bases[which]);
           failures++;
           return;
         }
