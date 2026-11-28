@@ -13,9 +13,11 @@ target_link_libraries(realbenchmark PRIVATE counters::counters)
 add_executable(bench_ip bench_ip.cpp)
 add_executable(bench_uint16 bench_uint16.cpp)
 add_executable(bench_int bench_int.cpp)
+add_executable(bench_hex bench_hex.cpp)
 target_link_libraries(bench_ip PRIVATE counters::counters)
 target_link_libraries(bench_uint16 PRIVATE counters::counters)
 target_link_libraries(bench_int PRIVATE counters::counters)
+target_link_libraries(bench_hex PRIVATE counters::counters)
 
 set_property(
     TARGET realbenchmark
@@ -29,10 +31,14 @@ set_property(
 set_property(
     TARGET bench_int
     PROPERTY CXX_STANDARD 17)
+set_property(
+    TARGET bench_hex
+    PROPERTY CXX_STANDARD 17)
 target_link_libraries(realbenchmark PUBLIC fast_float)
 target_link_libraries(bench_ip PUBLIC fast_float)
 target_link_libraries(bench_uint16 PUBLIC fast_float)
 target_link_libraries(bench_int PUBLIC fast_float)
+target_link_libraries(bench_hex PUBLIC fast_float)
 
 include(ExternalProject)
 
@@ -53,4 +59,6 @@ add_custom_target(CopyData ALL
     DEPENDS simple_fastfloat_benchmark
 )
 add_dependencies(realbenchmark CopyData)
+add_dependencies(bench_hex CopyData)
 target_compile_definitions(realbenchmark PUBLIC BENCHMARK_DATA_DIR="${CMAKE_CURRENT_BINARY_DIR}/data")
+target_compile_definitions(bench_hex PUBLIC BENCHMARK_DATA_DIR="${CMAKE_CURRENT_BINARY_DIR}/data")

@@ -123,3 +123,11 @@ cc_test(
         "@doctest//doctest",
     ],
 )
+
+cc_test(
+    name = "hex_float_test",
+    srcs = ["hex_float_test.cpp"],
+    deps = [
+        "//:fast_float",
+    ],
+)

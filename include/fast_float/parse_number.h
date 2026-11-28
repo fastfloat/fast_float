@@ -385,6 +385,288 @@ from_chars_float_javascript(UC const *first, UC const *last, T &value,
   return from_chars_advanced(pns, value);
 }
 
+namespace detail {
+// Value of a hexadecimal digit, or a value of at least 16 if c is not one.
+template <typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t hex_digit(UC c) {
+  if (cpp20_and_in_constexpr()) {
+    // The lookup table cannot be read in a constant expression. Any code unit
+    // (signed or not, of any width) maps to a distinct unsigned value, and
+    // only the 22 hexadecimal digits map below 16.
+    uint32_t const u = uint32_t(c);
+    if (u - uint32_t('0') < 10) {
+      return u - uint32_t('0');
+    }
+    if ((u | 0x20) - uint32_t('a') < 6) {
+      return (u | 0x20) - uint32_t('a') + 10;
+    }
+    return 16;
+  }
+  // Branchless: the digits and the letters of a hexadecimal significand come
+  // in no predictable order.
+  return ch_to_digit(c);
+}
+
+// Parses 8 hexadecimal digits given as 8 bytes, the first digit in the least
+// significant byte (see read8_to_u64). Returns false, leaving out untouched,
+// if one of the bytes is not a hexadecimal digit.
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 bool
+parse_eight_hex_digits(uint64_t v, uint32_t &out) noexcept {
+  // For a byte x < 0x80, (x + 0x80 - lo) has its high bit set if x >= lo and
+  // (x + 0x7f - hi) has its high bit set if x > hi, and no carry leaves the
+  // byte. A byte x >= 0x80 never passes either test (both sums have their
+  // high bit set, or the first one wraps around below 0x80), even with a
+  // carry from the byte below it, so it is rejected; the carry it may send to
+  // the byte above does not matter.
+  uint64_t const high = 0x8080808080808080;
+  uint64_t const lower = v | 0x2020202020202020; // 'A'-'F' becomes 'a'-'f'
+  uint64_t const is_digit =
+      (v + 0x5050505050505050) & ~(v + 0x4646464646464646); // '0'-'9'
+  uint64_t const is_letter =
+      (lower + 0x1f1f1f1f1f1f1f1f) & ~(lower + 0x1919191919191919); // 'a'-'f'
+  if (((is_digit | is_letter) & high) != high) {
+    return false;
+  }
+  // '0'-'9' have their value in the low nibble, 'a'-'f' and 'A'-'F' have
+  // their value minus 9.
+  uint64_t const nibbles =
+      (v & 0x0f0f0f0f0f0f0f0f) + ((is_letter & high) >> 7) * 9;
+  // Put the first digit in the most significant byte, then pack the nibbles.
+  uint64_t x = byteswap(nibbles);
+  x = (x | (x >> 4)) & 0x00ff00ff00ff00ff;
+  x = (x | (x >> 8)) & 0x0000ffff0000ffff;
+  out = uint32_t(x | (x >> 16));
+  return true;
+}
+
+// Adds one hexadecimal digit to the mantissa if it has room (at most 16
+// significant digits). In the integer part, each digit dropped adds 4 to the
+// exponent; in the fraction, each digit kept subtracts 4. A dropped nonzero
+// digit sets sticky.
+template <bool fraction>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 void
+add_hex_digit(uint32_t digit, uint64_t &mantissa, int64_t &exponent,
+              bool &sticky) noexcept {
+  if ((mantissa >> 60) == 0) {
+    mantissa = (mantissa << 4) | digit;
+    if (fraction) {
+      exponent -= 4;
+    }
+  } else {
+    if (!fraction) {
+      exponent += 4;
+    }
+    sticky |= (digit != 0);
+  }
+}
+
+// Parses a run of hexadecimal digits (see add_hex_digit).
+template <bool fraction, typename UC>
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 void
+parse_hex_digits(UC const *&p, UC const *last, uint64_t &mantissa,
+                 int64_t &exponent, bool &sticky) noexcept {
+  uint32_t digit;
+  if ((p == last) || ((digit = hex_digit(*p)) >= 16)) {
+    return;
+  }
+  add_hex_digit<fraction>(digit, mantissa, exponent, sticky);
+  ++p;
+  // Blocks of 8 digits, only for char (other code units would need to be
+  // checked for high bits), while the mantissa has room for them. We start
+  // after one digit, and only if a second one follows: printf("%a") and
+  // std::to_chars write a single digit before the point, and failing a
+  // block costs about as much as parsing one.
+  if (!cpp20_and_in_constexpr() && std::is_same<UC, char>::value &&
+      (p != last) && (hex_digit(*p) < 16)) {
+    uint32_t eight;
+    while ((last - p >= 8) && (mantissa >> 32) == 0 &&
+           parse_eight_hex_digits(read8_to_u64(p), eight)) {
+      mantissa = (mantissa << 32) | eight;
+      if (fraction) {
+        exponent -= 32;
+      }
+      p += 8;
+    }
+  }
+  while ((p != last) && ((digit = hex_digit(*p)) < 16)) {
+    add_hex_digit<fraction>(digit, mantissa, exponent, sticky);
+    ++p;
+  }
+}
+
+// Rounds m * 2^e2 + (a sticky fraction below m's last bit, if sticky is set)
+// to the nearest value of type T, ties to even, and stores it with the sign.
+// m must be nonzero. Returns false if the result overflows to infinity or
+// underflows to zero. Only integer arithmetic is used, so the result does not
+// depend on the rounding mode of the thread.
+template <typename T>
+FASTFLOAT_CONSTEXPR20 bool hex_to_float(bool negative, uint64_t m, int64_t e2,
+                                        bool sticky, T &value) noexcept {
+  constexpr int mbits = binary_format<T>::mantissa_explicit_bits();
+  constexpr int bias = -binary_format<T>::minimum_exponent();
+  constexpr int infinite_power = binary_format<T>::infinite_power();
+  int const lz = leading_zeroes(m);
+  m <<= lz;
+  // Now the value is 1.xxx * 2^(e2 + 63 - lz). With a bias, this exponent
+  // is the IEEE exponent field when the value is normal.
+  int64_t biased = e2 + 63 - lz + bias;
+  adjusted_mantissa am;
+  if (biased >= infinite_power) {
+    am.mantissa = 0;
+    am.power2 = infinite_power;
+    to_float(negative, am, value);
+    return false;
+  }
+  // We keep mbits + 1 bits when normal, fewer when subnormal.
+  int64_t shift = 63 - mbits;
+  if (biased <= 0) {
+    shift += 1 - biased;
+    biased = 1; // undone below, if the result stays subnormal
+  }
+  // round_bit and rest are 0 or 1. Rounding is branchless: when the input
+  // has more bits than T (e.g., a double parsed as a float), the round bit
+  // is unpredictable.
+  uint64_t kept;
+  uint64_t round_bit;
+  uint64_t rest;
+  if (shift < 64) {
+    kept = m >> shift;
+    round_bit = (m >> (shift - 1)) & 1;
+    rest = uint64_t(sticky) |
+           uint64_t((m & ((uint64_t(1) << (shift - 1)) - 1)) != 0);
+  } else if (shift == 64) {
+    kept = 0;
+    round_bit = 1; // m has its top bit set
+    rest = uint64_t(sticky) | uint64_t((m << 1) != 0);
+  } else {
+    kept = 0;
+    round_bit = 0;
+    rest = 1;
+  }
+  kept += round_bit & (rest | (kept & 1));
+  if (kept == (uint64_t(2) << mbits)) { // carried into the next binade
+    kept >>= 1;
+    biased++;
+    if (biased >= infinite_power) {
+      am.mantissa = 0;
+      am.power2 = infinite_power;
+      to_float(negative, am, value);
+      return false;
+    }
+  }
+  // A subnormal result has no implicit bit (the value can round up to the
+  // smallest normal number, which then gets its implicit bit).
+  if (kept < (uint64_t(1) << mbits)) {
+    biased = 0;
+  }
+  am.mantissa = kept & ((uint64_t(1) << mbits) - 1);
+  am.power2 = int32_t(biased);
+  to_float(negative, am, value);
+  return kept != 0;
+}
+} // namespace detail
+
+// Cold: the whole chars_format::hex conversion. Follows C++17
+// [charconv.from.chars]: the expected form is that of std::strtod for a
+// hexadecimal floating-point number, without the "0x" or "0X" prefix (it is
+// assumed). The binary exponent ('p' or 'P' followed by an optionally signed
+// decimal integer) is optional, unless chars_format::scientific is set but not
+// chars_format::fixed, in which case it is required. If chars_format::fixed is
+// set but not chars_format::scientific, it is not allowed. The result is
+// correctly rounded (nearest, ties to even) whatever the rounding mode.
+template <typename T, typename UC>
+fastfloat_never_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
+from_chars_float_hex(UC const *first, UC const *last, T &value,
+                     parse_options_t<UC> options) noexcept {
+  chars_format const fmt = detail::adjust_for_feature_macros(options.format);
+  if (uint64_t(fmt & chars_format::skip_white_space)) {
+    while ((first != last) && fast_float::is_space(*first)) {
+      first++;
+    }
+  }
+  from_chars_result_t<UC> answer;
+  answer.ec = std::errc::invalid_argument;
+  answer.ptr = first;
+  if (first == last) {
+    return answer;
+  }
+  UC const *p = first;
+  bool const negative = (*p == UC('-'));
+  if (negative ||
+      (uint64_t(fmt & chars_format::allow_leading_plus) && *p == UC('+'))) {
+    ++p;
+  }
+  // The value is mantissa * 2^exponent, plus something less than one unit of
+  // the mantissa when sticky is set. We keep up to 16 significant hexadecimal
+  // digits (64 bits): this is more than enough for a correct rounding as long
+  // as we remember whether any of the dropped digits was nonzero.
+  uint64_t mantissa = 0;
+  int64_t exponent = 0;
+  bool sticky = false;
+  UC const *const start_digits = p;
+  detail::parse_hex_digits<false>(p, last, mantissa, exponent, sticky);
+  bool has_digits = (p != start_digits);
+  if ((p != last) && (*p == options.decimal_point)) {
+    ++p;
+    UC const *const start_fraction = p;
+    detail::parse_hex_digits<true>(p, last, mantissa, exponent, sticky);
+    has_digits |= (p != start_fraction);
+  }
+  if (!has_digits) {
+    if (uint64_t(fmt & chars_format::no_infnan)) {
+      return answer;
+    }
+    return detail::parse_infnan(first, last, value, fmt);
+  }
+  bool const scientific = uint64_t(fmt & chars_format::scientific) != 0;
+  bool const fixed = uint64_t(fmt & chars_format::fixed) != 0;
+  if ((scientific || !fixed) && (p != last) &&
+      ((*p == UC('p')) || (*p == UC('P')))) {
+    UC const *const location_of_p = p;
+    ++p;
+    bool neg_exp = false;
+    if ((p != last) && (*p == UC('-'))) {
+      neg_exp = true;
+      ++p;
+    } else if ((p != last) && (*p == UC('+'))) {
+      ++p;
+    }
+    if ((p == last) || !is_integer(*p)) {
+      if (scientific && !fixed) {
+        return answer;
+      }
+      p = location_of_p; // not an exponent: we stop before the 'p'
+    } else {
+      // The digits shift the exponent by at most 4 per digit, so by less
+      // than 2^59 for any string that fits in memory. Past 2^59, we saturate
+      // at 2^62: no significand can bring that back into range, and adding
+      // it to the exponent cannot overflow.
+      int64_t exp_number = 0;
+      while ((p != last) && is_integer(*p)) {
+        if (exp_number < (int64_t(1) << 59)) {
+          exp_number = 10 * exp_number + int64_t(*p - UC('0'));
+        } else {
+          exp_number = int64_t(1) << 62;
+        }
+        ++p;
+      }
+      exponent += neg_exp ? -exp_number : exp_number;
+    }
+  } else if (scientific && !fixed) {
+    return answer; // the exponent is required
+  }
+  answer.ptr = p;
+  if (mantissa == 0) {
+    value = negative ? T(-0.) : T(0.);
+    answer.ec = std::errc();
+    return answer;
+  }
+  answer.ec = detail::hex_to_float(negative, mantissa, exponent, sticky, value)
+                  ? std::errc()
+                  : std::errc::result_out_of_range;
+  return answer;
+}
+
 template <typename T, typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 from_chars_result_t<UC>
 from_chars_float_advanced(UC const *first, UC const *last, T &value,
@@ -407,7 +689,11 @@ from_chars_float_advanced(UC const *first, UC const *last, T &value,
 #pragma clang diagnostic ignored "-Wc++20-extensions"
 #endif
 #endif
-  if fastfloat_unlikely (uint64_t(fmt & detail::basic_javascript_fmt)) {
+  if fastfloat_unlikely (uint64_t(fmt & (detail::basic_javascript_fmt |
+                                         chars_format::hex))) {
+    if (uint64_t(fmt & chars_format::hex)) {
+      return from_chars_float_hex<T, UC>(first, last, value, options);
+    }
     return from_chars_float_javascript<T, UC>(first, last, value, options);
   }
 #ifdef __clang__

@@ -126,6 +126,8 @@ check whether `fmt & fast_float::chars_format::fixed` and `fmt &
 fast_float::chars_format::scientific` are set to determine whether we allow the
 fixed point and scientific notation respectively. The default is
 `fast_float::chars_format::general` which allows both `fixed` and `scientific`.
+With `fast_float::chars_format::hex`, we parse hexadecimal floating-point
+numbers instead (see [Hexadecimal floating-point numbers](#hexadecimal-floating-point-numbers)).
 
 The library seeks to follow the C++17 (see
 [28.2.3.(6.1)](https://eel.is/c++draft/charconv.from.chars#6.1)) specification.
@@ -144,7 +146,6 @@ Furthermore, we have the following restrictions:
 * We support `float` and `double`, but not `long double`. We also support
   fixed-width floating-point types such as `std::float64_t`, `std::float32_t`,
   `std::float16_t`, and `std::bfloat16_t`.
-* We only support the decimal format: we do not support hexadecimal strings.
 * For values that are very large positives or negatives (e.g., `1e9999`), we
   represent them using a positive or negative infinity and the returned
   `ec` is set to `std::errc::result_out_of_range`.
@@ -437,6 +438,34 @@ int main() {
   fast_float::parse_options options{fast_float::chars_format::javascript_sloppy};
   auto answer = fast_float::from_chars_advanced(input.data(), input.data() + input.size(), result, options);
   if (answer.ec != std::errc() || result != 8.5) { std::cerr << "should have parsed 8.5\n"; return EXIT_FAILURE; }
+  return EXIT_SUCCESS;
+}
+```
+
+## Hexadecimal floating-point numbers
+
+With `fast_float::chars_format::hex`, `from_chars` parses hexadecimal
+floating-point numbers, as `std::from_chars` does with `std::chars_format::hex`:
+the expected form is that of `std::strtod` (e.g., `1.921fb54442d18p+1`), except
+that the `0x` or `0X` prefix is assumed and must not appear. The significand is
+made of hexadecimal digits with an optional decimal point, and it is optionally
+followed by a binary exponent: `p` or `P`, then an optionally signed decimal
+integer. The value is correctly rounded (to nearest, ties to even) whatever the
+rounding mode, and out-of-range values are reported as for decimal inputs. The
+`allow_leading_plus`, `skip_white_space` and `no_infnan` flags apply, and so does
+a custom decimal point. If you also set `fast_float::chars_format::scientific`
+but not `fast_float::chars_format::fixed`, the exponent is required; if you set
+`fixed` but not `scientific`, the exponent is not allowed.
+
+```C++
+#include "fast_float/fast_float.h"
+#include <iostream>
+
+int main() {
+  std::string input = "1.921fb54442d18p+1"; // printf("%a", 3.141592653589793) without "0x"
+  double result;
+  auto answer = fast_float::from_chars(input.data(), input.data() + input.size(), result, fast_float::chars_format::hex);
+  if (answer.ec != std::errc() || result != 3.141592653589793) { std::cerr << "should have parsed pi\n"; return EXIT_FAILURE; }
   return EXIT_SUCCESS;
 }
 ```
