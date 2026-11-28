@@ -157,6 +157,19 @@ parse_eight_digits_unrolled(uint64_t val) {
   return uint32_t(val);
 }
 
+// Same as parse_eight_digits_unrolled(uint64_t), but each byte already holds
+// the value of its digit (0..9) instead of its ASCII code. Zero bytes act as
+// leading zeros.
+fastfloat_really_inline FASTFLOAT_CONSTEXPR14 uint32_t
+parse_eight_digit_values_unrolled(uint64_t val) {
+  uint64_t const mask = 0x000000FF000000FF;
+  uint64_t const mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+  uint64_t const mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+  val = (val * 10) + (val >> 8);            // val = (val * 2561) >> 8;
+  val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+  return uint32_t(val);
+}
+
 // Call this if chars are definitely 8 digits.
 template <typename UC>
 fastfloat_really_inline FASTFLOAT_CONSTEXPR20 uint32_t
@@ -833,16 +846,47 @@ parse_int_string(UC const *p, UC const *pend, T &value,
   }
 
   uint64_t i = 0;
-  if (base == 10) {
-    loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
-  }
-  while (p != pend) {
-    uint8_t digit = ch_to_digit(*p);
-    if (digit >= base) {
-      break;
+  bool digits_done = false;
+  FASTFLOAT_IF_CONSTEXPR17((std::is_same<UC, char>::value)) {
+    if (base == 10 && (pend - p) >= 8) {
+      // Load eight bytes and mark the high bit of every byte that is not a
+      // digit. Borrows and carries only move upwards, so the bytes up to and
+      // including the first non-digit are marked correctly, and that is all
+      // the trailing-zero count looks at. With 0 to 7 digits, every digit
+      // count then takes the same instructions: no loop to mispredict.
+      // Prior work: simdjson (PR 3079) and jsonifier (str_to_i.hpp).
+      uint64_t const val = read8_to_u64(p);
+      uint64_t const non_digits =
+          ((val + 0x4646464646464646) | (val - 0x3030303030303030)) &
+          0x8080808080808080;
+      if (non_digits != 0) {
+        uint32_t const n = uint32_t(countr_zero_64(non_digits)) >> 3;
+        if (n != 0) {
+          // The digit bytes are 0..9 after the subtraction; shifting them to
+          // the top discards the other bytes and shifts in leading zeros.
+          i = parse_eight_digit_values_unrolled((val - 0x3030303030303030)
+                                                << (64 - 8 * n));
+          p += n;
+        }
+        digits_done = true;
+      } else {
+        i = parse_eight_digits_unrolled(val);
+        p += 8;
+      }
     }
-    i = uint64_t(base) * i + digit; // might overflow, check this later
-    p++;
+  }
+  if (!digits_done) {
+    if (base == 10) {
+      loop_parse_if_eight_digits(p, pend, i); // use SIMD if possible
+    }
+    while (p != pend) {
+      uint8_t digit = ch_to_digit(*p);
+      if (digit >= base) {
+        break;
+      }
+      i = uint64_t(base) * i + digit; // might overflow, check this later
+      p++;
+    }
   }
 
   size_t digit_count = size_t(p - start_digits);

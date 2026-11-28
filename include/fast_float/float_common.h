@@ -508,6 +508,30 @@ countr_zero_32(uint32_t input_num) {
 #endif
 }
 
+/* count trailing zeroes for a non-zero 64-bit integer */
+fastfloat_really_inline FASTFLOAT_CONSTEXPR20 int
+countr_zero_64(uint64_t input_num) {
+  assert(input_num != 0);
+  if (cpp20_and_in_constexpr()) {
+    uint32_t const low = uint32_t(input_num);
+    return low != 0 ? countr_zero_generic_32(low)
+                    : 32 + countr_zero_generic_32(uint32_t(input_num >> 32));
+  }
+#ifdef FASTFLOAT_VISUAL_STUDIO
+#if defined(_M_X64) || defined(_M_ARM64)
+  unsigned long trailing_zero = 0;
+  _BitScanForward64(&trailing_zero, input_num);
+  return static_cast<int>(trailing_zero);
+#else
+  uint32_t const low = uint32_t(input_num);
+  return low != 0 ? countr_zero_32(low)
+                  : 32 + countr_zero_32(uint32_t(input_num >> 32));
+#endif
+#else
+  return __builtin_ctzll(input_num);
+#endif
+}
+
 // slow emulation routine for 32-bit
 fastfloat_really_inline constexpr uint64_t emulu(uint32_t x, uint32_t y) {
   return x * static_cast<uint64_t>(y);
