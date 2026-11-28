@@ -519,9 +519,14 @@ parse_number_string_impl(UC const *p, UC const *pend,
       // Otherwise, we will be ignoring the 'e'.
       p = location_of_e;
     } else {
+      // We stop accumulating at 2^59: the digits of the significand shift the
+      // exponent by one per digit, so by much less than 2^59 for any string
+      // that fits in memory, and they cannot bring such an exponent back into
+      // range. Stopping earlier would be wrong: a long run of zeros such as
+      // 0.000...0001e300000000 must keep its whole exponent.
       while ((p != pend) && is_integer(*p)) {
         uint8_t digit = uint8_t(*p - UC('0'));
-        if (exp_number < 0x10000000) {
+        if (exp_number < (int64_t(1) << 59)) {
           exp_number = 10 * exp_number + digit;
         }
         ++p;

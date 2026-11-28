@@ -1159,6 +1159,44 @@ TEST_CASE("double.inf") {
          std::errc::result_out_of_range);
 }
 
+// The explicit exponent must be read in full even when it is large, because a
+// long significand can bring it back into range (and a truncated exponent can
+// fall into range by accident). 0.(268435455 zeros)1 is 10^-268435456.
+TEST_CASE("double.long_exponent") {
+  if (sizeof(void *) < 8) {
+    return; // the inputs take 256 MB each
+  }
+  std::string const zeros(268435455, '0');
+
+  struct long_case {
+    std::string input;
+    double expected;
+    std::errc ec;
+  };
+
+  long_case const cases[] = {
+      {"0." + zeros + "1e268435456", 1.0, std::errc()},
+      {"0." + zeros + "1e268435457", 10.0, std::errc()},
+      {"0." + zeros + "1e2684354560", std::numeric_limits<double>::infinity(),
+       std::errc::result_out_of_range},
+      {"1" + zeros + "0e-268435456", 1.0, std::errc()},
+      {"1" + zeros + "0e-2684354560", 0.0, std::errc::result_out_of_range},
+      {"1" + zeros + "0e-99999999999999999999999999", 0.0,
+       std::errc::result_out_of_range},
+      {"0." + zeros + "1e99999999999999999999999999",
+       std::numeric_limits<double>::infinity(), std::errc::result_out_of_range},
+  };
+  for (auto const &c : cases) {
+    double result = 12345.0;
+    auto answer = fast_float::from_chars(
+        c.input.data(), c.input.data() + c.input.size(), result);
+    INFO("input ending in " << c.input.substr(c.input.size() - 16));
+    CHECK(answer.ec == c.ec);
+    CHECK(answer.ptr == c.input.data() + c.input.size());
+    CHECK(result == c.expected);
+  }
+}
+
 TEST_CASE("double.general") {
   verify("0.95000000000000000000", 0.95);
   verify("22250738585072012e-324",
